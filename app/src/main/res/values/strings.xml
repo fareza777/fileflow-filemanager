@@ -1,0 +1,797 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">FileFlow</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_files">Files</string>
+    <string name="nav_tools">Tools</string>
+    <string name="nav_rules">Rules</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Permission gate -->
+    <string name="perm_title">Allow full file access</string>
+    <string name="perm_body">FileFlow needs the \'All files access\' permission to browse, organise and clean up your storage. Everything stays on this device — nothing is uploaded.</string>
+    <string name="perm_btn_grant">Grant access</string>
+    <string name="perm_btn_settings">Open app settings</string>
+    <string name="perm_denied">Access is still blocked. Without it FileFlow can only see its own folder.</string>
+    <string name="perm_why_title">What FileFlow uses it for</string>
+    <string name="perm_why_1">Browse and search every folder on your device and SD card</string>
+    <string name="perm_why_2">Move, copy, rename and delete files you pick</string>
+    <string name="perm_why_3">Run your Auto Rules on a schedule, in the background</string>
+    <string name="perm_privacy_note">No account. No backend. No analytics. Zero files leave your phone.</string>
+    <string name="perm_continue">Continue</string>
+
+    <!-- Home -->
+    <string name="home_title">FileFlow</string>
+    <!-- Shown instead of empty figures when the user skipped the permission
+         gate. An empty donut and blank insights with no explanation reads as a
+         broken app; this says what is missing and offers the one tap that fixes
+         it. -->
+    <string name="home_no_access_title">No storage access</string>
+    <string name="home_no_access_body">FileFlow can’t see your files yet. Grant all-files access to browse, search and organize.</string>
+    <string name="home_grant_access">Grant access</string>
+    <string name="home_storage">Storage</string>
+    <string name="home_used_of">%1$s used of %2$s</string>
+    <string name="home_free">%1$s free</string>
+    <string name="home_insights">Insights</string>
+    <string name="home_insight_dupes">%1$d duplicate groups · %2$s recoverable</string>
+    <string name="home_insight_large">%1$d files over %2$s</string>
+    <string name="home_insight_junk">%1$s of junk and leftovers</string>
+    <string name="home_insight_clean">Storage looks clean. Nice.</string>
+    <string name="home_recent">Recent files</string>
+    <string name="home_view_all">View all</string>
+    <string name="home_recent_empty">Photos, downloads and documents land here as they arrive.</string>
+    <string name="recent_empty">No recent files</string>
+    <string name="home_analyzing">Analysing storage…</string>
+    <string name="home_shortcuts">Places</string>
+    <string name="home_used_label">used</string>
+    <string name="home_scan_now">Analyse my storage</string>
+    <string name="home_scan_action">Scan</string>
+    <string name="action_remove_shortcut">Remove from places</string>
+    <string name="home_add_shortcut">Add shortcut</string>
+
+    <!-- Browser -->
+    <string name="browser_title">Files</string>
+    <string name="browser_empty">This folder is empty</string>
+    <string name="browser_empty_hint">Files you add here will show up instantly.</string>
+    <string name="browser_new_folder">New folder</string>
+    <string name="browser_new_folder_hint">Folder name</string>
+    <string name="browser_name_hint">Name</string>
+    <string name="browser_sort">Sort</string>
+    <string name="browser_sort_name">Name</string>
+    <string name="browser_sort_size">Size</string>
+    <string name="browser_sort_date">Modified</string>
+    <string name="browser_sort_type">Type</string>
+    <string name="browser_sort_ascending">Ascending</string>
+    <string name="browser_sort_descending">Descending</string>
+    <string name="browser_show_hidden">Show hidden files</string>
+    <string name="browser_item_count">%1$d items</string>
+    <string name="browser_selected_count">%1$d selected</string>
+    <string name="browser_folder_info">%1$d folders · %2$d files · %3$s</string>
+    <string name="browser_search_folder">Search this folder</string>
+    <string name="browser_storage_details">Storage details</string>
+    <string name="browser_add_to_places">Add to places</string>
+    <string name="browser_filter_empty">Nothing of that type here</string>
+    <string name="restricted_folder_body">Android blocks every app from reading this folder, so FileFlow cannot show it. It is not a permission problem.</string>
+    <string name="clipboard_to_move">%1$d to move</string>
+    <string name="clipboard_to_copy">%1$d to copy</string>
+    <string name="browser_permission_lost">File access was revoked. Grant it again to continue.</string>
+
+    <!-- Calendar -->
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_month_summary">%1$s · %2$s this month</string>
+    <string name="calendar_loading">Reading this month…</string>
+    <string name="calendar_deep_scan">Scan storage</string>
+    <string name="calendar_deep_scanning">Scanning storage… %1$d checked</string>
+    <string name="calendar_deep_scanning_matched">%1$d files matched</string>
+    <string name="calendar_pick_day">Pick a day</string>
+    <string name="calendar_day_empty">Nothing on this day</string>
+    <string name="calendar_day_empty_hint">Android\'s index has no files for this date. A full scan can find ones it missed.</string>
+    <string name="tool_calendar">Calendar</string>
+    <string name="tool_calendar_desc">See everything by the day it arrived</string>
+
+    <!-- Starred -->
+    <string name="starred_title">Starred</string>
+    <string name="starred_empty">No starred files</string>
+    <string name="starred_empty_hint">Star a file from its menu and it will stay here, wherever you move it.</string>
+    <string name="starred_missing">%1$d starred files have moved or been deleted</string>
+    <string name="starred_clear_missing">Clean up</string>
+    <string name="tool_starred">Starred files</string>
+    <string name="tool_starred_desc">Files you marked to keep close</string>
+
+    <!-- Search index -->
+    <string name="settings_index">Search index</string>
+    <string name="settings_index_desc">Keeps search instant by remembering what is on the device.</string>
+    <string name="settings_index_status">%1$d files indexed</string>
+    <string name="settings_index_empty">Not built yet</string>
+    <string name="settings_index_rebuild">Rebuild now</string>
+    <string name="settings_index_running">Indexing… %1$d files</string>
+    <string name="settings_index_done">Indexed %1$d files</string>
+
+    <!-- Recent changes -->
+    <string name="changes_title">Recent changes</string>
+    <string name="changes_empty">Nothing to undo</string>
+    <string name="changes_empty_hint">Moving, copying, deleting or renaming files shows up here so you can put it back.</string>
+    <string name="changes_undo">Undo this change</string>
+    <string name="changes_undone">Reverted</string>
+    <string name="tool_changes">Recent changes</string>
+    <string name="tool_changes_desc">Undo something from earlier</string>
+
+    <plurals name="changes_files">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+
+    <!-- Accessibility -->
+    <string name="cd_back">Back</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_sort">Sort</string>
+    <string name="cd_view_mode">Switch between list and grid</string>
+    <string name="cd_more">More options</string>
+    <string name="cd_close">Close</string>
+    <string name="cd_delete">Delete</string>
+    <string name="cd_share">Share</string>
+    <string name="cd_copy">Copy</string>
+    <string name="cd_move">Move</string>
+    <string name="cd_select_all">Select all</string>
+    <string name="cd_refresh">Refresh</string>
+    <string name="cd_undo">Undo</string>
+    <string name="cd_open_folder">Show in folder</string>
+    <string name="cd_unstar">Remove star</string>
+    <string name="cd_play">Run this rule now</string>
+    <string name="cd_deselect_all">Clear selection</string>
+    <string name="cd_previous_month">Previous month</string>
+    <string name="cd_next_month">Next month</string>
+    <string name="cd_open_with">Open with another app</string>
+    <string name="cd_history">Run history</string>
+    <string name="cd_view_calendar">Show files by date</string>
+    <string name="cd_view_list">Switch to list</string>
+    <string name="cd_expand">Show more</string>
+    <string name="cd_collapse">Show less</string>
+
+    <!-- Viewers -->
+    <string name="viewer_loading">Loading…</string>
+    <string name="viewer_text_title">Text</string>
+    <string name="viewer_line_count">%1$d lines</string>
+    <string name="viewer_wrap">Wrap long lines</string>
+    <string name="viewer_binary_title">Not a text file</string>
+    <string name="viewer_binary_body">This file contains binary data. Open it with another app to see it.</string>
+    <string name="viewer_truncated">Showing the first part of a large file.</string>
+
+    <!-- Common actions -->
+    <string name="action_open">Open</string>
+    <string name="action_open_with">Open with</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_copy_here">Copy here</string>
+    <string name="action_move">Move</string>
+    <string name="action_move_here">Move here</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_share">Share</string>
+    <string name="action_info">Details</string>
+    <string name="action_select">Select</string>
+    <string name="action_star">Add star</string>
+    <string name="action_unstar">Remove star</string>
+    <string name="action_compress">Compress to zip</string>
+    <string name="action_extract">Extract here</string>
+    <string name="action_show_in_folder">Show in folder</string>
+    <string name="action_move_to_transfer">Move to PC folder</string>
+    <string name="action_to_pc">To PC</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_deselect_all">Clear selection</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_close">Close</string>
+    <string name="action_ok">OK</string>
+    <string name="action_apply">Apply</string>
+    <string name="action_save">Save</string>
+    <string name="action_add">Add</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_undo">Undo</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_done">Done</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_paste">Paste</string>
+    <string name="action_show_less">Show less</string>
+    <string name="action_show_more">Show more</string>
+
+    <!-- Operation feedback -->
+    <string name="op_copying">Copying…</string>
+    <string name="op_moving">Moving…</string>
+    <string name="op_deleting">Deleting…</string>
+    <string name="op_renaming">Renaming…</string>
+    <string name="op_archiving">Working on the archive…</string>
+    <string name="op_restoring">Restoring…</string>
+    <string name="op_progress">%1$d of %2$d</string>
+    <string name="op_done_copied">Copied %1$d items</string>
+    <string name="op_done_moved">Moved %1$d items</string>
+    <string name="op_done_deleted">Moved %1$d items to trash</string>
+    <string name="op_done_renamed">Renamed %1$d items</string>
+    <string name="op_partial">%1$d done, %2$d failed</string>
+    <string name="op_failed">Operation failed: %1$s</string>
+    <string name="op_cancelled">Cancelled</string>
+    <string name="op_undo_action">Undo</string>
+    <string name="op_undone">Changes reverted</string>
+    <string name="op_undo_failed">Could not fully undo: %1$s</string>
+    <string name="op_cancel">Stop</string>
+
+    <!-- Delete / conflict dialogs -->
+    <string name="delete_title">Delete %1$d items?</string>
+    <string name="delete_body">They go to FileFlow Trash first, so you can restore them. Trash is emptied after %1$d days.</string>
+    <string name="delete_body_permanent">This cannot be undone.</string>
+    <string name="delete_move_to_trash">Move to trash</string>
+    <string name="delete_forever">Delete permanently</string>
+    <string name="delete_ask_permanent">Always delete permanently (skip trash)</string>
+    <string name="conflict_title">Already exists</string>
+    <string name="conflict_body">%1$s already exists in the destination.</string>
+    <string name="conflict_rename">Keep both</string>
+    <string name="conflict_overwrite">Overwrite</string>
+    <string name="conflict_skip">Skip</string>
+    <string name="conflict_apply_all">Apply to all</string>
+
+    <!-- Search -->
+    <string name="search_title">Search</string>
+    <string name="search_hint">Search files and folders</string>
+    <string name="search_scope">Search in</string>
+    <string name="search_filters">Filters</string>
+    <string name="search_type">Type</string>
+    <string name="search_size">Size</string>
+    <string name="search_date">Modified</string>
+    <string name="search_min">Min</string>
+    <string name="search_max">Max</string>
+    <string name="search_any">Any</string>
+    <string name="search_results">%1$d results</string>
+    <string name="search_scanning">Scanning… %1$d found</string>
+    <string name="search_empty">No matches</string>
+    <string name="search_empty_hint">Try a shorter word, or clear your filters.</string>
+    <string name="search_save_as_rule">Create rule from this search</string>
+    <string name="search_stopped">Search stopped</string>
+    <string name="search_sort_relevance">Best match</string>
+    <string name="search_deep">Include subfolders</string>
+    <!-- Tells the user which folder the results are limited to, so an empty
+         result set reads as "nothing here" instead of "nothing anywhere". -->
+    <string name="search_in_folder">In %1$s</string>
+    <string name="search_whole_device">Whole device</string>
+    <string name="search_scope_all">Search everywhere</string>
+    <!-- The index is a snapshot, and answering from a stale one with no warning
+         is how a file manager loses trust: the user knows the file is there. -->
+    <string name="search_index_stale">Index last updated %1$s</string>
+    <string name="search_rescan">Scan device now</string>
+    <string name="search_live_scan">Searching storage…</string>
+
+    <!-- Tools -->
+    <string name="tools_title">Tools</string>
+    <string name="tools_cleanup">Clean up</string>
+    <string name="tools_insight">Understand</string>
+    <string name="tools_keep">Keep &amp; recover</string>
+    <string name="tool_analyzer">Storage analyzer</string>
+    <string name="tool_analyzer_desc">See what is eating your space</string>
+    <string name="tool_duplicates">Duplicate files</string>
+    <string name="tool_duplicates_desc">Find and remove copies</string>
+    <string name="tool_large">Large files</string>
+    <string name="tool_large_desc">The heavyweights on your phone</string>
+    <string name="tool_junk">Junk cleaner</string>
+    <string name="tool_junk_desc">Empty files, temp data, old installers</string>
+    <string name="tool_rename">Smart rename</string>
+    <string name="tool_rename_desc">Fix messy, unclear file names</string>
+    <string name="tool_trash">Trash</string>
+    <string name="tool_trash_desc">Restore or purge deleted files</string>
+    <string name="tool_history">Rule history</string>
+    <string name="tool_history_desc">Every automatic change, with undo</string>
+
+    <!-- Convert -->
+    <string name="convert_title">Convert</string>
+    <string name="convert_nothing">Select files to convert</string>
+    <string name="convert_action">Convert</string>
+    <string name="convert_working">Converting…</string>
+    <string name="convert_to">To %1$s</string>
+    <string name="convert_output">Output</string>
+    <string name="convert_quality">Quality · %1$d%%</string>
+    <string name="convert_size">Resize longest edge</string>
+    <string name="convert_size_original">Original</string>
+    <string name="convert_audio_only">Audio (M4A)</string>
+    <string name="convert_no_target">Nothing in this selection can be converted on this device.</string>
+    <string name="convert_unsupported">No conversion available for this file</string>
+    <string name="convert_empty">Nothing to convert here</string>
+    <string name="convert_empty_hint">This folder has no files. Pick another one.</string>
+    <string name="tool_convert">Convert files</string>
+    <string name="tool_convert_desc">Images to PNG, JPEG or WEBP, anything to PDF</string>
+
+    <!-- Compress -->
+    <string name="compress_title">Compress</string>
+    <string name="compress_nothing">Select files or folders</string>
+    <string name="compress_action">Compress %1$d</string>
+    <string name="compress_settings">Archive settings</string>
+    <string name="compress_name">Archive name</string>
+    <string name="compress_format">Format</string>
+    <string name="compress_format_hint">ZIP opens anywhere. TAR.GZ is what Linux and servers expect.</string>
+    <string name="compress_level">Compression</string>
+    <string name="compress_pick_folder">Choose a folder</string>
+    <string name="compress_change_folder">Change folder</string>
+    <string name="compress_empty">Nothing to compress here</string>
+    <string name="compress_empty_hint">This folder is empty. Pick another one.</string>
+    <string name="level_store">Store</string>
+    <string name="level_fast">Fast</string>
+    <string name="level_normal">Normal</string>
+    <string name="level_maximum">Maximum</string>
+    <string name="tool_compress">Compress files</string>
+    <string name="tool_compress_desc">ZIP, TAR or TAR.GZ with the level you pick</string>
+
+    <!-- Transfer -->
+    <string name="transfer_title">Transfer to PC</string>
+    <string name="transfer_start">Start server</string>
+    <string name="transfer_stop">Stop server</string>
+    <string name="transfer_running">Server running</string>
+    <string name="transfer_stopped">Server off</string>
+    <string name="transfer_hint">Open the link below in a browser on the other device. It carries a one-time code, so only devices you hand it to can connect. Same Wi-Fi works, and so does this phone\'s hotspot or USB tethering when the computer is on a different network.</string>
+    <string name="transfer_starting">Starting…</string>
+    <string name="transfer_no_address">No local address found. Connect to Wi-Fi, or turn on a hotspot.</string>
+    <string name="transfer_addresses">Addresses</string>
+    <string name="transfer_share_folder">Shared folder</string>
+    <string name="transfer_change">Change</string>
+    <string name="transfer_activity">Activity</string>
+    <string name="transfer_sent">Sent</string>
+    <string name="transfer_received">Received</string>
+    <string name="transfer_log_empty">Nothing transferred yet.</string>
+    <string name="transfer_note">The server keeps running when you leave this screen — switch tabs, use another app, or lock the phone and the computer stays connected. Stop it from here or from the notification.</string>
+    <string name="transfer_channel">File transfer</string>
+    <string name="transfer_channel_desc">Shows the address while the transfer server is running</string>
+    <string name="transfer_notification_title">Transfer server is on</string>
+    <string name="transfer_background">Running in the background. Tap the notification to come back or to stop it.</string>
+    <string name="transfer_open_page">Open the page on this phone</string>
+    <string name="transfer_copy">Copy address</string>
+    <string name="transfer_copied">Address copied</string>
+    <string name="transfer_error">Could not start: %1$s</string>
+    <string name="transfer_link_wifi">Wi-Fi</string>
+    <string name="transfer_link_hotspot">Hotspot</string>
+    <string name="transfer_link_usb">USB tethering</string>
+    <string name="transfer_link_other">Other network</string>
+    <string name="tool_transfer">Transfer to PC</string>
+    <string name="tool_transfer_desc">Send and receive files through a browser</string>
+
+    <!-- Analyzer -->
+    <string name="analyzer_title">Storage analyzer</string>
+    <string name="analyzer_computing">Measuring folders…</string>
+    <string name="analyzer_by_category">By category</string>
+    <string name="analyzer_by_folder">Biggest folders</string>
+    <string name="analyzer_total">Total scanned</string>
+    <string name="analyzer_files">%1$d files</string>
+    <string name="analyzer_none">Nothing to show yet</string>
+    <string name="analyzer_scan_root">Scanning %1$s</string>
+
+    <!-- Categories -->
+    <string name="cat_images">Images</string>
+    <string name="cat_videos">Videos</string>
+    <string name="cat_audio">Audio</string>
+    <string name="cat_documents">Documents</string>
+    <string name="cat_archives">Archives</string>
+    <string name="cat_apk">Apps</string>
+    <string name="cat_code">Code</string>
+    <string name="cat_other">Other</string>
+
+    <!-- Duplicates -->
+    <string name="dup_title">Duplicate files</string>
+    <string name="dup_scanning">Comparing files… %1$d checked</string>
+    <string name="dup_found">%1$d groups · %2$s recoverable</string>
+    <string name="dup_none">No duplicates found</string>
+    <string name="dup_none_hint">Every file on this storage is unique. Nothing to clean.</string>
+    <string name="dup_auto_select">Auto-select copies</string>
+    <string name="dup_keep">Keep</string>
+    <string name="dup_copy_label">Copy</string>
+    <string name="dup_selected_summary">%1$d files selected · %2$s</string>
+    <string name="dup_delete">Delete selected</string>
+    <string name="dup_keep_best_note">Keeps the oldest file in each group and selects the rest.</string>
+
+    <!-- Large files -->
+    <string name="large_title">Large files</string>
+    <string name="large_threshold">Show files larger than</string>
+    <string name="large_scanning">Looking for big files…</string>
+    <string name="large_none">Nothing above %1$s</string>
+    <string name="large_none_hint">Your storage has no oversized files. Nice.</string>
+    <string name="large_total">%1$d files · %2$s total</string>
+
+    <!-- Junk -->
+    <string name="junk_title">Junk cleaner</string>
+    <string name="junk_scanning">Checking for junk…</string>
+    <string name="junk_reclaimable">%1$s can be reclaimed</string>
+    <string name="junk_empty_files">Empty files</string>
+    <string name="junk_empty_folders">Empty folders</string>
+    <string name="junk_temp">Leftover temp files</string>
+    <string name="junk_logs">Log and crash files</string>
+    <string name="junk_old_apk">Old installers</string>
+    <string name="junk_thumbnails">Thumbnail caches</string>
+    <string name="junk_none">Nothing junk-like found</string>
+    <string name="junk_none_hint">Your storage is tidy. Nothing to clean right now.</string>
+    <string name="junk_clean">Clean %1$d items</string>
+    <string name="junk_safe_note">Everything selected goes to Trash, never straight to gone.</string>
+
+    <!-- Smart rename -->
+    <string name="rename_title">Smart rename</string>
+    <string name="rename_scanning">Reading file names…</string>
+    <string name="rename_intro">Find files with unclear, duplicated or broken names and give them a name you can actually search.</string>
+    <string name="rename_convention">Naming style</string>
+    <string name="rename_conv_keep">Keep original words</string>
+    <string name="rename_conv_natural">Natural sentence</string>
+    <string name="rename_conv_title">Title Case</string>
+    <string name="rename_conv_kebab">kebab-case</string>
+    <string name="rename_conv_snake">snake_case</string>
+    <string name="rename_conv_date_prefix">Prefix with capture date</string>
+    <string name="rename_scan">Scan names</string>
+    <string name="rename_proposals">%1$d files can be improved</string>
+    <string name="rename_none">Names look fine</string>
+    <string name="rename_none_hint">No junk, no cryptic names, no duplicates to resolve.</string>
+    <string name="rename_old">Now</string>
+    <string name="rename_new">Becomes</string>
+    <string name="rename_apply">Rename %1$d files</string>
+    <string name="rename_confidence_high">Confident</string>
+    <string name="rename_confidence_medium">Likely</string>
+    <string name="rename_confidence_low">Unsure</string>
+    <string name="rename_reason_junk">Removed filler words</string>
+    <string name="rename_reason_duplicate_suffix">Resolved a (1) style duplicate</string>
+    <string name="rename_reason_spacing">Cleaned up spacing and symbols</string>
+    <string name="rename_reason_date">Date recovered from the name</string>
+    <string name="rename_reason_extension">Fixed the file extension</string>
+    <string name="rename_reason_hash">Random name replaced with something readable</string>
+    <string name="rename_reason_case">Applied your naming style</string>
+    <string name="rename_reason_folder">Added the source folder for context</string>
+    <string name="rename_reason_uniqueness">Made the name unique</string>
+
+    <!-- Rules -->
+    <string name="rules_title">Auto Rules</string>
+    <string name="rules_intro">Rules watch the folders you choose and put files where they belong — on a schedule, or whenever you tap run.</string>
+    <string name="rules_empty">No rules yet</string>
+    <string name="rules_empty_hint">Start from a template below, or build your own from scratch.</string>
+    <string name="rules_new">New rule</string>
+    <string name="rules_templates">Templates</string>
+    <string name="rules_use_template">Use template</string>
+    <string name="template_whatsapp_title">WhatsApp PDFs → Work</string>
+    <string name="template_whatsapp_desc">Every night, PDFs arriving from WhatsApp move into Documents/Work.</string>
+    <string name="template_screenshot_title">Screenshots older than 90 days → Archive</string>
+    <string name="template_screenshot_desc">Old screenshots leave the gallery and file themselves by month.</string>
+    <string name="template_apk_title">APKs older than 30 days → Review</string>
+    <string name="template_apk_desc">Stale installers collect in one folder so you can decide what to keep.</string>
+    <string name="template_invoice_title">Invoices → Finance</string>
+    <string name="template_invoice_desc">Anything named like an invoice lands in Documents/Finance, sorted by month.</string>
+    <string name="template_archive_title">Forgotten downloads → Archive</string>
+    <string name="template_archive_desc">Large files sitting in Download for six months get filed away.</string>
+    <string name="rules_last_run">Last run %1$s</string>
+    <string name="rules_never_run">Never run</string>
+    <string name="rules_run_now">Run now</string>
+    <string name="rules_preview">Preview</string>
+    <string name="rules_history">History</string>
+    <string name="rules_matched_hint">Matched %1$d files last time</string>
+    <string name="rules_delete_title">Delete this rule?</string>
+    <string name="rules_delete_body">Files it already moved stay where they are. Only the rule is removed.</string>
+    <string name="rules_schedule_summary_off">Manual only</string>
+    <string name="rules_schedule_summary_daily">Daily at %1$s</string>
+    <string name="rules_schedule_summary_weekly">%1$s at %2$s</string>
+    <string name="rules_schedule_summary_interval">Every %1$d hours</string>
+    <string name="rules_enable_notifications">Notify when a rule runs</string>
+
+    <!-- Rule editor -->
+    <string name="rule_new_title">New rule</string>
+    <string name="rule_edit_title">Edit rule</string>
+    <string name="rule_name">Rule name</string>
+    <string name="rule_name_hint">WhatsApp PDFs to Work</string>
+    <string name="rule_when">When a file</string>
+    <string name="rule_then">Then</string>
+    <string name="rule_scope">Where to look</string>
+    <string name="rule_scope_hint">Choose folders to watch</string>
+    <string name="rule_scope_all">Entire storage</string>
+    <string name="rule_add_folder">Add folder</string>
+    <string name="rule_add_condition">Add condition</string>
+    <string name="rule_match_mode">Match</string>
+    <string name="rule_match_all">All conditions</string>
+    <string name="rule_match_any">Any condition</string>
+    <string name="rule_recursive">Include subfolders</string>
+    <string name="rule_skip_hidden">Skip hidden files</string>
+    <string name="rule_schedule">Schedule</string>
+    <string name="rule_schedule_off">Manual only</string>
+    <string name="rule_schedule_hourly">Hourly</string>
+    <string name="rule_schedule_daily">Daily</string>
+    <string name="rule_schedule_weekly">Weekly</string>
+    <string name="rule_time">Time</string>
+    <string name="rule_days">Days</string>
+    <string name="rule_wifi_only">Only on Wi-Fi</string>
+    <string name="rule_charging_only">Only while charging</string>
+    <string name="rule_action">Action</string>
+    <string name="rule_destination">Destination folder</string>
+    <string name="rule_destination_hint">Choose a folder</string>
+    <string name="rule_on_conflict">If a file already exists</string>
+    <string name="rule_save_and_preview">Save &amp; preview</string>
+    <string name="rule_validation_name">Give the rule a name</string>
+    <string name="rule_validation_condition">Add at least one condition</string>
+    <string name="rule_validation_destination">Pick a destination folder</string>
+
+    <!-- Conditions -->
+    <string name="cond_name">Name</string>
+    <string name="cond_name_contains">contains</string>
+    <string name="cond_name_starts">starts with</string>
+    <string name="cond_name_ends">ends with</string>
+    <string name="cond_name_wildcard">matches pattern</string>
+    <string name="cond_name_regex">matches regex</string>
+    <string name="cond_extension">Extension</string>
+    <string name="cond_extension_hint">pdf, apk, jpg</string>
+    <string name="cond_category">File type</string>
+    <string name="cond_folder">Source folder</string>
+    <string name="cond_folder_hint">WhatsApp</string>
+    <string name="cond_size">Size</string>
+    <string name="cond_size_min">Min size</string>
+    <string name="cond_size_max">Max size</string>
+    <string name="cond_age">Age</string>
+    <string name="cond_age_older">Older than</string>
+    <string name="cond_age_newer">Newer than</string>
+    <string name="cond_age_days">days</string>
+    <string name="cond_negate">Invert this condition</string>
+    <string name="cond_remove">Remove condition</string>
+    <string name="cond_value_hint">Value</string>
+
+    <!-- Actions -->
+    <string name="action_kind_move">Move to folder</string>
+    <string name="action_kind_copy">Copy to folder</string>
+    <string name="action_kind_trash">Move to trash</string>
+    <string name="action_kind_delete">Delete permanently</string>
+    <string name="action_kind_rename">Rename</string>
+    <string name="action_delete_warning">This action runs without trash. Files cannot be recovered.</string>
+
+    <!-- Preview -->
+    <string name="preview_title">Preview</string>
+    <string name="preview_intro">Nothing has changed yet. This is exactly what the rule will do.</string>
+    <string name="preview_scanning">Matching files… %1$d checked</string>
+    <string name="preview_matches">%1$d files match · %2$s</string>
+    <string name="preview_no_matches">No files match right now</string>
+    <string name="preview_no_matches_hint">Adjust the conditions, or check back after new files arrive.</string>
+    <string name="preview_run">Run on %1$d files</string>
+    <string name="preview_conflict_flagged">%1$d name conflicts will be resolved automatically</string>
+    <string name="preview_affected">What changes</string>
+    <string name="preview_running">Working… %1$d of %2$d</string>
+    <string name="preview_result">%1$d done, %2$d failed</string>
+    <string name="preview_result_ok">Done — %1$d files updated</string>
+    <string name="preview_by_folder">%1$d files from %2$s</string>
+
+    <!-- History -->
+    <string name="history_title">Rule history</string>
+    <string name="history_empty">No runs yet</string>
+    <string name="history_empty_hint">Every rule run is logged here, and every change can be undone.</string>
+    <string name="history_status_success">Completed</string>
+    <string name="history_status_partial">Completed with errors</string>
+    <string name="history_status_failed">Failed</string>
+    <string name="history_status_undone">Undone</string>
+    <string name="history_status_cancelled">Stopped</string>
+    <string name="history_detail">%1$d files · %2$s · %3$s</string>
+    <string name="history_undo_run">Undo this run</string>
+    <string name="history_undo_confirm">Put every file from this run back where it was?</string>
+    <string name="history_undo_partial">%1$d files restored, %2$d could not be</string>
+    <string name="history_manual">Manual</string>
+    <string name="history_scheduled">Scheduled</string>
+    <string name="history_clear">Clear history</string>
+    <string name="history_clear_confirm">Remove all log entries? Files are not affected.</string>
+
+    <!-- Trash -->
+    <string name="trash_title">Trash</string>
+    <string name="trash_empty">Trash is empty</string>
+    <string name="trash_empty_hint">Deleted files wait here before they are gone for good.</string>
+    <string name="trash_size">%1$d items · %2$s</string>
+    <string name="trash_restore">Restore</string>
+    <string name="trash_delete_forever">Delete permanently</string>
+    <string name="trash_empty_now">Empty trash</string>
+    <string name="trash_empty_confirm">Permanently delete %1$d items? This cannot be undone.</string>
+    <string name="trash_restored">Restored %1$d items</string>
+    <string name="trash_restore_failed">Could not restore %1$d items</string>
+    <string name="trash_expires">Removed %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_color_theme">Colour theme</string>
+    <string name="palette_default">Default</string>
+    <string name="palette_dynamic">Wallpaper</string>
+    <string name="palette_ocean">Ocean</string>
+    <string name="palette_forest">Forest</string>
+    <string name="palette_sunset">Sunset</string>
+    <string name="palette_berry">Berry</string>
+    <string name="palette_sand">Sand</string>
+    <string name="settings_browsing">Browsing</string>
+    <string name="settings_show_hidden">Show hidden files</string>
+    <string name="settings_show_hidden_desc">Files starting with a dot</string>
+    <string name="settings_thumbnails">Image thumbnails</string>
+    <string name="settings_sort_default">Default sort</string>
+    <string name="settings_safety">Safety</string>
+    <string name="settings_confirm_delete">Ask before deleting</string>
+    <string name="settings_preview_required">Always preview rules before running</string>
+    <string name="settings_preview_required_desc">Shows exactly what will change, every time</string>
+    <string name="settings_use_trash">Move deletions to trash</string>
+    <string name="settings_trash_retention">Empty trash after</string>
+    <string name="settings_days">%1$d days</string>
+    <string name="settings_notifications">Notify me after scheduled rules run</string>
+    <!-- The setting was on while the system permission was off, so every
+         notification was silently dropped. This line makes the mismatch
+         visible and tappable instead. -->
+    <string name="settings_notifications_blocked">Blocked by the system — tap to allow notifications</string>
+    <string name="settings_ads">Advertisements</string>
+    <string name="settings_ad_choices">Change ad choices</string>
+    <string name="message_no_browser">No browser available to open that link</string>
+    <string name="settings_ads_desc">Ads never appear in the file browser, search or preview screens.</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_privacy_policy">Privacy policy</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_reset">Reset all settings</string>
+    <string name="settings_reset_confirm">Restore every setting to its default?</string>
+    <string name="settings_storage_access">Full storage access</string>
+    <string name="settings_storage_granted">Granted</string>
+    <string name="settings_storage_missing">Not granted</string>
+
+    <!-- About -->
+    <string name="about_title">About FileFlow</string>
+    <string name="about_tagline">A file manager that keeps itself tidy.</string>
+    <string name="about_body">FileFlow is built for people whose Downloads folder has become a jungle. Browse and move files the normal way, or write rules once and let the app keep everything in its place — with a preview before anything moves, a full log, and one-tap undo.\n\nEverything happens on your device. There is no account, no server, and no upload. The only network traffic is advertising, which never appears while you are browsing your files.</string>
+    <string name="about_permissions">Permissions explained</string>
+    <string name="about_open_source">Built with Jetpack Compose</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_rules">Rule runs</string>
+    <string name="notif_channel_rules_desc">Summary after an automatic rule finishes</string>
+    <string name="notif_rule_done_title">%1$s finished</string>
+    <string name="notif_rule_done_body">%1$d files organised · %2$s moved</string>
+    <string name="notif_rule_failed_title">%1$s hit a problem</string>
+    <string name="notif_rule_failed_body">%1$d of %2$d files could not be processed</string>
+
+    <!-- Misc -->
+    <string name="common_loading">Loading…</string>
+    <string name="common_error">Something went wrong</string>
+    <string name="common_unknown">Unknown</string>
+    <string name="common_none">None</string>
+    <string name="common_files">files</string>
+    <string name="common_folders">folders</string>
+    <string name="common_items">items</string>
+    <string name="common_today">Today</string>
+    <string name="common_yesterday">Yesterday</string>
+    <string name="common_just_now">just now</string>
+    <string name="common_minutes_ago">%1$d min ago</string>
+    <string name="common_hours_ago">%1$d h ago</string>
+    <string name="common_days_ago">%1$d d ago</string>
+    <string name="common_modified">Modified %1$s</string>
+    <string name="common_modified_label">Modified</string>
+    <string name="common_size">Size</string>
+    <string name="common_path">Path</string>
+    <string name="common_type">Type</string>
+    <string name="common_contains">Contains</string>
+    <string name="common_forbidden">This folder is protected by Android</string>
+    <string name="common_empty_folder">Empty folder</string>
+    <string name="message_file_missing">That file is no longer there</string>
+    <string name="message_no_app">No app on this phone can open that file</string>
+    <string name="message_nothing_to_share">Nothing to share</string>
+
+    <plurals name="file_count">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+
+    <plurals name="folder_count">
+        <item quantity="one">%1$d folder</item>
+        <item quantity="other">%1$d folders</item>
+    </plurals>
+
+    <plurals name="item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+
+    <plurals name="delete_title">
+        <item quantity="one">Delete this item?</item>
+        <item quantity="other">Delete %1$d items?</item>
+    </plurals>
+
+    <plurals name="conflict_body">
+        <item quantity="one">1 of %2$d items already exists in the destination.</item>
+        <item quantity="other">%1$d of %2$d items already exist in the destination.</item>
+    </plurals>
+
+    <plurals name="junk_clean">
+        <item quantity="one">Clean %1$d item</item>
+        <item quantity="other">Clean %1$d items</item>
+    </plurals>
+
+    <plurals name="items_and_size">
+        <item quantity="one">%1$d item · %2$s</item>
+        <item quantity="other">%1$d items · %2$s</item>
+    </plurals>
+
+    <plurals name="result_count">
+        <item quantity="one">%1$d result</item>
+        <item quantity="other">%1$d results</item>
+    </plurals>
+
+    <plurals name="bytes_found">
+        <item quantity="one">%1$d found</item>
+        <item quantity="other">%1$d found</item>
+    </plurals>
+
+    <plurals name="outcome_moved_to_trash">
+        <item quantity="one">%1$d item moved to trash</item>
+        <item quantity="other">%1$d items moved to trash</item>
+    </plurals>
+
+    <plurals name="outcome_deleted">
+        <item quantity="one">%1$d item deleted</item>
+        <item quantity="other">%1$d items deleted</item>
+    </plurals>
+
+    <plurals name="outcome_copied">
+        <item quantity="one">%1$d item copied</item>
+        <item quantity="other">%1$d items copied</item>
+    </plurals>
+
+    <plurals name="outcome_moved">
+        <item quantity="one">%1$d item moved</item>
+        <item quantity="other">%1$d items moved</item>
+    </plurals>
+
+    <plurals name="outcome_renamed">
+        <item quantity="one">%1$d item renamed</item>
+        <item quantity="other">%1$d items renamed</item>
+    </plurals>
+
+    <plurals name="outcome_restored">
+        <item quantity="one">%1$d item restored</item>
+        <item quantity="other">%1$d items restored</item>
+    </plurals>
+
+    <plurals name="outcome_removed">
+        <item quantity="one">%1$d item removed</item>
+        <item quantity="other">%1$d items removed</item>
+    </plurals>
+
+    <plurals name="outcome_failed">
+        <item quantity="one">%1$d failed</item>
+        <item quantity="other">%1$d failed</item>
+    </plurals>
+
+    <plurals name="outcome_skipped">
+        <item quantity="one">%1$d skipped</item>
+        <item quantity="other">%1$d skipped</item>
+    </plurals>
+
+    <!-- A result and its failure count, joined. Kept separate so each half
+         pluralises on its own number. -->
+    <string name="outcome_with_failures">%1$s · %2$s</string>
+
+    <string name="outcome_undo">Undo</string>
+    <string name="outcome_nothing_changed">Nothing changed</string>
+    <string name="outcome_all_reversed">Changes reversed</string>
+    <plurals name="outcome_reversed_partial">
+        <item quantity="one">%1$d of %2$d reversed</item>
+        <item quantity="other">%1$d of %2$d reversed</item>
+    </plurals>
+
+    <string name="trash_emptied">Trash emptied</string>
+    <string name="trash_nothing_to_empty">Nothing to empty</string>
+
+    <string name="error_index_failed">Could not build the index</string>
+    <string name="error_load_failed">Could not load this screen</string>
+    <string name="error_delete_failed">Some items could not be deleted</string>
+
+    <string name="rules_unreadable">Not running: this rule\'s settings could not be read. Open it, check it, and save it again.</string>
+
+    <string name="state_loading">One moment…</string>
+    <string name="state_scanning">Looking through your files…</string>
+    <string name="error_index_failed_title">Indexing failed</string>
+
+    <string name="analyzer_empty_hint">See what is using your space, folder by folder.</string>
+    <string name="analyzer_scan">Analyse storage</string>
+    <string name="analyzer_root">Internal storage</string>
+    <string name="analyzer_largest">Largest files</string>
+    <string name="analyzer_browse">Open in Files</string>
+    <string name="analyzer_showing">Showing %1$s of %2$s</string>
+    <string name="analyzer_unknown_size">Size unknown until the next scan</string>
+    <string name="analyzer_tap_hint">Tap a folder to see what is inside it.</string>
+    <string name="junk_clean_short">Clean now</string>
+
+</resources>

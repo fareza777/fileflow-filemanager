@@ -1,0 +1,706 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">FileFlow</string>
+
+    <!-- Navigasi -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_files">File</string>
+    <string name="nav_tools">Alat</string>
+    <string name="nav_rules">Aturan</string>
+    <string name="nav_settings">Setelan</string>
+
+    <!-- Izin akses -->
+    <string name="perm_title">Izinkan akses semua file</string>
+    <string name="perm_body">FileFlow butuh izin \'Akses semua file\' untuk menjelajah, merapikan, dan membersihkan penyimpananmu. Semua tetap di HP ini — tidak ada yang diunggah.</string>
+    <string name="perm_btn_grant">Beri izin</string>
+    <string name="perm_btn_settings">Buka setelan aplikasi</string>
+    <string name="perm_denied">Izin masih diblokir. Tanpa izin ini FileFlow hanya bisa melihat folder miliknya sendiri.</string>
+    <string name="perm_why_title">Untuk apa izin ini dipakai</string>
+    <string name="perm_why_1">Menjelajah dan mencari di semua folder di HP dan kartu SD</string>
+    <string name="perm_why_2">Memindah, menyalin, mengganti nama, dan menghapus file yang kamu pilih</string>
+    <string name="perm_why_3">Menjalankan Aturan Otomatis sesuai jadwal, di latar belakang</string>
+    <string name="perm_privacy_note">Tanpa akun. Tanpa server. Tanpa pelacak. Tidak ada file yang keluar dari HP-mu.</string>
+    <string name="perm_continue">Lanjut</string>
+
+    <!-- Beranda -->
+    <string name="home_title">FileFlow</string>
+    <string name="home_no_access_title">Belum ada akses penyimpanan</string>
+    <string name="home_no_access_body">FileFlow belum bisa melihat berkas Anda. Beri akses semua berkas untuk menelusuri, mencari, dan merapikan.</string>
+    <string name="home_grant_access">Beri akses</string>
+    <string name="home_storage">Penyimpanan</string>
+    <string name="home_used_of">%1$s terpakai dari %2$s</string>
+    <string name="home_free">%1$s tersisa</string>
+    <string name="home_insights">Ringkasan</string>
+    <string name="home_insight_dupes">%1$d grup duplikat · %2$s bisa dihemat</string>
+    <string name="home_insight_large">%1$d file di atas %2$s</string>
+    <string name="home_insight_junk">%1$s sampah dan file sisa</string>
+    <string name="home_insight_clean">Penyimpananmu sudah rapi. Mantap.</string>
+    <string name="home_recent">File terbaru</string>
+    <string name="home_view_all">Lihat semua</string>
+    <string name="home_recent_empty">Foto, unduhan, dan dokumen muncul di sini begitu tersimpan.</string>
+    <string name="recent_empty">Belum ada file terbaru</string>
+    <string name="home_analyzing">Menganalisis penyimpanan…</string>
+    <string name="home_shortcuts">Lokasi favorit</string>
+    <string name="home_used_label">terpakai</string>
+    <string name="home_scan_now">Analisis penyimpananku</string>
+    <string name="home_scan_action">Pindai</string>
+    <string name="action_remove_shortcut">Hapus dari favorit</string>
+    <string name="home_add_shortcut">Tambah lokasi</string>
+
+    <!-- Penjelajah file -->
+    <string name="browser_title">File</string>
+    <string name="browser_empty">Folder ini kosong</string>
+    <string name="browser_empty_hint">File yang kamu tambahkan akan langsung muncul di sini.</string>
+    <string name="browser_new_folder">Folder baru</string>
+    <string name="browser_new_folder_hint">Nama folder</string>
+    <string name="browser_name_hint">Nama</string>
+    <string name="browser_sort">Urutkan</string>
+    <string name="browser_sort_name">Nama</string>
+    <string name="browser_sort_size">Ukuran</string>
+    <string name="browser_sort_date">Tanggal diubah</string>
+    <string name="browser_sort_type">Jenis</string>
+    <string name="browser_sort_ascending">Naik</string>
+    <string name="browser_sort_descending">Turun</string>
+    <string name="browser_show_hidden">Tampilkan file tersembunyi</string>
+    <string name="browser_item_count">%1$d item</string>
+    <string name="browser_selected_count">%1$d dipilih</string>
+    <string name="browser_folder_info">%1$d folder · %2$d file · %3$s</string>
+    <string name="browser_search_folder">Cari di folder ini</string>
+    <string name="browser_storage_details">Detail penyimpanan</string>
+    <string name="browser_add_to_places">Tambah ke favorit</string>
+    <string name="browser_filter_empty">Tidak ada file jenis ini di sini</string>
+    <string name="restricted_folder_body">Android memblokir semua aplikasi dari folder ini, jadi FileFlow tidak bisa menampilkannya. Ini bukan masalah izin.</string>
+    <string name="clipboard_to_move">%1$d akan dipindah</string>
+    <string name="clipboard_to_copy">%1$d akan disalin</string>
+    <string name="browser_permission_lost">Akses file dicabut. Beri izin lagi untuk melanjutkan.</string>
+
+    <!-- Kalender -->
+    <string name="calendar_title">Kalender</string>
+    <string name="calendar_today">Hari ini</string>
+    <string name="calendar_month_summary">%1$s · %2$s bulan ini</string>
+    <string name="calendar_loading">Membaca bulan ini…</string>
+    <string name="calendar_deep_scan">Pindai penyimpanan</string>
+    <string name="calendar_deep_scanning">Memindai penyimpanan… %1$d diperiksa</string>
+    <string name="calendar_deep_scanning_matched">%1$d file cocok</string>
+    <string name="calendar_pick_day">Pilih tanggal</string>
+    <string name="calendar_day_empty">Tidak ada file di tanggal ini</string>
+    <string name="calendar_day_empty_hint">Index Android tidak punya file untuk tanggal ini. Pemindaian penuh bisa menemukan yang terlewat.</string>
+    <string name="tool_calendar">Kalender</string>
+    <string name="tool_calendar_desc">Lihat semua file per tanggal dia masuk</string>
+
+    <!-- Berbintang -->
+    <string name="starred_title">Berbintang</string>
+    <string name="starred_empty">Belum ada file berbintang</string>
+    <string name="starred_empty_hint">Beri bintang dari menu file, dan file itu tetap di sini walau kamu pindahkan.</string>
+    <string name="starred_missing">%1$d file berbintang sudah pindah atau terhapus</string>
+    <string name="starred_clear_missing">Bersihkan</string>
+    <string name="tool_starred">File berbintang</string>
+    <string name="tool_starred_desc">File yang kamu tandai untuk disimpan dekat</string>
+
+    <!-- Index pencarian -->
+    <string name="settings_index">Index pencarian</string>
+    <string name="settings_index_desc">Membuat pencarian instan dengan mengingat isi HP.</string>
+    <string name="settings_index_status">%1$d file terindeks</string>
+    <string name="settings_index_empty">Belum dibuat</string>
+    <string name="settings_index_rebuild">Buat ulang sekarang</string>
+    <string name="settings_index_running">Mengindeks… %1$d file</string>
+    <string name="settings_index_done">%1$d file terindeks</string>
+
+    <!-- Perubahan terakhir -->
+    <string name="changes_title">Perubahan terakhir</string>
+    <string name="changes_empty">Tidak ada yang bisa dibatalkan</string>
+    <string name="changes_empty_hint">Pindah, salin, hapus, atau ganti nama file akan muncul di sini supaya bisa dikembalikan.</string>
+    <string name="changes_undo">Batalkan perubahan ini</string>
+    <string name="changes_undone">Sudah dikembalikan</string>
+    <string name="tool_changes">Perubahan terakhir</string>
+    <string name="tool_changes_desc">Batalkan sesuatu dari sebelumnya</string>
+
+    <plurals name="changes_files">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d file</item>
+    </plurals>
+
+    <!-- Aksesibilitas -->
+    <string name="cd_back">Kembali</string>
+    <string name="cd_search">Cari</string>
+    <string name="cd_sort">Urutkan</string>
+    <string name="cd_view_mode">Ganti tampilan daftar dan kisi</string>
+    <string name="cd_more">Opsi lainnya</string>
+    <string name="cd_close">Tutup</string>
+    <string name="cd_delete">Hapus</string>
+    <string name="cd_share">Bagikan</string>
+    <string name="cd_copy">Salin</string>
+    <string name="cd_move">Pindah</string>
+    <string name="cd_select_all">Pilih semua</string>
+    <string name="cd_refresh">Muat ulang</string>
+    <string name="cd_undo">Batalkan</string>
+    <string name="cd_open_folder">Lihat di folder</string>
+    <string name="cd_unstar">Hapus bintang</string>
+    <string name="cd_play">Jalankan aturan ini</string>
+
+    <!-- Penampil -->
+    <string name="viewer_loading">Memuat…</string>
+    <string name="viewer_text_title">Teks</string>
+    <string name="viewer_line_count">%1$d baris</string>
+    <string name="viewer_wrap">Lipat baris panjang</string>
+    <string name="viewer_binary_title">Bukan file teks</string>
+    <string name="viewer_binary_body">File ini berisi data biner. Buka pakai aplikasi lain untuk melihatnya.</string>
+    <string name="viewer_truncated">Menampilkan bagian awal saja karena filenya besar.</string>
+
+    <!-- Aksi umum -->
+    <string name="action_open">Buka</string>
+    <string name="action_open_with">Buka dengan</string>
+    <string name="action_copy">Salin</string>
+    <string name="action_copy_here">Salin ke sini</string>
+    <string name="action_move">Pindah</string>
+    <string name="action_move_here">Pindah ke sini</string>
+    <string name="action_rename">Ganti nama</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_share">Bagikan</string>
+    <string name="action_info">Detail</string>
+    <string name="action_select">Pilih</string>
+    <string name="action_star">Beri bintang</string>
+    <string name="action_unstar">Hapus bintang</string>
+    <string name="action_compress">Kompres ke zip</string>
+    <string name="action_extract">Ekstrak di sini</string>
+    <string name="action_show_in_folder">Lihat di folder</string>
+    <string name="action_move_to_transfer">Pindah ke folder PC</string>
+    <string name="action_to_pc">Ke PC</string>
+    <string name="action_select_all">Pilih semua</string>
+    <string name="action_deselect_all">Hapus pilihan</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_close">Tutup</string>
+    <string name="action_ok">OK</string>
+    <string name="action_apply">Terapkan</string>
+    <string name="action_save">Simpan</string>
+    <string name="action_add">Tambah</string>
+    <string name="action_edit">Ubah</string>
+    <string name="action_undo">Batalkan</string>
+    <string name="action_retry">Coba lagi</string>
+    <string name="action_done">Selesai</string>
+    <string name="action_continue">Lanjutkan</string>
+    <string name="action_paste">Tempel</string>
+    <string name="action_show_less">Sembunyikan</string>
+    <string name="action_show_more">Tampilkan semua</string>
+
+    <!-- Proses -->
+    <string name="op_copying">Menyalin…</string>
+    <string name="op_moving">Memindah…</string>
+    <string name="op_deleting">Menghapus…</string>
+    <string name="op_renaming">Mengganti nama…</string>
+    <string name="op_archiving">Memproses arsip…</string>
+    <string name="op_restoring">Memulihkan…</string>
+    <string name="op_progress">%1$d dari %2$d</string>
+    <string name="op_done_copied">%1$d item disalin</string>
+    <string name="op_done_moved">%1$d item dipindah</string>
+    <string name="op_done_deleted">%1$d item masuk sampah</string>
+    <string name="op_done_renamed">%1$d item diganti nama</string>
+    <string name="op_partial">%1$d berhasil, %2$d gagal</string>
+    <string name="op_failed">Proses gagal: %1$s</string>
+    <string name="op_cancelled">Dibatalkan</string>
+    <string name="op_undo_action">Batalkan</string>
+    <string name="op_undone">Perubahan dikembalikan</string>
+    <string name="op_undo_failed">Tidak semua bisa dibatalkan: %1$s</string>
+    <string name="op_cancel">Stop</string>
+
+    <!-- Dialog hapus / konflik -->
+    <string name="delete_title">Hapus %1$d item?</string>
+    <string name="delete_body">File masuk ke Sampah FileFlow dulu, jadi masih bisa dikembalikan. Sampah dikosongkan setelah %1$d hari.</string>
+    <string name="delete_body_permanent">Ini tidak bisa dibatalkan.</string>
+    <string name="delete_move_to_trash">Masukkan ke sampah</string>
+    <string name="delete_forever">Hapus permanen</string>
+    <string name="delete_ask_permanent">Selalu hapus permanen (lewati sampah)</string>
+    <string name="conflict_title">Sudah ada</string>
+    <string name="conflict_body">%1$s sudah ada di folder tujuan.</string>
+    <string name="conflict_rename">Simpan keduanya</string>
+    <string name="conflict_overwrite">Timpa</string>
+    <string name="conflict_skip">Lewati</string>
+    <string name="conflict_apply_all">Berlaku untuk semua</string>
+
+    <!-- Pencarian -->
+    <string name="search_title">Cari</string>
+    <string name="search_hint">Cari file dan folder</string>
+    <string name="search_scope">Cari di</string>
+    <string name="search_filters">Filter</string>
+    <string name="search_type">Jenis</string>
+    <string name="search_size">Ukuran</string>
+    <string name="search_date">Tanggal diubah</string>
+    <string name="search_min">Min</string>
+    <string name="search_max">Maks</string>
+    <string name="search_any">Semua</string>
+    <string name="search_results">%1$d hasil</string>
+    <string name="search_scanning">Memindai… %1$d ditemukan</string>
+    <string name="search_empty">Tidak ada hasil</string>
+    <string name="search_empty_hint">Coba kata yang lebih pendek, atau hapus filternya.</string>
+    <string name="search_save_as_rule">Buat aturan dari pencarian ini</string>
+    <string name="search_stopped">Pencarian dihentikan</string>
+    <string name="search_sort_relevance">Paling cocok</string>
+    <string name="search_deep">Termasuk subfolder</string>
+    <string name="search_in_folder">Di %1$s</string>
+    <string name="search_whole_device">Seluruh perangkat</string>
+    <string name="search_scope_all">Cari di semua lokasi</string>
+    <string name="search_index_stale">Indeks terakhir diperbarui %1$s</string>
+    <string name="search_rescan">Pindai perangkat sekarang</string>
+    <string name="search_live_scan">Mencari di penyimpanan…</string>
+
+    <!-- Alat -->
+    <string name="tools_title">Alat</string>
+    <string name="tools_cleanup">Bersihkan</string>
+    <string name="tools_insight">Telusuri</string>
+    <string name="tools_keep">Simpan &amp; pulihkan</string>
+    <string name="tool_analyzer">Analisis penyimpanan</string>
+    <string name="tool_analyzer_desc">Lihat apa yang menghabiskan ruang</string>
+    <string name="tool_duplicates">File duplikat</string>
+    <string name="tool_duplicates_desc">Temukan dan hapus salinannya</string>
+    <string name="tool_large">File besar</string>
+    <string name="tool_large_desc">File yang paling berat di HP-mu</string>
+    <string name="tool_junk">Pembersih sampah</string>
+    <string name="tool_junk_desc">File kosong, data sementara, installer lama</string>
+    <string name="tool_rename">Ganti nama pintar</string>
+    <string name="tool_rename_desc">Rapikan nama file yang berantakan</string>
+    <string name="tool_trash">Sampah</string>
+    <string name="tool_trash_desc">Kembalikan atau hapus file di sampah</string>
+    <string name="tool_history">Riwayat aturan</string>
+    <string name="tool_history_desc">Semua perubahan otomatis, bisa dibatalkan</string>
+
+    <!-- Konversi -->
+    <string name="convert_title">Konversi</string>
+    <string name="convert_nothing">Pilih file yang mau dikonversi</string>
+    <string name="convert_action">Konversi</string>
+    <string name="convert_working">Mengonversi…</string>
+    <string name="convert_to">Ke %1$s</string>
+    <string name="convert_output">Hasil</string>
+    <string name="convert_quality">Kualitas · %1$d%%</string>
+    <string name="convert_size">Ubah ukuran sisi terpanjang</string>
+    <string name="convert_size_original">Asli</string>
+    <string name="convert_audio_only">Audio (M4A)</string>
+    <string name="convert_no_target">Tidak ada di pilihan ini yang bisa dikonversi di HP ini.</string>
+    <string name="convert_unsupported">Tidak ada konversi untuk file ini</string>
+    <string name="convert_empty">Tidak ada yang bisa dikonversi</string>
+    <string name="convert_empty_hint">Folder ini kosong. Pilih folder lain.</string>
+    <string name="tool_convert">Konversi file</string>
+    <string name="tool_convert_desc">Gambar ke PNG, JPEG, atau WEBP, apa pun ke PDF</string>
+
+    <!-- Kompres -->
+    <string name="compress_title">Kompres</string>
+    <string name="compress_nothing">Pilih file atau folder</string>
+    <string name="compress_action">Kompres %1$d</string>
+    <string name="compress_settings">Pengaturan arsip</string>
+    <string name="compress_name">Nama arsip</string>
+    <string name="compress_format">Format</string>
+    <string name="compress_format_hint">ZIP bisa dibuka di mana saja. TAR.GZ yang biasa dipakai Linux dan server.</string>
+    <string name="compress_level">Kompresi</string>
+    <string name="compress_pick_folder">Pilih folder</string>
+    <string name="compress_change_folder">Ganti folder</string>
+    <string name="compress_empty">Tidak ada yang bisa dikompres</string>
+    <string name="compress_empty_hint">Folder ini kosong. Pilih folder lain.</string>
+    <string name="level_store">Tanpa kompresi</string>
+    <string name="level_fast">Cepat</string>
+    <string name="level_normal">Normal</string>
+    <string name="level_maximum">Maksimal</string>
+    <string name="tool_compress">Kompres file</string>
+    <string name="tool_compress_desc">ZIP, TAR, atau TAR.GZ dengan level pilihanmu</string>
+
+    <!-- Transfer -->
+    <string name="transfer_title">Transfer ke PC</string>
+    <string name="transfer_start">Nyalakan server</string>
+    <string name="transfer_stop">Matikan server</string>
+    <string name="transfer_running">Server aktif</string>
+    <string name="transfer_stopped">Server mati</string>
+    <string name="transfer_hint">Buka tautan di bawah ini lewat browser di perangkat lain. Tautannya membawa kode sekali pakai, jadi hanya perangkat yang kamu kasih tautan itu yang bisa masuk. Satu Wi-Fi bisa, dan hotspot atau tethering USB HP ini juga bisa kalau komputernya di jaringan berbeda.</string>
+    <string name="transfer_starting">Menyalakan…</string>
+    <string name="transfer_no_address">Belum ada alamat jaringan. Sambungkan ke Wi-Fi, atau nyalakan hotspot.</string>
+    <string name="transfer_addresses">Alamat</string>
+    <string name="transfer_share_folder">Folder yang dibagikan</string>
+    <string name="transfer_change">Ubah</string>
+    <string name="transfer_activity">Aktivitas</string>
+    <string name="transfer_sent">Terkirim</string>
+    <string name="transfer_received">Diterima</string>
+    <string name="transfer_log_empty">Belum ada transfer.</string>
+    <string name="transfer_note">Server tetap jalan walau kamu keluar dari layar ini — pindah tab, buka app lain, atau kunci HP, koneksi ke komputer tetap hidup. Matikan dari sini atau dari notifikasi.</string>
+    <string name="transfer_channel">Transfer file</string>
+    <string name="transfer_channel_desc">Menampilkan alamat selama server transfer jalan</string>
+    <string name="transfer_notification_title">Server transfer aktif</string>
+    <string name="transfer_background">Jalan di latar belakang. Ketuk notifikasi untuk kembali atau mematikannya.</string>
+    <string name="transfer_open_page">Buka halamannya di HP ini</string>
+    <string name="transfer_copy">Salin alamat</string>
+    <string name="transfer_copied">Alamat disalin</string>
+    <string name="transfer_error">Gagal menyalakan: %1$s</string>
+    <string name="transfer_link_wifi">Wi-Fi</string>
+    <string name="transfer_link_hotspot">Hotspot</string>
+    <string name="transfer_link_usb">Tethering USB</string>
+    <string name="transfer_link_other">Jaringan lain</string>
+    <string name="tool_transfer">Transfer ke PC</string>
+    <string name="tool_transfer_desc">Kirim dan terima file lewat browser</string>
+
+    <!-- Analisis -->
+    <string name="analyzer_title">Analisis penyimpanan</string>
+    <string name="analyzer_computing">Menghitung folder…</string>
+    <string name="analyzer_by_category">Per kategori</string>
+    <string name="analyzer_by_folder">Folder terbesar</string>
+    <string name="analyzer_total">Total dipindai</string>
+    <string name="analyzer_files">%1$d file</string>
+    <string name="analyzer_none">Belum ada yang bisa ditampilkan</string>
+    <string name="analyzer_scan_root">Memindai %1$s</string>
+    <string name="analyzer_empty_hint">Lihat apa yang menghabiskan ruang, folder per folder.</string>
+    <string name="analyzer_scan">Analisis penyimpanan</string>
+    <string name="analyzer_root">Penyimpanan internal</string>
+    <string name="analyzer_largest">File terbesar</string>
+    <string name="analyzer_browse">Buka di Files</string>
+    <string name="analyzer_showing">Menampilkan %1$s dari %2$s</string>
+    <string name="analyzer_unknown_size">Ukuran belum diketahui, jalankan pindai lagi</string>
+    <string name="analyzer_tap_hint">Ketuk folder untuk melihat isinya.</string>
+    <string name="junk_clean_short">Bersihkan</string>
+
+    <!-- Kategori -->
+    <string name="cat_images">Gambar</string>
+    <string name="cat_videos">Video</string>
+    <string name="cat_audio">Audio</string>
+    <string name="cat_documents">Dokumen</string>
+    <string name="cat_archives">Arsip</string>
+    <string name="cat_apk">Aplikasi</string>
+    <string name="cat_code">Kode</string>
+    <string name="cat_other">Lainnya</string>
+
+    <!-- Duplikat -->
+    <string name="dup_title">File duplikat</string>
+    <string name="dup_scanning">Membandingkan file… %1$d diperiksa</string>
+    <string name="dup_found">%1$d grup · %2$s bisa dihemat</string>
+    <string name="dup_none">Tidak ada duplikat</string>
+    <string name="dup_none_hint">Semua file di penyimpanan ini unik. Tidak ada yang perlu dibersihkan.</string>
+    <string name="dup_auto_select">Pilih salinan otomatis</string>
+    <string name="dup_keep">Simpan</string>
+    <string name="dup_copy_label">Salinan</string>
+    <string name="dup_selected_summary">%1$d file dipilih · %2$s</string>
+    <string name="dup_delete">Hapus yang dipilih</string>
+    <string name="dup_keep_best_note">Menyimpan file paling lama di tiap grup, sisanya dipilih.</string>
+
+    <!-- File besar -->
+    <string name="large_title">File besar</string>
+    <string name="large_threshold">Tampilkan file lebih besar dari</string>
+    <string name="large_scanning">Mencari file besar…</string>
+    <string name="large_none">Tidak ada di atas %1$s</string>
+    <string name="large_none_hint">Tidak ada file jumbo di penyimpananmu. Bagus.</string>
+    <string name="large_total">%1$d file · total %2$s</string>
+
+    <!-- Sampah -->
+    <string name="junk_title">Pembersih sampah</string>
+    <string name="junk_scanning">Memeriksa sampah…</string>
+    <string name="junk_reclaimable">%1$s bisa dihemat</string>
+    <string name="junk_empty_files">File kosong</string>
+    <string name="junk_empty_folders">Folder kosong</string>
+    <string name="junk_temp">File sementara</string>
+    <string name="junk_logs">File log dan crash</string>
+    <string name="junk_old_apk">Installer lama</string>
+    <string name="junk_thumbnails">Cache thumbnail</string>
+    <string name="junk_none">Tidak ada sampah</string>
+    <string name="junk_none_hint">Penyimpananmu rapi. Tidak ada yang perlu dibersihkan.</string>
+    <string name="junk_clean">Bersihkan %1$d item</string>
+    <string name="junk_safe_note">Semua yang dipilih masuk ke Sampah dulu, bukan langsung hilang.</string>
+
+    <!-- Ganti nama pintar -->
+    <string name="rename_title">Ganti nama pintar</string>
+    <string name="rename_scanning">Membaca nama file…</string>
+    <string name="rename_intro">Temukan file dengan nama tidak jelas, dobel, atau rusak, lalu beri nama yang gampang dicari.</string>
+    <string name="rename_convention">Gaya penamaan</string>
+    <string name="rename_conv_keep">Pertahankan kata asli</string>
+    <string name="rename_conv_natural">Kalimat natural</string>
+    <string name="rename_conv_title">Title Case</string>
+    <string name="rename_conv_kebab">kebab-case</string>
+    <string name="rename_conv_snake">snake_case</string>
+    <string name="rename_conv_date_prefix">Awali tanggal dibuat</string>
+    <string name="rename_scan">Pindai nama</string>
+    <string name="rename_proposals">%1$d file bisa diperbaiki</string>
+    <string name="rename_none">Nama file sudah bagus</string>
+    <string name="rename_none_hint">Tidak ada nama sampah, nama aneh, atau duplikat yang perlu dibereskan.</string>
+    <string name="rename_old">Sekarang</string>
+    <string name="rename_new">Menjadi</string>
+    <string name="rename_apply">Ganti nama %1$d file</string>
+    <string name="rename_confidence_high">Yakin</string>
+    <string name="rename_confidence_medium">Kemungkinan</string>
+    <string name="rename_confidence_low">Belum pasti</string>
+    <string name="rename_reason_junk">Menghapus kata pengisi</string>
+    <string name="rename_reason_duplicate_suffix">Membereskan duplikat gaya (1)</string>
+    <string name="rename_reason_spacing">Merapikan spasi dan simbol</string>
+    <string name="rename_reason_date">Tanggal diambil dari nama</string>
+    <string name="rename_reason_extension">Memperbaiki ekstensi file</string>
+    <string name="rename_reason_hash">Nama acak diganti lebih jelas</string>
+    <string name="rename_reason_case">Gaya penamaan diterapkan</string>
+    <string name="rename_reason_folder">Menambah nama folder asal</string>
+    <string name="rename_reason_uniqueness">Membuat nama jadi unik</string>
+
+    <!-- Aturan -->
+    <string name="rules_title">Aturan Otomatis</string>
+    <string name="rules_intro">Aturan memantau folder pilihanmu dan memindahkan file ke tempat yang benar — sesuai jadwal, atau saat kamu tekan jalan.</string>
+    <string name="rules_empty">Belum ada aturan</string>
+    <string name="rules_empty_hint">Mulai dari template di bawah, atau buat sendiri dari nol.</string>
+    <string name="rules_new">Aturan baru</string>
+    <string name="rules_templates">Template</string>
+    <string name="rules_use_template">Pakai template</string>
+    <string name="template_whatsapp_title">PDF WhatsApp → Kerja</string>
+    <string name="template_whatsapp_desc">Tiap malam, PDF dari WhatsApp pindah ke Documents/Work.</string>
+    <string name="template_screenshot_title">Screenshot lebih dari 90 hari → Arsip</string>
+    <string name="template_screenshot_desc">Screenshot lama keluar dari galeri dan dirapikan per bulan.</string>
+    <string name="template_apk_title">APK lebih dari 30 hari → Tinjau</string>
+    <string name="template_apk_desc">Installer lama dikumpulkan di satu folder biar gampang dipilih.</string>
+    <string name="template_invoice_title">Invoice → Keuangan</string>
+    <string name="template_invoice_desc">File bernama invoice masuk ke Documents/Finance, diurut per bulan.</string>
+    <string name="template_archive_title">Download terlupakan → Arsip</string>
+    <string name="template_archive_desc">File besar yang menganggur 6 bulan di Download dirapikan.</string>
+    <string name="rules_last_run">Terakhir jalan %1$s</string>
+    <string name="rules_never_run">Belum pernah jalan</string>
+    <string name="rules_run_now">Jalankan</string>
+    <string name="rules_preview">Pratinjau</string>
+    <string name="rules_history">Riwayat</string>
+    <string name="rules_matched_hint">Terakhir cocok %1$d file</string>
+    <string name="rules_delete_title">Hapus aturan ini?</string>
+    <string name="rules_delete_body">File yang sudah dipindahkan tetap di tempatnya. Hanya aturannya yang dihapus.</string>
+    <string name="rules_schedule_summary_off">Hanya manual</string>
+    <string name="rules_schedule_summary_daily">Setiap hari %1$s</string>
+    <string name="rules_schedule_summary_weekly">%1$s pukul %2$s</string>
+    <string name="rules_schedule_summary_interval">Setiap %1$d jam</string>
+    <string name="rules_enable_notifications">Beri tahu saat aturan jalan</string>
+
+    <!-- Editor aturan -->
+    <string name="rule_new_title">Aturan baru</string>
+    <string name="rule_edit_title">Ubah aturan</string>
+    <string name="rule_name">Nama aturan</string>
+    <string name="rule_name_hint">PDF WhatsApp ke Kerja</string>
+    <string name="rule_when">Saat file</string>
+    <string name="rule_then">Maka</string>
+    <string name="rule_scope">Di mana dicari</string>
+    <string name="rule_scope_hint">Pilih folder yang dipantau</string>
+    <string name="rule_scope_all">Seluruh penyimpanan</string>
+    <string name="rule_add_folder">Tambah folder</string>
+    <string name="rule_add_condition">Tambah kondisi</string>
+    <string name="rule_match_mode">Cocok</string>
+    <string name="rule_match_all">Semua kondisi</string>
+    <string name="rule_match_any">Salah satu kondisi</string>
+    <string name="rule_recursive">Termasuk subfolder</string>
+    <string name="rule_skip_hidden">Lewati file tersembunyi</string>
+    <string name="rule_schedule">Jadwal</string>
+    <string name="rule_schedule_off">Hanya manual</string>
+    <string name="rule_schedule_hourly">Tiap jam</string>
+    <string name="rule_schedule_daily">Harian</string>
+    <string name="rule_schedule_weekly">Mingguan</string>
+    <string name="rule_time">Jam</string>
+    <string name="rule_days">Hari</string>
+    <string name="rule_wifi_only">Hanya saat Wi-Fi</string>
+    <string name="rule_charging_only">Hanya saat mengisi daya</string>
+    <string name="rule_action">Aksi</string>
+    <string name="rule_destination">Folder tujuan</string>
+    <string name="rule_destination_hint">Pilih folder</string>
+    <string name="rule_on_conflict">Kalau file sudah ada</string>
+    <string name="rule_save_and_preview">Simpan &amp; pratinjau</string>
+    <string name="rule_validation_name">Beri nama aturannya</string>
+    <string name="rule_validation_condition">Tambahkan minimal satu kondisi</string>
+    <string name="rule_validation_destination">Pilih folder tujuan</string>
+
+    <!-- Kondisi -->
+    <string name="cond_name">Nama</string>
+    <string name="cond_name_contains">mengandung</string>
+    <string name="cond_name_starts">diawali</string>
+    <string name="cond_name_ends">diakhiri</string>
+    <string name="cond_name_wildcard">cocok pola</string>
+    <string name="cond_name_regex">cocok regex</string>
+    <string name="cond_extension">Ekstensi</string>
+    <string name="cond_extension_hint">pdf, apk, jpg</string>
+    <string name="cond_category">Jenis file</string>
+    <string name="cond_folder">Folder asal</string>
+    <string name="cond_folder_hint">WhatsApp</string>
+    <string name="cond_size">Ukuran</string>
+    <string name="cond_size_min">Ukuran min</string>
+    <string name="cond_size_max">Ukuran maks</string>
+    <string name="cond_age">Umur</string>
+    <string name="cond_age_older">Lebih lama dari</string>
+    <string name="cond_age_newer">Lebih baru dari</string>
+    <string name="cond_age_days">hari</string>
+    <string name="cond_negate">Balik kondisi ini</string>
+    <string name="cond_remove">Hapus kondisi</string>
+    <string name="cond_value_hint">Nilai</string>
+
+    <!-- Aksi -->
+    <string name="action_kind_move">Pindah ke folder</string>
+    <string name="action_kind_copy">Salin ke folder</string>
+    <string name="action_kind_trash">Masukkan ke sampah</string>
+    <string name="action_kind_delete">Hapus permanen</string>
+    <string name="action_kind_rename">Ganti nama</string>
+    <string name="action_delete_warning">Aksi ini jalan tanpa sampah. File tidak bisa dikembalikan.</string>
+
+    <!-- Pratinjau -->
+    <string name="preview_title">Pratinjau</string>
+    <string name="preview_intro">Belum ada yang berubah. Ini persis yang akan dilakukan aturannya.</string>
+    <string name="preview_scanning">Mencari file… %1$d diperiksa</string>
+    <string name="preview_matches">%1$d file cocok · %2$s</string>
+    <string name="preview_no_matches">Belum ada file yang cocok</string>
+    <string name="preview_no_matches_hint">Sesuaikan kondisinya, atau cek lagi setelah ada file baru.</string>
+    <string name="preview_run">Jalankan untuk %1$d file</string>
+    <string name="preview_conflict_flagged">%1$d bentrok nama akan dibereskan otomatis</string>
+    <string name="preview_affected">Yang berubah</string>
+    <string name="preview_running">Bekerja… %1$d dari %2$d</string>
+    <string name="preview_result">%1$d berhasil, %2$d gagal</string>
+    <string name="preview_result_ok">Selesai — %1$d file diperbarui</string>
+    <string name="preview_by_folder">%1$d file dari %2$s</string>
+
+    <!-- Riwayat -->
+    <string name="history_title">Riwayat aturan</string>
+    <string name="history_empty">Belum ada riwayat</string>
+    <string name="history_empty_hint">Setiap aturan yang jalan dicatat di sini, dan semuanya bisa dibatalkan.</string>
+    <string name="history_status_success">Selesai</string>
+    <string name="history_status_partial">Selesai dengan error</string>
+    <string name="history_status_failed">Gagal</string>
+    <string name="history_status_undone">Dibatalkan</string>
+    <string name="history_status_cancelled">Dihentikan</string>
+    <string name="history_detail">%1$d file · %2$s · %3$s</string>
+    <string name="history_undo_run">Batalkan proses ini</string>
+    <string name="history_undo_confirm">Kembalikan semua file dari proses ini ke tempat asalnya?</string>
+    <string name="history_undo_partial">%1$d file dikembalikan, %2$d gagal</string>
+    <string name="history_manual">Manual</string>
+    <string name="history_scheduled">Terjadwal</string>
+    <string name="history_clear">Bersihkan riwayat</string>
+    <string name="history_clear_confirm">Hapus semua catatan? File tidak terpengaruh.</string>
+
+    <!-- Sampah -->
+    <string name="trash_title">Sampah</string>
+    <string name="trash_empty">Sampah kosong</string>
+    <string name="trash_empty_hint">File yang dihapus menunggu di sini sebelum benar-benar hilang.</string>
+    <string name="trash_size">%1$d item · %2$s</string>
+    <string name="trash_restore">Kembalikan</string>
+    <string name="trash_delete_forever">Hapus permanen</string>
+    <string name="trash_empty_now">Kosongkan sampah</string>
+    <string name="trash_empty_confirm">Hapus permanen %1$d item? Ini tidak bisa dibatalkan.</string>
+    <string name="trash_restored">%1$d item dikembalikan</string>
+    <string name="trash_restore_failed">%1$d item gagal dikembalikan</string>
+    <string name="trash_expires">Terhapus %1$s</string>
+
+    <!-- Setelan -->
+    <string name="settings_title">Setelan</string>
+    <string name="settings_appearance">Tampilan</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_system">Ikuti sistem</string>
+    <string name="settings_theme_light">Terang</string>
+    <string name="settings_theme_dark">Gelap</string>
+    <string name="settings_color_theme">Tema warna</string>
+    <string name="palette_default">Bawaan</string>
+    <string name="palette_dynamic">Wallpaper</string>
+    <string name="palette_ocean">Samudra</string>
+    <string name="palette_forest">Hutan</string>
+    <string name="palette_sunset">Senja</string>
+    <string name="palette_berry">Beri</string>
+    <string name="palette_sand">Pasir</string>
+    <string name="settings_browsing">Penjelajahan</string>
+    <string name="settings_show_hidden">Tampilkan file tersembunyi</string>
+    <string name="settings_show_hidden_desc">File yang diawali titik</string>
+    <string name="settings_thumbnails">Thumbnail gambar</string>
+    <string name="settings_sort_default">Urutan bawaan</string>
+    <string name="settings_safety">Keamanan</string>
+    <string name="settings_confirm_delete">Tanya dulu sebelum menghapus</string>
+    <string name="settings_preview_required">Selalu pratinjau aturan sebelum jalan</string>
+    <string name="settings_preview_required_desc">Menampilkan persis apa yang akan berubah</string>
+    <string name="settings_use_trash">Hapus lewat sampah</string>
+    <string name="settings_trash_retention">Kosongkan sampah setelah</string>
+    <string name="settings_days">%1$d hari</string>
+    <string name="settings_notifications">Beri tahu setelah aturan terjadwal jalan</string>
+    <string name="settings_notifications_blocked">Diblokir sistem — ketuk untuk mengizinkan notifikasi</string>
+    <string name="settings_ads">Iklan</string>
+    <string name="settings_ad_choices">Ubah pilihan iklan</string>
+    <string name="message_no_browser">Tidak ada browser untuk membuka tautan itu</string>
+    <string name="settings_ads_desc">Iklan tidak pernah muncul di penjelajah file, pencarian, atau pratinjau.</string>
+    <string name="settings_privacy">Privasi</string>
+    <string name="settings_privacy_policy">Kebijakan privasi</string>
+    <string name="settings_about">Tentang</string>
+    <string name="settings_version">Versi %1$s</string>
+    <string name="settings_reset">Reset semua setelan</string>
+    <string name="settings_reset_confirm">Kembalikan semua setelan ke bawaan?</string>
+    <string name="settings_storage_access">Akses penyimpanan penuh</string>
+    <string name="settings_storage_granted">Diberikan</string>
+    <string name="settings_storage_missing">Belum diberikan</string>
+
+    <!-- Tentang -->
+    <string name="about_title">Tentang FileFlow</string>
+    <string name="about_tagline">File manager yang merapikan dirinya sendiri.</string>
+    <string name="about_body">FileFlow dibuat untuk kamu yang folder Download-nya sudah jadi hutan. Jelajahi dan pindahkan file seperti biasa, atau tulis aturan sekali lalu biarkan aplikasi yang menjaga semuanya tetap rapi — dengan pratinjau sebelum apa pun dipindahkan, catatan lengkap, dan pembatalan sekali sentuh.\n\nSemua terjadi di HP-mu. Tidak ada akun, tidak ada server, tidak ada unggahan. Satu-satunya lalu lintas internet adalah iklan, dan iklan tidak pernah muncul saat kamu sedang menjelajah file.</string>
+    <string name="about_permissions">Penjelasan izin</string>
+    <string name="about_open_source">Dibuat dengan Jetpack Compose</string>
+
+    <!-- Notifikasi -->
+    <string name="notif_channel_rules">Jalannya aturan</string>
+    <string name="notif_channel_rules_desc">Ringkasan setelah aturan otomatis selesai</string>
+    <string name="notif_rule_done_title">%1$s selesai</string>
+    <string name="notif_rule_done_body">%1$d file dirapikan · %2$s dipindahkan</string>
+    <string name="notif_rule_failed_title">%1$s ada masalah</string>
+    <string name="notif_rule_failed_body">%1$d dari %2$d file gagal diproses</string>
+
+    <!-- Lain-lain -->
+    <string name="common_loading">Memuat…</string>
+    <string name="common_error">Ada yang salah</string>
+    <string name="common_unknown">Tidak diketahui</string>
+    <string name="common_none">Tidak ada</string>
+    <string name="common_files">file</string>
+    <string name="common_folders">folder</string>
+    <string name="common_items">item</string>
+    <string name="common_today">Hari ini</string>
+    <string name="common_yesterday">Kemarin</string>
+    <string name="common_just_now">baru saja</string>
+    <string name="common_minutes_ago">%1$d menit lalu</string>
+    <string name="common_hours_ago">%1$d jam lalu</string>
+    <string name="common_days_ago">%1$d hari lalu</string>
+    <string name="common_modified">Diubah %1$s</string>
+    <string name="common_modified_label">Diubah</string>
+    <string name="common_size">Ukuran</string>
+    <string name="common_path">Lokasi</string>
+    <string name="common_type">Jenis</string>
+    <string name="common_contains">Berisi</string>
+    <string name="common_forbidden">Folder ini dilindungi Android</string>
+    <string name="common_empty_folder">Folder kosong</string>
+    <string name="message_file_missing">File-nya sudah tidak ada</string>
+    <string name="message_no_app">Tidak ada aplikasi di HP ini yang bisa membukanya</string>
+    <string name="message_nothing_to_share">Tidak ada yang bisa dibagikan</string>
+
+    <plurals name="file_count">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d file</item>
+    </plurals>
+
+    <plurals name="folder_count">
+        <item quantity="one">%1$d folder</item>
+        <item quantity="other">%1$d folder</item>
+    </plurals>
+
+    <plurals name="item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d item</item>
+    </plurals>
+
+    <plurals name="delete_title">
+        <item quantity="one">Hapus item ini?</item>
+        <item quantity="other">Hapus %1$d item?</item>
+    </plurals>
+
+    <plurals name="conflict_body">
+        <item quantity="one">1 dari %2$d item sudah ada di folder tujuan.</item>
+        <item quantity="other">%1$d dari %2$d item sudah ada di folder tujuan.</item>
+    </plurals>
+
+    <plurals name="junk_clean">
+        <item quantity="one">Bersihkan %1$d item</item>
+        <item quantity="other">Bersihkan %1$d item</item>
+    </plurals>
+
+    <plurals name="items_and_size">
+        <item quantity="one">%1$d item · %2$s</item>
+        <item quantity="other">%1$d item · %2$s</item>
+    </plurals>
+
+    <plurals name="result_count">
+        <item quantity="one">%1$d hasil</item>
+        <item quantity="other">%1$d hasil</item>
+    </plurals>
+
+    <plurals name="bytes_found">
+        <item quantity="one">%1$d ditemukan</item>
+        <item quantity="other">%1$d ditemukan</item>
+    </plurals>
+
+</resources>

@@ -1,0 +1,25 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+key.properties
+*.jks
+*.keystore
+app/release
+app/debug
+
+# Build output of the app module and Kotlin's incremental state.
+app/build
+.kotlin
+
+# Local agent/tooling configuration, not part of the project.
+.commandcode
+
+# Scratch notes written during a review pass.
+_audit_findings.txt

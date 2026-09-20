@@ -1,0 +1,412 @@
+package com.fileflow.app.ui.analyzer
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.pluralStringResource
+import com.fileflow.app.R
+import com.fileflow.app.core.model.FileCategory
+import com.fileflow.app.core.util.Formatters
+import com.fileflow.app.domain.Candidate
+import com.fileflow.app.domain.Candidates
+import com.fileflow.app.domain.toFileItem
+import com.fileflow.app.ui.components.BreadcrumbBar
+import com.fileflow.app.ui.components.EmptyState
+import com.fileflow.app.ui.components.FileVisuals
+import com.fileflow.app.ui.components.ProgressPanel
+import com.fileflow.app.ui.components.SectionCard
+import com.fileflow.app.ui.components.SectionHeader
+import com.fileflow.app.ui.components.StatPill
+import com.fileflow.app.ui.components.StorageBar
+import com.fileflow.app.ui.components.UsageRow
+import com.fileflow.app.ui.util.FileIntents
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AnalyzerScreen(
+    onBack: () -> Unit,
+    onOpenFolder: (String) -> Unit,
+    viewModel: AnalyzerViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    // Back means "up one level" while drilled in, and only leaves the analyzer
+    // from the top. Jumping straight out to another tab made the drill-down a
+    // one-way trip.
+    BackHandler(enabled = !state.atRoot) { viewModel.up() }
+
+    val rootLabel = stringResource(R.string.analyzer_root)
+    val crumbs = remember(state.crumbs, state.atRoot, state.root, rootLabel) {
+        if (state.atRoot) {
+            emptyList()
+        } else {
+            listOf(rootLabel to state.root) + state.crumbs.map { it.name to it.path }
+        }
+    }
+    // The share-of-total bars need a denominator; computing it inside the list
+    // builder would run it on every item, and inside a LazyColumn item is not a
+    // composable scope at all.
+    val entryTotal = remember(state.entries) {
+        state.entries.sumOf { it.bytes }.coerceAtLeast(1L)
+    }
+    val largestTotal = remember(state.largest) { largestTotalOf(state.largest) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = if (state.atRoot) {
+                                stringResource(R.string.analyzer_title)
+                            } else {
+                                state.focusName
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (!state.atRoot && state.result != null) {
+                            Text(
+                                text = Formatters.bytes(state.focusBytes),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = { if (!viewModel.up()) onBack() },
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back),
+                        )
+                    }
+                },
+                actions = {
+                    if (!state.atRoot) {
+                        IconButton(
+                            onClick = { onOpenFolder(state.focusPath) },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.FolderOpen,
+                                contentDescription = stringResource(R.string.analyzer_browse),
+                            )
+                        }
+                    }
+                    IconButton(onClick = viewModel::refresh) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = stringResource(R.string.cd_refresh),
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (state.running) {
+                item {
+                    ProgressPanel(
+                        title = stringResource(R.string.analyzer_computing),
+                        detail = stringResource(R.string.analyzer_files, state.scanned),
+                        fraction = null,
+                        onCancel = viewModel::stop,
+                    )
+                }
+            }
+
+            // Before the first scan the screen was an app bar over an empty
+            // body — no prompt, no explanation, just nothing.
+            if (!state.running && state.result == null) {
+                item {
+                    EmptyState(
+                        icon = Icons.Filled.PieChart,
+                        title = stringResource(R.string.analyzer_title),
+                        body = stringResource(R.string.analyzer_empty_hint),
+                        action = {
+                            Button(onClick = viewModel::refresh) {
+                                Text(stringResource(R.string.analyzer_scan))
+                            }
+                        },
+                    )
+                }
+            }
+
+            val result = state.result
+            if (result != null) {
+                if (state.atRoot) {
+                    item {
+                        SectionCard {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                StatPill(
+                                    label = stringResource(R.string.analyzer_total),
+                                    value = Formatters.bytes(result.totalBytes),
+                                    modifier = Modifier.weight(1f),
+                                )
+                                StatPill(
+                                    label = stringResource(R.string.common_files),
+                                    value = result.totalFiles.toString(),
+                                    modifier = Modifier.weight(1f),
+                                    accent = MaterialTheme.colorScheme.tertiary,
+                                )
+                            }
+                            if (result.volumeTotal > 0) {
+                                Spacer(Modifier.height(14.dp))
+                                StorageBar(
+                                    usedBytes = result.volumeTotal - result.volumeFree,
+                                    totalBytes = result.volumeTotal,
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    text = stringResource(
+                                        R.string.home_free,
+                                        Formatters.bytes(result.volumeFree),
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    item {
+                        SectionCard(contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) {
+                            BreadcrumbBar(
+                                segments = crumbs,
+                                onJump = { path ->
+                                    if (path == state.root) viewModel.jumpTo(state.root)
+                                    else viewModel.jumpTo(path)
+                                },
+                            )
+                        }
+                    }
+                }
+
+                if (result.categories.isNotEmpty()) {
+                    item { SectionHeader(stringResource(R.string.analyzer_by_category)) }
+                    item {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(horizontal = 2.dp),
+                        ) {
+                            item {
+                                FilterChip(
+                                    selected = state.category == null,
+                                    onClick = { viewModel.setCategory(null) },
+                                    label = { Text(stringResource(R.string.search_any)) },
+                                )
+                            }
+                            items(
+                                result.categories,
+                                key = { it.category.name },
+                            ) { usage ->
+                                FilterChip(
+                                    selected = state.category == usage.category,
+                                    onClick = { viewModel.setCategory(usage.category) },
+                                    label = {
+                                        Text(
+                                            text = "${labelForCategory(usage.category)} · ${
+                                                Formatters.bytes(usage.bytes)
+                                            }"
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                val categoryFilter = state.category
+                item {
+                    SectionHeader(
+                        title = when {
+                            !state.atRoot -> state.focusName
+                            categoryFilter != null -> labelForCategory(categoryFilter)
+                            else -> stringResource(R.string.analyzer_by_folder)
+                        },
+                        trailing = {
+                            if (state.entries.isNotEmpty()) {
+                                Text(
+                                    text = pluralStringResource(
+                                        R.plurals.item_count,
+                                        state.entries.size,
+                                        state.entries.size,
+                                    ),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                    )
+                }
+
+                if (state.entries.isEmpty() && !state.loadingEntries) {
+                    item {
+                        SectionCard {
+                            Text(
+                                text = stringResource(R.string.analyzer_none),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
+                // One LazyColumn item per row, not one item holding the whole
+                // list. Wrapping every entry in a single card meant a folder
+                // with two hundred children composed and measured all of them
+                // before the first frame — which is exactly what showed up as
+                // dropped frames while the scan was still reporting progress.
+                val total = entryTotal
+                items(state.entries, key = { it.path }) { entry ->
+                    val accent = if (entry.isDirectory) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        FileVisuals.accentFor(categoryOfExtension(entry.name))
+                    }
+                    UsageRow(
+                        name = entry.name,
+                        subtitle = when {
+                            // Filtered rows are described by the category being
+                            // filtered, not by a total that would not match what
+                            // is on screen.
+                            entry.filtered -> categoryLabel(
+                                state.category ?: categoryOfExtension(entry.name)
+                            )
+                            entry.isDirectory && entry.measured ->
+                                pluralStringResource(
+                                    R.plurals.file_count,
+                                    entry.fileCount,
+                                    entry.fileCount,
+                                )
+                            entry.isDirectory ->
+                                stringResource(R.string.analyzer_unknown_size)
+                            else -> categoryLabel(categoryOfExtension(entry.name))
+                        },
+                        sizeLabel = if (entry.measured) {
+                            Formatters.bytes(entry.bytes)
+                        } else {
+                            "—"
+                        },
+                        fraction = entry.bytes.toFloat() / total.toFloat(),
+                        accent = accent,
+                        icon = if (entry.isDirectory) {
+                            Icons.Filled.Folder
+                        } else {
+                            Icons.AutoMirrored.Filled.InsertDriveFile
+                        },
+                        muted = !entry.measured,
+                        showChevron = entry.isDirectory,
+                        onClick = if (entry.isDirectory) {
+                            { viewModel.open(entry) }
+                        } else {
+                            {
+                                FileIntents.open(
+                                    context,
+                                    Candidates.of(java.io.File(entry.path)).toFileItem(),
+                                )
+                            }
+                        },
+                    )
+                }
+
+                if (state.atRoot && state.largest.isNotEmpty()) {
+                    item { SectionHeader(stringResource(R.string.analyzer_largest)) }
+                    val largestShare = largestTotal
+                    items(state.largest.take(10), key = { it.path }) { file ->
+                        val category = categoryOfExtension(file.name)
+                        UsageRow(
+                            name = file.name,
+                            subtitle = file.path.substringBeforeLast('/').substringAfterLast('/'),
+                            sizeLabel = Formatters.bytes(file.sizeBytes),
+                            fraction = file.sizeBytes.toFloat() / largestShare.toFloat(),
+                            accent = FileVisuals.accentFor(category),
+                            icon = Icons.AutoMirrored.Filled.InsertDriveFile,
+                            showChevron = true,
+                            onClick = { viewModel.revealFile(file) },
+                        )
+                    }
+                    item {
+                        Text(
+                            text = stringResource(R.string.analyzer_tap_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+private fun categoryOfExtension(name: String): FileCategory =
+    com.fileflow.app.core.util.MimeTypes.categoryOf(
+        com.fileflow.app.core.util.MimeTypes.extensionOf(name)
+    )
+
+private fun largestTotalOf(files: List<Candidate>): Long =
+    files.firstOrNull()?.sizeBytes?.coerceAtLeast(1L) ?: 1L
+
+@Composable
+private fun categoryLabel(category: FileCategory): String = labelForCategory(category)
+
+@Composable
+private fun labelForCategory(category: FileCategory): String = when (category) {
+    FileCategory.IMAGES -> stringResource(R.string.cat_images)
+    FileCategory.VIDEOS -> stringResource(R.string.cat_videos)
+    FileCategory.AUDIO -> stringResource(R.string.cat_audio)
+    FileCategory.DOCUMENTS -> stringResource(R.string.cat_documents)
+    FileCategory.ARCHIVES -> stringResource(R.string.cat_archives)
+    FileCategory.APPS -> stringResource(R.string.cat_apk)
+    FileCategory.CODE -> stringResource(R.string.cat_code)
+    FileCategory.OTHER -> stringResource(R.string.cat_other)
+}

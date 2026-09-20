@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Files chosen by the user can live on the internal shared volume or on
+         a removable card, so both roots are exposed. Grants are per-URI and
+         only ever handed out for a file the user explicitly shared.
+
+         There is deliberately no `root-path` here: it maps every path on the
+         device, including app-private directories of other apps, into this
+         provider. Grants are per-URI and the provider is not exported, but a
+         share/open-with built from attacker-influenced input would then be one
+         step from reading an arbitrary file. The three roots below already
+         cover everything FileIntents hands out. -->
+    <external-path name="shared" path="." />
+    <files-path name="app_files" path="." />
+    <cache-path name="app_cache" path="." />
+    <external-cache-path name="app_ext_cache" path="." />
+</paths>
