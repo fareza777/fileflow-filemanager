@@ -26,6 +26,65 @@ internal object TarFormat {
     private const val PREFIX_LENGTH = 155
     private const val COPY_BUFFER = 128 * 1024
 
+    /** One entry as it appears in the archive, without reading its data. */
+    data class Entry(
+        val name: String,
+        val size: Long,
+        val isDirectory: Boolean,
+        /** Where the payload starts, counted from the first byte of the stream. */
+        val dataOffset: Long,
+        val modifiedSeconds: Long,
+    )
+
+    /**
+     * Walks the headers and nothing else.
+     *
+     * A tar has no central directory, so this is the only way to know what is
+     * inside — but reading 512 bytes and skipping the payload is orders of
+     * magnitude cheaper than extracting, and the result is what the browser
+     * needs to show a tar as a folder.
+     */
+    suspend fun index(input: InputStream): List<Entry> {
+        val entries = mutableListOf<Entry>()
+        var offset = 0L
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val header = readFully(input, BLOCK) ?: break
+            offset += BLOCK
+            if (header.size < BLOCK || header.all { it == 0.toByte() }) break
+
+            val name = entryName(header) ?: continue
+            val size = octal(header, 124, 12)
+            val type = header[156].toInt().toChar()
+            val directory = type == TYPE_DIRECTORY
+            val payload = if (directory) 0L else size
+
+            entries += Entry(
+                name = name,
+                size = payload,
+                isDirectory = directory || name.endsWith('/'),
+                dataOffset = offset,
+                modifiedSeconds = octal(header, 136, 12),
+            )
+
+            val skipBytes = payload + paddingSize(payload)
+            skip(input, skipBytes)
+            offset += skipBytes
+        }
+        return entries
+    }
+
+    /**
+     * Reads one entry by offset. The stream is positioned by skipping, which is
+     * why a `.tar.gz` costs a decompression pass: the offsets describe the
+     * decompressed bytes, and gzip cannot be seeked.
+     */
+    suspend fun openEntry(
+        input: InputStream,
+        entry: Entry,
+        onProgress: (bytesRead: Long) -> Unit = {},
+    ): InputStream = EntryStream(input, entry, onProgress)
+
     /** Directories, files and symlinks; everything else is skipped on read. */
     private const val TYPE_FILE = '0'
     private const val TYPE_DIRECTORY = '5'
@@ -283,6 +342,60 @@ internal object TarFormat {
             val read = input.read(buffer, 0, minOf(buffer.size.toLong(), remaining).toInt())
             if (read <= 0) break
             remaining -= read
+        }
+    }
+
+    /**
+     * One entry's bytes, read from a stream that is walked to the entry's offset
+     * on first use. Reading is the only operation, so it stays a plain
+     * [InputStream]: the caller can hand it to a viewer or copy it out without
+     * knowing there is an archive underneath.
+     */
+    private class EntryStream(
+        private val input: InputStream,
+        private val entry: Entry,
+        private val onProgress: (Long) -> Unit,
+    ) : InputStream() {
+
+        private var remaining = entry.size
+        private var delivered = 0L
+        private var positioned = false
+
+        private fun position() {
+            if (positioned) return
+            positioned = true
+            var toSkip = entry.dataOffset
+            val buffer = ByteArray(COPY_BUFFER)
+            while (toSkip > 0) {
+                val read = input.read(buffer, 0, minOf(buffer.size.toLong(), toSkip).toInt())
+                if (read <= 0) break
+                toSkip -= read
+            }
+        }
+
+        override fun read(): Int {
+            val single = ByteArray(1)
+            val count = read(single, 0, 1)
+            return if (count <= 0) -1 else single[0].toInt() and 0xFF
+        }
+
+        override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+            position()
+            if (remaining <= 0L) return -1
+            val wanted = minOf(length.toLong(), remaining).toInt()
+            val count = input.read(buffer, offset, wanted)
+            if (count <= 0) return -1
+            remaining -= count
+            delivered += count
+            onProgress(delivered)
+            return count
+        }
+
+        override fun available(): Int =
+            remaining.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+
+        override fun close() {
+            runCatching { input.close() }
         }
     }
 }

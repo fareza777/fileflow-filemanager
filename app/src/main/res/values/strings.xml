@@ -74,6 +74,7 @@
     <string name="browser_storage_details">Storage details</string>
     <string name="browser_add_to_places">Add to places</string>
     <string name="browser_filter_empty">Nothing of that type here</string>
+    <string name="browser_in_archive">In %1$s</string>
     <string name="restricted_folder_body">Android blocks every app from reading this folder, so FileFlow cannot show it. It is not a permission problem.</string>
     <string name="clipboard_to_move">%1$d to move</string>
     <string name="clipboard_to_copy">%1$d to copy</string>
@@ -266,6 +267,7 @@
     <string name="tools_cleanup">Clean up</string>
     <string name="tools_insight">Understand</string>
     <string name="tools_keep">Keep &amp; recover</string>
+    <string name="tools_power">Power tools</string>
     <string name="tool_analyzer">Storage analyzer</string>
     <string name="tool_analyzer_desc">See what is eating your space</string>
     <string name="tool_duplicates">Duplicate files</string>
@@ -350,6 +352,88 @@
     <string name="transfer_link_other">Other network</string>
     <string name="tool_transfer">Transfer to PC</string>
     <string name="tool_transfer_desc">Send and receive files through a browser</string>
+
+    <!-- Dual pane -->
+    <string name="dual_title">Dual pane</string>
+    <string name="dual_swap">Swap panes</string>
+    <string name="dual_copy">Copy</string>
+    <string name="dual_move">Move</string>
+    <string name="dual_change_folder">Change folder</string>
+    <string name="dual_pick_left">Left pane folder</string>
+    <string name="dual_pick_right">Right pane folder</string>
+    <string name="tool_dual">Dual pane</string>
+    <string name="tool_dual_desc">Two folders at once, copy between them</string>
+
+    <!-- Directory compare -->
+    <string name="compare_title">Compare folders</string>
+    <string name="compare_left">Left</string>
+    <string name="compare_right">Right</string>
+    <string name="compare_content">Compare file contents</string>
+    <string name="compare_content_hint">Slower, but catches same-size edits under 64 MB</string>
+    <string name="compare_run">Compare</string>
+    <string name="compare_identical">The two folders match</string>
+    <string name="compare_identical_hint">%1$d entries compared, all identical.</string>
+    <string name="compare_all">All %1$d</string>
+    <string name="compare_differences">Differences %1$d</string>
+    <string name="compare_only_left">Only left %1$d</string>
+    <string name="compare_only_right">Only right %1$d</string>
+    <string name="compare_to_left">To left</string>
+    <string name="compare_to_right">To right</string>
+    <string name="compare_pick_left">Left folder</string>
+    <string name="compare_pick_right">Right folder</string>
+    <string name="compare_state_same">Same</string>
+    <string name="compare_state_left">Left only</string>
+    <string name="compare_state_right">Right only</string>
+    <string name="compare_state_different">Differs</string>
+    <string name="compare_state_type">Type differs</string>
+    <string name="tool_compare">Compare folders</string>
+    <string name="tool_compare_desc">See what differs, then sync one way</string>
+
+    <!-- Remote storage -->
+    <string name="remote_title">Remote storage</string>
+    <string name="remote_add">Add connection</string>
+    <string name="remote_edit">Edit connection</string>
+    <string name="remote_empty">No servers yet</string>
+    <string name="remote_empty_hint">Add a WebDAV, S3, SFTP or SMB server and browse it like a folder.</string>
+    <string name="remote_label">Name</string>
+    <string name="remote_host">Host</string>
+    <string name="remote_host_webdav">e.g. cloud.example.com</string>
+    <string name="remote_host_s3">e.g. s3.amazonaws.com or minio.local:9000</string>
+    <string name="remote_host_sftp">e.g. server.example.com</string>
+    <string name="remote_host_smb">e.g. 192.168.1.10 or NAS</string>
+    <string name="remote_port">Port</string>
+    <string name="remote_port_hint">Default %1$s</string>
+    <string name="remote_user">Username</string>
+    <string name="remote_access_key">Access key id</string>
+    <string name="remote_password">Password</string>
+    <string name="remote_secret_key">Secret access key</string>
+    <string name="remote_password_or_passphrase">Password or key passphrase</string>
+    <string name="remote_start_path">Start folder</string>
+    <string name="remote_bucket">Bucket</string>
+    <string name="remote_share">Share</string>
+    <string name="remote_region">Region (optional)</string>
+    <string name="remote_domain">Domain (optional)</string>
+    <string name="remote_key_path">Private key file (optional)</string>
+    <string name="remote_extra_none">Not used</string>
+    <string name="remote_secure">Use HTTPS</string>
+    <string name="remote_secret_note">Passwords are encrypted with a key that never leaves this device.</string>
+    <string name="remote_delete_title">Delete this connection?</string>
+    <string name="remote_delete_body">Delete %1$d items from the server? This cannot be undone.</string>
+    <string name="remote_new_folder">New folder</string>
+    <string name="remote_upload">Upload files</string>
+    <string name="remote_upload_title">Upload from this phone</string>
+    <string name="remote_upload_count">Upload %1$d</string>
+    <string name="remote_up_one_level">Up one level</string>
+    <string name="remote_selected">%1$d selected</string>
+    <string name="remote_select">Select</string>
+    <string name="remote_download">Download</string>
+    <string name="remote_download_here">Download here</string>
+    <string name="remote_download_to">Download to folder</string>
+    <string name="remote_failed">Could not connect</string>
+    <string name="remote_connecting">Connecting…</string>
+    <string name="remote_empty_folder_hint">Upload a file, or create a folder here.</string>
+    <string name="tool_remote">Remote storage</string>
+    <string name="tool_remote_desc">WebDAV, S3, SFTP and SMB servers</string>
 
     <!-- Analyzer -->
     <string name="analyzer_title">Storage analyzer</string>
@@ -649,6 +733,7 @@
     <string name="common_unknown">Unknown</string>
     <string name="common_none">None</string>
     <string name="common_files">files</string>
+    <string name="common_folder">Folder</string>
     <string name="common_folders">folders</string>
     <string name="common_items">items</string>
     <string name="common_today">Today</string>

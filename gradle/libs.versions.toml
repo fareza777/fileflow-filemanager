@@ -18,6 +18,9 @@ playServicesAds = "24.5.0"
 userMessagingPlatform = "3.1.0"
 coil = "2.7.0"
 serialization = "1.7.3"
+okhttp = "4.12.0"
+jsch = "0.2.20"
+jcifs = "2.1.10"
 junit = "4.13.2"
 mockk = "1.13.13"
 androidxJunit = "1.2.1"
@@ -55,6 +58,9 @@ play-services-ads = { group = "com.google.android.gms", name = "play-services-ad
 user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "userMessagingPlatform" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 coil-video = { group = "io.coil-kt", name = "coil-video", version.ref = "coil" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+jsch = { group = "com.github.mwiede", name = "jsch", version.ref = "jsch" }
+jcifs-ng = { group = "eu.agno3.jcifs", name = "jcifs-ng", version.ref = "jcifs" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }

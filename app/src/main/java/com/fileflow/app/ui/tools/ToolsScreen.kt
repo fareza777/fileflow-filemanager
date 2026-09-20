@@ -18,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.CloudQueue
+import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Devices
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Splitscreen
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -174,6 +177,35 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
                             subtitle = stringResource(R.string.tool_history_desc),
                             onClick = { onOpenTool("history") },
                             accent = scheme.tertiary,
+                        )
+                    }
+                }
+            }
+
+            item { SectionHeader(stringResource(R.string.tools_power)) }
+            item {
+                SectionCard {
+                    Column {
+                        ToolRow(
+                            icon = Icons.Filled.Splitscreen,
+                            title = stringResource(R.string.tool_dual),
+                            subtitle = stringResource(R.string.tool_dual_desc),
+                            onClick = { onOpenTool("dual") },
+                            accent = scheme.primary,
+                        )
+                        ToolRow(
+                            icon = Icons.Filled.Compare,
+                            title = stringResource(R.string.tool_compare),
+                            subtitle = stringResource(R.string.tool_compare_desc),
+                            onClick = { onOpenTool("compare") },
+                            accent = scheme.tertiary,
+                        )
+                        ToolRow(
+                            icon = Icons.Filled.CloudQueue,
+                            title = stringResource(R.string.tool_remote),
+                            subtitle = stringResource(R.string.tool_remote_desc),
+                            onClick = { onOpenTool("remote") },
+                            accent = scheme.secondary,
                         )
                     }
                 }

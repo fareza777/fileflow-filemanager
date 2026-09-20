@@ -76,12 +76,16 @@ import com.fileflow.app.ui.calendar.CalendarScreen
 import com.fileflow.app.ui.changes.RecentChangesScreen
 import com.fileflow.app.ui.compress.CompressScreen
 import com.fileflow.app.ui.components.ProgressPanel
+import com.fileflow.app.ui.compare.CompareScreen
 import com.fileflow.app.ui.convert.ConvertScreen
+import com.fileflow.app.ui.dualpane.DualPaneScreen
 import com.fileflow.app.ui.duplicates.DuplicatesScreen
 import com.fileflow.app.ui.home.HomeScreen
 import com.fileflow.app.ui.junk.JunkScreen
 import com.fileflow.app.ui.large.LargeFilesScreen
 import com.fileflow.app.ui.recent.RecentFilesScreen
+import com.fileflow.app.ui.remote.RemoteBrowserScreen
+import com.fileflow.app.ui.remote.RemoteScreen
 import com.fileflow.app.ui.rename.SmartRenameScreen
 import com.fileflow.app.ui.rules.HistoryScreen
 import com.fileflow.app.ui.rules.RuleEditorScreen
@@ -133,6 +137,10 @@ private object Routes {
     const val TRANSFER = "transfer"
     const val COMPRESS = "compress"
     const val CONVERT = "convert"
+    const val DUAL = "dual"
+    const val COMPARE = "compare"
+    const val REMOTE = "remote"
+    const val REMOTE_BROWSE = "remote_browse"
 }
 
 @Composable
@@ -211,6 +219,9 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
             "transfer" -> navController.navigate(Routes.TRANSFER)
             "compress" -> navController.navigate(Routes.COMPRESS)
             "convert" -> navController.navigate(Routes.CONVERT)
+            "dual" -> navController.navigate(Routes.DUAL)
+            "compare" -> navController.navigate(Routes.COMPARE)
+            "remote" -> navController.navigate(Routes.REMOTE)
             else -> Unit
         }
     }
@@ -418,6 +429,38 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
 
                 composable(Routes.CONVERT) {
                     ConvertScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.DUAL) {
+                    DualPaneScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenFolder = openFolder,
+                    )
+                }
+
+                composable(Routes.COMPARE) {
+                    CompareScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.REMOTE) {
+                    RemoteScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenConnection = { connection ->
+                            navController.navigate("${Routes.REMOTE_BROWSE}?connectionId=${connection.id}")
+                        },
+                    )
+                }
+
+                composable(
+                    route = "${Routes.REMOTE_BROWSE}?connectionId={connectionId}",
+                    arguments = listOf(
+                        navArgument("connectionId") {
+                            type = NavType.StringType
+                            defaultValue = ""
+                        }
+                    ),
+                ) {
+                    RemoteBrowserScreen(onBack = { navController.popBackStack() })
                 }
 
                 composable(

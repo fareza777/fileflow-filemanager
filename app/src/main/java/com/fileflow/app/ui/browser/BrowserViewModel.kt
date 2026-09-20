@@ -7,11 +7,15 @@ import com.fileflow.app.core.model.FileCategory
 import com.fileflow.app.core.model.FileItem
 import com.fileflow.app.core.model.SortField
 import com.fileflow.app.core.model.SortOrder
+import com.fileflow.app.core.storage.ArchiveBrowser
 import com.fileflow.app.core.storage.ArchiveFormat
+import com.fileflow.app.core.storage.CollisionResolver
 import com.fileflow.app.core.storage.ConflictPolicy
+import com.fileflow.app.core.storage.MediaScanner
 import com.fileflow.app.core.storage.OperationKind
 import com.fileflow.app.core.storage.OperationProgress
 import com.fileflow.app.core.util.Formatters
+import com.fileflow.app.core.util.MimeTypes
 import com.fileflow.app.core.util.OutcomeMessages
 import com.fileflow.app.core.util.Paths
 import com.fileflow.app.data.prefs.SettingsRepository
@@ -19,9 +23,11 @@ import com.fileflow.app.data.repo.ActiveOperation
 import com.fileflow.app.data.repo.BrowseRepository
 import com.fileflow.app.core.storage.VolumeRepository
 import com.fileflow.app.data.repo.FileActionsRepository
+import com.fileflow.app.data.repo.FileIndexRepository
 import com.fileflow.app.data.repo.OperationRunner
 import com.fileflow.app.ui.util.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -102,6 +108,10 @@ class BrowserViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val volumes: VolumeRepository,
     private val outcome: OutcomeMessages,
+    private val archiveBrowser: ArchiveBrowser,
+    private val indexRepository: FileIndexRepository,
+    private val mediaScanner: MediaScanner,
+    @ApplicationContext private val context: android.content.Context,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -164,8 +174,91 @@ class BrowserViewModel @Inject constructor(
         // Above a volume root lies /storage/emulated, where the user has no
         // business: `Paths.parentOf` only stops at "/", so the climb had to be
         // stopped here instead.
+        val current = _state.value.path
+        if (current.contains(ARCHIVE_SEPARATOR)) {
+            // Out of the archive one level at a time: the entry's parent, then
+            // the folder the archive itself lives in.
+            val archive = current.substringBefore(ARCHIVE_SEPARATOR)
+            val inner = current.substringAfter(ARCHIVE_SEPARATOR).trim('/')
+            val parent = inner.substringBeforeLast('/', "")
+            if (parent.isNotEmpty()) {
+                openFolder("$archive$ARCHIVE_SEPARATOR$parent")
+            } else {
+                openFolder(archive.substringBeforeLast('/', "/"))
+            }
+            return
+        }
         if (_state.value.atVolumeRoot) return
-        Paths.parentOf(_state.value.path)?.let { openFolder(it) }
+        Paths.parentOf(current)?.let { openFolder(it) }
+    }
+
+    // ------------------------------------------------------------- archives
+
+    /** Walks into an archive as if it were a folder. */
+    fun openArchive(archivePath: String) {
+        openFolder("$archivePath$ARCHIVE_SEPARATOR")
+    }
+
+    fun isInsideArchive(path: String = _state.value.path): Boolean =
+        path.contains(ARCHIVE_SEPARATOR)
+
+    /** The archive a path belongs to, for the title and the extract target. */
+    fun archiveFileFor(path: String = _state.value.path): File? =
+        path.substringBefore(ARCHIVE_SEPARATOR, "").takeIf { it.isNotEmpty() }?.let { File(it) }
+
+    fun innerPathOf(path: String): String = path.substringAfter(ARCHIVE_SEPARATOR, "").trim('/')
+
+    /**
+     * Writes one entry out to the cache and returns the copy, so a file inside
+     * an archive opens in the app's own viewers like any other file — the
+     * alternative is telling the user to extract it first, which is the thing
+     * archive browsing exists to avoid.
+     */
+    fun materialize(item: FileItem, onReady: (FileItem) -> Unit) {
+        val archive = archiveFileFor(item.path) ?: return
+        val inner = innerPathOf(item.path)
+        viewModelScope.launch {
+            // The cache name carries the entry's own path, so two archives with
+            // a file of the same name do not overwrite each other's preview.
+            val cacheName = "${inner.hashCode().toUInt().toString(16)}-${item.name}"
+            val target = File(File(context.cacheDir, ARCHIVE_CACHE_DIR), cacheName)
+            val ok = runCatching {
+                archiveBrowser.extract(archive, inner, target)
+            }.isSuccess
+            if (ok) {
+                onReady(item.copy(path = target.absolutePath, name = item.name, extension = item.extension))
+            } else {
+                _messages.send(UiMessage.Info("Could not open ${item.name}"))
+            }
+        }
+    }
+
+    /** Extracts an entry next to the archive it came from. */
+    fun extractEntry(item: FileItem) {
+        val archive = archiveFileFor(item.path) ?: return
+        val inner = innerPathOf(item.path)
+        val destination = archive.parentFile ?: return
+        runOperation(OperationKind.ARCHIVE) { progress ->
+            val result = runCatching {
+                val target = CollisionResolver.unique(destination, item.name)
+                val output = File(destination, target)
+                val bytes = archiveBrowser.extract(archive, inner, output) { done, total ->
+                    progress(OperationProgress(0, 1, item.name, done, total))
+                }
+                output.absolutePath to bytes
+            }
+            result.fold(
+                onSuccess = { (path, bytes) ->
+                    browseRepository.invalidateListing(destination.absolutePath)
+                    // The new file has to be visible to search and to the gallery
+                    // straight away; it did not exist when the index was built.
+                    indexRepository.upsertPaths(listOf(path))
+                    mediaScanner.announce(listOf(path))
+                    _messages.send(UiMessage.Info("${Formatters.bytes(bytes)} extracted"))
+                },
+                onFailure = { _messages.send(UiMessage.Info(it.message ?: "Could not extract")) },
+            )
+        }
     }
 
     fun refresh() {
@@ -175,6 +268,10 @@ class BrowserViewModel @Inject constructor(
 
     private fun load(path: String) {
         viewModelScope.launch {
+            if (path.contains(ARCHIVE_SEPARATOR)) {
+                loadArchive(path)
+                return@launch
+            }
             val snapshot = _state.value
             val restricted = browseRepository.isRestricted(path)
             val items = if (restricted) {
@@ -192,6 +289,54 @@ class BrowserViewModel @Inject constructor(
                     current.copy(items = items, loading = false, restricted = restricted)
                         .withSelection(current.selection.filterTo(HashSet()) { it in present })
                 }
+            }
+        }
+    }
+
+    /**
+     * A listing inside an archive, mapped into the same rows the rest of the
+     * screen uses. The path keeps the archive and the entry together
+     * ("…/photos.zip!/2024/one.jpg"), which is what makes every other action —
+     * up, breadcrumbs, selection — work without knowing about archives.
+     */
+    private suspend fun loadArchive(path: String) {
+        val archive = File(path.substringBefore(ARCHIVE_SEPARATOR))
+        val inner = path.substringAfter(ARCHIVE_SEPARATOR).trim('/')
+        val entries = runCatching { archiveBrowser.list(archive, inner) }
+            .getOrElse {
+                _state.update { current -> current.copy(items = emptyList(), loading = false) }
+                return
+            }
+        val items = entries.map { entry ->
+            val extension = if (entry.isDirectory) "" else MimeTypes.extensionOf(entry.name)
+            FileItem(
+                path = "${archive.absolutePath}$ARCHIVE_SEPARATOR${entry.path}",
+                name = entry.name,
+                isDirectory = entry.isDirectory,
+                sizeBytes = entry.sizeBytes,
+                lastModified = entry.lastModified,
+                extension = extension,
+                mimeType = if (entry.isDirectory) "resource/folder" else MimeTypes.mimeFor(extension),
+                category = MimeTypes.categoryOf(extension),
+                isHidden = entry.name.startsWith("."),
+            )
+        }.let { list ->
+            when (_state.value.sort.field) {
+                SortField.NAME -> list.sortedWith(
+                    compareByDescending<FileItem> { it.isDirectory }
+                        .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name }
+                )
+                SortField.SIZE -> list.sortedByDescending { it.sizeBytes }
+                SortField.MODIFIED -> list.sortedByDescending { it.lastModified }
+                SortField.TYPE -> list.sortedBy { it.extension }
+            }
+        }
+        _state.update { current ->
+            if (current.path != path) {
+                current
+            } else {
+                current.copy(items = items, loading = false, restricted = false)
+                    .withSelection(emptySet())
             }
         }
     }
@@ -538,5 +683,13 @@ class BrowserViewModel @Inject constructor(
 
     companion object {
         const val KEY_PATH = "browser_path"
+
+        /**
+         * Marks the boundary between an archive and a path inside it. Chosen
+         * because no filename can contain it: "!" and "/" cannot both appear in
+         * one path segment on any filesystem this app can see.
+         */
+        const val ARCHIVE_SEPARATOR = "!/"
+        const val ARCHIVE_CACHE_DIR = "archive-preview"
     }
 }

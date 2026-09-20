@@ -59,12 +59,33 @@ scanner, junk cleaner (empty files and folders, temp data, crash logs, stale
 installers, thumbnail caches), storage analyzer, and a search that can be turned
 into a rule in one tap.
 
+**Storage sources.** Local storage is one of several, behind a single
+`RemoteFileSystem` interface: WebDAV and S3 (both written by hand, S3 with its
+own SigV4 signing), SFTP and SMB (JSch and jcifs-ng, both pure Java). A remote
+folder browses like a local one — download, upload, new folder, rename, delete,
+multi-select — and saved passwords are encrypted with a key that never leaves
+the device's keystore.
+
+**Dual pane.** Two folders at once, stacked in portrait and side by side in
+landscape, with copy and move going from the pane holding the selection to the
+other one. The destination is always visible, which is the whole point.
+
+**Directory compare.** Two folders compared by relative path, differences
+first: only left, only right, differs, or same. Contents are compared as well
+when asked, under a size ceiling. Copying runs in whichever direction the user
+points at — and every action here is a copy, never a delete.
+
+**Archives as folders.** A zip, tar or tar.gz opens like a directory: walk into
+it, read one entry (a text file opens in the reader, a photo in the viewer,
+straight from inside the archive), or extract a single entry beside it. Tars are
+indexed once and cached; a plain tar is opened by seeking to the entry's offset.
+
 **Transfer to PC.** The phone serves its own storage over the local network:
 start the server, open the address it shows in a browser on the computer, and
 browse, download and upload from there. Every local address is listed — Wi-Fi,
 hotspot, and USB tethering — because the reachable one depends on which network
-the other device is on. It runs only while its screen is open, and the display
-stays awake while it does.
+the other device is on. It runs in a foreground service, so leaving the screen
+or locking the phone keeps the connection up.
 
 **Compress and convert.** ZIP, TAR and TAR.GZ, with the compression level chosen
 rather than assumed; extraction reads each of them back, with the same

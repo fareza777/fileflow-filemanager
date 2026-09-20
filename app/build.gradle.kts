@@ -191,6 +191,13 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
 
+    // Remote storage. WebDAV and S3 are hand-written over OkHttp; SMB and SFTP
+    // bring their own protocol implementations because neither is a weekend's
+    // worth of code, and both are pure Java so nothing native is built here.
+    implementation(libs.okhttp)
+    implementation(libs.jsch)
+    implementation(libs.jcifs.ng)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)

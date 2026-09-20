@@ -70,6 +70,7 @@
     <string name="browser_storage_details">Detail penyimpanan</string>
     <string name="browser_add_to_places">Tambah ke favorit</string>
     <string name="browser_filter_empty">Tidak ada file jenis ini di sini</string>
+    <string name="browser_in_archive">Di dalam %1$s</string>
     <string name="restricted_folder_body">Android memblokir semua aplikasi dari folder ini, jadi FileFlow tidak bisa menampilkannya. Ini bukan masalah izin.</string>
     <string name="clipboard_to_move">%1$d akan dipindah</string>
     <string name="clipboard_to_copy">%1$d akan disalin</string>
@@ -249,6 +250,7 @@
     <string name="tools_cleanup">Bersihkan</string>
     <string name="tools_insight">Telusuri</string>
     <string name="tools_keep">Simpan &amp; pulihkan</string>
+    <string name="tools_power">Alat lanjutan</string>
     <string name="tool_analyzer">Analisis penyimpanan</string>
     <string name="tool_analyzer_desc">Lihat apa yang menghabiskan ruang</string>
     <string name="tool_duplicates">File duplikat</string>
@@ -333,6 +335,88 @@
     <string name="transfer_link_other">Jaringan lain</string>
     <string name="tool_transfer">Transfer ke PC</string>
     <string name="tool_transfer_desc">Kirim dan terima file lewat browser</string>
+
+    <!-- Dua panel -->
+    <string name="dual_title">Dua panel</string>
+    <string name="dual_swap">Tukar panel</string>
+    <string name="dual_copy">Salin</string>
+    <string name="dual_move">Pindah</string>
+    <string name="dual_change_folder">Ganti folder</string>
+    <string name="dual_pick_left">Folder panel kiri</string>
+    <string name="dual_pick_right">Folder panel kanan</string>
+    <string name="tool_dual">Dua panel</string>
+    <string name="tool_dual_desc">Dua folder sekaligus, salin antar panel</string>
+
+    <!-- Bandingkan folder -->
+    <string name="compare_title">Bandingkan folder</string>
+    <string name="compare_left">Kiri</string>
+    <string name="compare_right">Kanan</string>
+    <string name="compare_content">Bandingkan isi file</string>
+    <string name="compare_content_hint">Lebih lambat, tapi menangkap file beda isi yang ukurannya sama (di bawah 64 MB)</string>
+    <string name="compare_run">Bandingkan</string>
+    <string name="compare_identical">Kedua folder sama</string>
+    <string name="compare_identical_hint">%1$d entri dibandingkan, semuanya identik.</string>
+    <string name="compare_all">Semua %1$d</string>
+    <string name="compare_differences">Beda %1$d</string>
+    <string name="compare_only_left">Hanya kiri %1$d</string>
+    <string name="compare_only_right">Hanya kanan %1$d</string>
+    <string name="compare_to_left">Ke kiri</string>
+    <string name="compare_to_right">Ke kanan</string>
+    <string name="compare_pick_left">Folder kiri</string>
+    <string name="compare_pick_right">Folder kanan</string>
+    <string name="compare_state_same">Sama</string>
+    <string name="compare_state_left">Hanya kiri</string>
+    <string name="compare_state_right">Hanya kanan</string>
+    <string name="compare_state_different">Beda</string>
+    <string name="compare_state_type">Jenis beda</string>
+    <string name="tool_compare">Bandingkan folder</string>
+    <string name="tool_compare_desc">Lihat bedanya, lalu sinkron satu arah</string>
+
+    <!-- Penyimpanan remote -->
+    <string name="remote_title">Penyimpanan remote</string>
+    <string name="remote_add">Tambah koneksi</string>
+    <string name="remote_edit">Edit koneksi</string>
+    <string name="remote_empty">Belum ada server</string>
+    <string name="remote_empty_hint">Tambahkan server WebDAV, S3, SFTP, atau SMB dan telusuri seperti folder biasa.</string>
+    <string name="remote_label">Nama</string>
+    <string name="remote_host">Host</string>
+    <string name="remote_host_webdav">contoh: cloud.example.com</string>
+    <string name="remote_host_s3">contoh: s3.amazonaws.com atau minio.local:9000</string>
+    <string name="remote_host_sftp">contoh: server.example.com</string>
+    <string name="remote_host_smb">contoh: 192.168.1.10 atau NAS</string>
+    <string name="remote_port">Port</string>
+    <string name="remote_port_hint">Bawaan %1$s</string>
+    <string name="remote_user">Nama pengguna</string>
+    <string name="remote_access_key">Access key id</string>
+    <string name="remote_password">Kata sandi</string>
+    <string name="remote_secret_key">Secret access key</string>
+    <string name="remote_password_or_passphrase">Kata sandi atau passphrase kunci</string>
+    <string name="remote_start_path">Folder awal</string>
+    <string name="remote_bucket">Bucket</string>
+    <string name="remote_share">Share</string>
+    <string name="remote_region">Region (opsional)</string>
+    <string name="remote_domain">Domain (opsional)</string>
+    <string name="remote_key_path">File kunci privat (opsional)</string>
+    <string name="remote_extra_none">Tidak dipakai</string>
+    <string name="remote_secure">Pakai HTTPS</string>
+    <string name="remote_secret_note">Kata sandi dienkripsi dengan kunci yang tidak pernah keluar dari HP ini.</string>
+    <string name="remote_delete_title">Hapus koneksi ini?</string>
+    <string name="remote_delete_body">Hapus %1$d item dari server? Ini tidak bisa dibatalkan.</string>
+    <string name="remote_new_folder">Folder baru</string>
+    <string name="remote_upload">Unggah file</string>
+    <string name="remote_upload_title">Unggah dari HP ini</string>
+    <string name="remote_upload_count">Unggah %1$d</string>
+    <string name="remote_up_one_level">Naik satu tingkat</string>
+    <string name="remote_selected">%1$d dipilih</string>
+    <string name="remote_select">Pilih</string>
+    <string name="remote_download">Unduh</string>
+    <string name="remote_download_here">Unduh ke sini</string>
+    <string name="remote_download_to">Unduh ke folder</string>
+    <string name="remote_failed">Gagal terhubung</string>
+    <string name="remote_connecting">Menghubungkan…</string>
+    <string name="remote_empty_folder_hint">Unggah file, atau buat folder di sini.</string>
+    <string name="tool_remote">Penyimpanan remote</string>
+    <string name="tool_remote_desc">Server WebDAV, S3, SFTP, dan SMB</string>
 
     <!-- Analisis -->
     <string name="analyzer_title">Analisis penyimpanan</string>
@@ -638,6 +722,7 @@
     <string name="common_unknown">Tidak diketahui</string>
     <string name="common_none">Tidak ada</string>
     <string name="common_files">file</string>
+    <string name="common_folder">Folder</string>
     <string name="common_folders">folder</string>
     <string name="common_items">item</string>
     <string name="common_today">Hari ini</string>

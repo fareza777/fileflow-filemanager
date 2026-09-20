@@ -86,6 +86,7 @@ import com.fileflow.app.R
 import com.fileflow.app.core.model.FileCategory
 import com.fileflow.app.core.model.FileItem
 import com.fileflow.app.core.model.SortField
+import com.fileflow.app.core.storage.ArchiveFormat
 import com.fileflow.app.core.storage.ConflictPolicy
 import com.fileflow.app.core.storage.OperationKind
 import com.fileflow.app.core.util.Formatters
@@ -102,6 +103,7 @@ import com.fileflow.app.ui.components.folderSubtitle
 import com.fileflow.app.ui.util.FileIntents
 import com.fileflow.app.ui.util.FileOpen
 import com.fileflow.app.ui.util.LocalUserSettings
+import com.fileflow.app.ui.util.PreviewKind
 import com.fileflow.app.ui.util.showMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,6 +136,45 @@ fun BrowserScreen(
         state.filterCategory?.let { category ->
             state.items.filter { it.isDirectory || it.category == category }
         } ?: state.items
+    }
+
+    val insideArchive = state.path.contains(BrowserViewModel.ARCHIVE_SEPARATOR)
+    val archiveCrumb = remember(state.path) {
+        if (!insideArchive) {
+            emptyList()
+        } else {
+            val archiveFile = state.path.substringBefore(BrowserViewModel.ARCHIVE_SEPARATOR)
+            val inner = state.path.substringAfter(BrowserViewModel.ARCHIVE_SEPARATOR).trim('/')
+            buildList {
+                add(archiveFile.substringAfterLast('/') to "$archiveFile${BrowserViewModel.ARCHIVE_SEPARATOR}")
+                var accumulated = ""
+                inner.split('/').filter { it.isNotEmpty() }.forEach { segment ->
+                    accumulated = if (accumulated.isEmpty()) segment else "$accumulated/$segment"
+                    add(segment to "$archiveFile${BrowserViewModel.ARCHIVE_SEPARATOR}$accumulated")
+                }
+            }
+        }
+    }
+
+    /**
+     * Inside an archive a tap means one of two things: walk into a folder, or
+     * pull that one entry out to the cache and open it. The second is what makes
+     * an archive browsable rather than a file that has to be unpacked first.
+     */
+    fun openInsideArchive(item: FileItem) {
+        if (item.isDirectory) {
+            viewModel.openFolder(item.path)
+            return
+        }
+        viewModel.materialize(item) { local ->
+            when (FileOpen.kindOf(local)) {
+                PreviewKind.IMAGE -> onViewImage(local.path.substringBeforeLast('/'), local.path)
+                PreviewKind.TEXT -> onViewText(local.path)
+                PreviewKind.EXTERNAL ->
+                    if (viewModel.isArchive(local)) viewModel.openArchive(local.path)
+                    else FileIntents.open(context, local)
+            }
+        }
     }
 
     val listState = rememberLazyListState()
@@ -203,8 +244,13 @@ fun BrowserScreen(
                                     .padding(vertical = 4.dp),
                             ) {
                                 Text(
-                                    text = Paths.nameOf(state.path).ifEmpty {
-                                        stringResource(R.string.browser_title)
+                                    text = if (insideArchive) {
+                                        archiveCrumb.lastOrNull()?.first
+                                            ?: state.path.substringBefore("!/").substringAfterLast('/')
+                                    } else {
+                                        Paths.nameOf(state.path).ifEmpty {
+                                            stringResource(R.string.browser_title)
+                                        }
                                     },
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -213,6 +259,15 @@ fun BrowserScreen(
                                 Text(
                                     text = if (state.loading) {
                                         stringResource(R.string.common_loading)
+                                    } else if (insideArchive) {
+                                        stringResource(
+                                            R.string.browser_in_archive,
+                                            state.path.substringBefore("!/").substringAfterLast('/'),
+                                        ) + " · " + pluralStringResource(
+                                            R.plurals.item_count,
+                                            visibleItems.size,
+                                            visibleItems.size,
+                                        )
                                     } else {
                                         pluralStringResource(
                                             R.plurals.item_count,
@@ -229,17 +284,20 @@ fun BrowserScreen(
                                 expanded = showBreadcrumbs,
                                 onDismissRequest = { showBreadcrumbs = false },
                             ) {
-                                Paths.breadcrumbSegments(state.path, null)
-                                    .reversed()
-                                    .forEach { (label, path) ->
-                                        DropdownMenuItem(
-                                            text = { Text(label, maxLines = 1) },
-                                            onClick = {
-                                                viewModel.openFolder(path)
-                                                showBreadcrumbs = false
-                                            },
-                                        )
-                                    }
+                                val crumbs = if (insideArchive) {
+                                    archiveCrumb.reversed()
+                                } else {
+                                    Paths.breadcrumbSegments(state.path, null).reversed()
+                                }
+                                crumbs.forEach { (label, path) ->
+                                    DropdownMenuItem(
+                                        text = { Text(label, maxLines = 1) },
+                                        onClick = {
+                                            viewModel.openFolder(path)
+                                            showBreadcrumbs = false
+                                        },
+                                    )
+                                }
                             }
                         }
                     },
@@ -341,7 +399,9 @@ fun BrowserScreen(
             }
         },
         floatingActionButton = {
-            if (!state.selectionMode && !state.restricted) {
+            // No new folders inside an archive: a zip can be appended to, but not
+            // by this screen, and a button that fails is worse than no button.
+            if (!state.selectionMode && !state.restricted && !insideArchive) {
                 ExtendedFloatingActionButton(
                     onClick = { showNewFolder = true },
                     icon = { Icon(Icons.Filled.CreateNewFolder, contentDescription = null) },
@@ -400,6 +460,8 @@ fun BrowserScreen(
                                 onClick = {
                                     if (state.selectionMode) {
                                         viewModel.toggleSelection(item.path)
+                                    } else if (insideArchive) {
+                                        openInsideArchive(item)
                                     } else {
                                         openOrNavigate(context, item, state.path, viewModel, onViewImage, onViewText)
                                     }
@@ -428,6 +490,8 @@ fun BrowserScreen(
                                 onClick = {
                                     if (state.selectionMode) {
                                         viewModel.toggleSelection(item.path)
+                                    } else if (insideArchive) {
+                                        openInsideArchive(item)
                                     } else {
                                         openOrNavigate(context, item, state.path, viewModel, onViewImage, onViewText)
                                     }
@@ -528,7 +592,11 @@ fun BrowserScreen(
             onDismiss = { actionTarget = null },
             onOpen = if (item.isDirectory) null else {
                 {
-                    FileIntents.open(context, item)
+                    if (insideArchive) {
+                        openInsideArchive(item)
+                    } else {
+                        FileIntents.open(context, item)
+                    }
                     actionTarget = null
                 }
             },
@@ -542,13 +610,25 @@ fun BrowserScreen(
                 FileIntents.share(context, listOf(item))
                 actionTarget = null
             },
-            onExtract = if (viewModel.isArchive(item)) {
-                {
-                    viewModel.extract(item)
-                    actionTarget = null
+            onExtract = when {
+                // A row inside an archive: extracting one entry next to the
+                // archive is the useful verb, not extracting the archive again.
+                insideArchive && !item.isDirectory -> {
+                    {
+                        viewModel.extractEntry(item)
+                        viewModel.clearSelection()
+                        actionTarget = null
+                    }
                 }
-            } else {
-                null
+
+                viewModel.isArchive(item) -> {
+                    {
+                        viewModel.extract(item)
+                        actionTarget = null
+                    }
+                }
+
+                else -> null
             },
             onRename = {
                 renameTarget = item
@@ -681,6 +761,9 @@ private fun openOrNavigate(
 ) {
     when {
         item.isDirectory -> viewModel.openFolder(item.path)
+        // An archive opens as a folder rather than being handed to another app:
+        // "what is in this zip" is the question a file manager should answer.
+        ArchiveFormat.of(item.name) != null -> viewModel.openArchive(item.path)
         item.category == FileCategory.IMAGES -> onViewImage(folder, item.path)
         item.extension in TEXT_EXTENSIONS -> onViewText(item.path)
         else -> FileIntents.open(context, item)

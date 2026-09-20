@@ -26,6 +26,21 @@
 -dontwarn okio.**
 -dontwarn okhttp3.**
 
+# SMB (jcifs-ng): the SMB1/SMB2 dialect tables and the properties file are
+# loaded by name, and its crypto goes through Bouncy Castle providers that R8
+# cannot see being used.
+-keep class jcifs.** { *; }
+-dontwarn jcifs.**
+-keep class org.bouncycastle.** { *; }
+-dontwarn org.bouncycastle.**
+-keep class org.slf4j.** { *; }
+-dontwarn org.slf4j.**
+
+# SFTP (JSch): ciphers, key exchange and MAC implementations are named in
+# strings and instantiated reflectively.
+-keep class com.jcraft.jsch.** { *; }
+-dontwarn com.jcraft.jsch.**
+
 # Keep line numbers so Play Vitals crashes stay readable.
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
