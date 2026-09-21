@@ -41,6 +41,13 @@
 -keep class com.jcraft.jsch.** { *; }
 -dontwarn com.jcraft.jsch.**
 
+# Shizuku: the API talks to a service in another process through generated AIDL,
+# and the provider is looked up by name from the manifest.
+-keep class rikka.shizuku.** { *; }
+-keep class dev.rikka.shizuku.** { *; }
+-dontwarn rikka.shizuku.**
+-dontwarn dev.rikka.shizuku.**
+
 # Keep line numbers so Play Vitals crashes stay readable.
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile

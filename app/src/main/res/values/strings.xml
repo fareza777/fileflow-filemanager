@@ -347,6 +347,20 @@
     <string name="transfer_received">Received</string>
     <string name="transfer_log_empty">Nothing transferred yet.</string>
     <string name="transfer_note">The server keeps running when you leave this screen — switch tabs, use another app, or lock the phone and the computer stays connected. Stop it from here or from the notification.</string>
+
+    <!-- Delta sync -->
+    <string name="delta_title">Delta sync</string>
+    <string name="delta_note">Pull a file from another device running FileFlow — only the pieces that are missing here travel over the network. That device\'s link and token are on its own Transfer screen.</string>
+    <string name="delta_host">Other device (host:port)</string>
+    <string name="delta_token">Its token</string>
+    <string name="delta_remote">The file on that device</string>
+    <string name="delta_destination">Where to save it here</string>
+    <string name="delta_no_destination">No destination chosen yet</string>
+    <string name="delta_choose_folder">Choose</string>
+    <string name="delta_check">Check</string>
+    <string name="delta_pull">Sync</string>
+    <string name="delta_plan">%1$s of %2$s has to move · %3$d%% is already here</string>
+    <string name="delta_failed">That did not work. Check the address, the token, and that the other device is still serving.</string>
     <string name="transfer_channel">File transfer</string>
     <string name="transfer_channel_desc">Shows the address while the transfer server is running</string>
     <string name="transfer_notification_title">Transfer server is on</string>
@@ -563,6 +577,29 @@
     <string name="versions_stats">%1$d versions · %2$s stored · %3$s saved by chunk sharing</string>
     <string name="tool_versions">Versions</string>
     <string name="tool_versions_desc">A time machine that stores only what changed</string>
+
+    <!-- Power access -->
+    <string name="power_title">Power access</string>
+    <string name="power_via_shizuku">Reachable through Shizuku</string>
+    <string name="power_via_root">Reachable through root</string>
+    <string name="power_none">No privileged access</string>
+    <string name="power_shizuku_state">Shizuku</string>
+    <string name="power_shizuku_missing">not installed</string>
+    <string name="power_shizuku_stopped">installed, not running</string>
+    <string name="power_shizuku_running">running, permission not granted</string>
+    <string name="power_shizuku_granted">granted</string>
+    <string name="power_root_yes">yes</string>
+    <string name="power_root_no">no</string>
+    <string name="power_grant">Grant Shizuku permission</string>
+    <string name="power_note">Android hides these folders from every app. With Shizuku or root the shell can read them, so a file can be copied out into ordinary storage — where the rest of the app can work with it.</string>
+    <string name="power_no_engine">Nothing is available yet. Install and start Shizuku, grant it this app, or use a rooted device.</string>
+    <string name="power_reading">Reading the folder…</string>
+    <string name="power_copy_out">Copy out</string>
+    <string name="power_copy_to">Where should the copy go?</string>
+    <string name="power_delete_title">Delete through the shell?</string>
+    <string name="power_delete_warning">This runs rm -rf as the shell. It does not go to FileFlow Trash and cannot be undone.</string>
+    <string name="tool_power">Power access</string>
+    <string name="tool_power_desc">Read and copy the folders Android hides, via Shizuku or root</string>
 
     <!-- Analyzer -->
     <string name="analyzer_title">Storage analyzer</string>

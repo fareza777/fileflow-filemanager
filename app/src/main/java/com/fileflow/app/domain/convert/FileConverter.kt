@@ -338,7 +338,14 @@ class FileConverter @Inject constructor() {
                 info.offset = 0
                 info.size = size
                 info.presentationTimeUs = extractor.sampleTime
-                info.flags = extractor.sampleFlags
+                // The extractor's flags and the muxer's are different enums that
+                // happen to agree on this one bit; translating rather than
+                // passing the number through keeps that from being a guess.
+                info.flags = if (extractor.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0) {
+                    MediaCodec.BUFFER_FLAG_KEY_FRAME
+                } else {
+                    0
+                }
                 muxer.writeSampleData(outputTrack, buffer, info)
                 extractor.advance()
                 if (duration > 0) {

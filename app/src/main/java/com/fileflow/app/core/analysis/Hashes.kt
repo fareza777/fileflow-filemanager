@@ -285,14 +285,29 @@ object Chunker {
         return chunks
     }
 
+    /**
+     * The cut mask, over the *high* bits of the rolling hash.
+     *
+     * It matters which end of the register is tested. The hash is built as
+     * `(hash shl 1) + GEAR[byte]`, so every byte pushes the previous ones one
+     * place up: the low bits are decided almost entirely by the most recent
+     * byte, and testing them asks "was the last byte one of these few values"
+     * instead of "is this a boundary". The result is not an average-sized
+     * chunk — it is a chunk several times too large, which is the difference
+     * between a sync moving ten kilobytes and moving a third of the file.
+     *
+     * The high bits are the mixed ones, so that is where the test goes.
+     */
     private fun maskFor(averageSize: Int): Int {
         var bits = 0
         var size = 1
-        while (size < averageSize && bits < 30) {
+        while (size < averageSize && bits < MASK_BITS) {
             size = size shl 1
             bits++
         }
-        return (1 shl bits) - 1
+        // Kept below the sign bit, so the arithmetic stays a shift and not a
+        // surprise.
+        return ((1 shl bits) - 1) shl (MASK_BITS - bits)
     }
 
     private fun ByteArray.toHex(): String = buildString(size * 2) {
@@ -302,6 +317,9 @@ object Chunker {
     const val MIN = 2 * 1024
     const val AVERAGE = 8 * 1024
     const val MAX = 64 * 1024
+
+    /** Bits of the 32-bit hash the cut mask draws from, sign bit excluded. */
+    private const val MASK_BITS = 30
 }
 
 /**

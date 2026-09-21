@@ -3,6 +3,7 @@ package com.fileflow.app.domain.transfer
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
+import com.fileflow.app.core.delta.DeltaTransfer
 import com.fileflow.app.core.storage.ConflictPolicy
 import com.fileflow.app.core.storage.StorageAccess
 import com.fileflow.app.core.storage.VolumeRepository
@@ -16,6 +17,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.RandomAccessFile
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.ServerSocket
@@ -252,6 +254,17 @@ class HttpFileServer @Inject constructor(
                 listFolders(query, output)
                 "folders in ${nameOf(query["path"])}"
             }
+            // The delta protocol: what the file is made of, and one piece of it.
+            // Together they let a client that already has an older revision
+            // fetch only the pieces that changed.
+            method == "GET" && path == "/api/manifest" -> {
+                val pieces = sendManifest(query, output)
+                if (pieces == 0) "" else "manifest of ${nameOf(query["path"])} in $pieces pieces"
+            }
+            method == "GET" && path == "/api/chunk" -> {
+                bytes = sendChunk(query, output)
+                "piece of ${nameOf(query["path"])}"
+            }
             method == "PUT" && path == "/api/upload" -> {
                 bytes = upload(query, headers, input, output)
                 "received ${query["name"].orEmpty()}"
@@ -377,6 +390,13 @@ class HttpFileServer @Inject constructor(
             append("<button type=\"button\" id=\"cancel\">Cancel</button>")
             append("<button type=\"button\" id=\"confirm\">Move here</button>")
             append("</div></div></div>")
+
+            // The delta protocol, for anyone writing the other end: listing a
+            // file's pieces costs a request, and a client that already has an
+            // older revision only has to ask for the pieces it is missing.
+            append("<p class=\"hint\">Scripting? <code>/api/manifest?path=…</code> describes a file ")
+            append("in content-defined pieces, <code>/api/chunk?path=…&amp;offset=…&amp;length=…</code> ")
+            append("sends one of them. Add <code>&amp;t=…</code> to both.</p>")
 
             append(pageScript(current.absolutePath))
             append("</body></html>")
@@ -752,6 +772,60 @@ class HttpFileServer @Inject constructor(
         }
         writeText(output, 200, text)
         return outcome
+    }
+
+    /**
+     * What a file is made of: the content-defined chunks with their hashes.
+     *
+     * A few kilobytes of JSON describes a multi-gigabyte file, and because the
+     * boundaries come from the content, an unchanged piece keeps its hash — so
+     * the client can compare this against its own copy and ask for the rest.
+     */
+    private suspend fun sendManifest(query: Map<String, String>, output: OutputStream): Int {
+        val file = resolve(query["path"])?.takeIf { it.isFile }
+        if (file == null) {
+            writeText(output, 404, "Not found")
+            return 0
+        }
+        val manifest = DeltaTransfer.manifest(file)
+        writeJson(output, manifest.toJson())
+        return manifest.chunks.size
+    }
+
+    /** One piece of a file, by offset and length. */
+    private fun sendChunk(query: Map<String, String>, output: OutputStream): Long {
+        val file = resolve(query["path"])?.takeIf { it.isFile }
+        val offset = query["offset"]?.toLongOrNull()
+        val length = query["length"]?.toIntOrNull()
+        if (file == null || offset == null || length == null) {
+            writeText(output, 400, "Bad piece")
+            return 0
+        }
+        if (offset < 0L || length <= 0 || offset + length > file.length()) {
+            // Asking for bytes outside the file is a client bug or a probe; it
+            // gets a plain answer either way.
+            writeText(output, 416, "That piece is not in the file")
+            return 0
+        }
+        val bytes = ByteArray(length)
+        RandomAccessFile(file, "r").use {
+            it.seek(offset)
+            it.readFully(bytes)
+        }
+        writeBytes(output, 200, "application/octet-stream", bytes)
+        return length.toLong()
+    }
+
+    private fun writeBytes(output: OutputStream, code: Int, contentType: String, bytes: ByteArray) {
+        val head = buildString {
+            append("HTTP/1.1 $code ${if (code == 200) "OK" else "Error"}\r\n")
+            append("Content-Type: $contentType\r\n")
+            append("Content-Length: ${bytes.size}\r\n")
+            append("Connection: close\r\n\r\n")
+        }
+        output.write(head.toByteArray(Charsets.ISO_8859_1))
+        output.write(bytes)
+        output.flush()
     }
 
     private fun listFolders(query: Map<String, String>, output: OutputStream) {

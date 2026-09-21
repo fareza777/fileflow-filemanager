@@ -1,6 +1,7 @@
 package com.fileflow.app.domain.rules
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -82,6 +83,9 @@ class RuleNotifier @Inject constructor(
             .build()
 
         runCatching {
+            // The POST_NOTIFICATIONS check is canNotify(), called at the top of
+            // this method; lint cannot follow it across the call.
+            @SuppressLint("MissingPermission")
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
         }
     }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -261,6 +262,13 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
                             subtitle = stringResource(R.string.tool_versions_desc),
                             onClick = { onOpenTool("versions") },
                             accent = scheme.tertiary,
+                        )
+                        ToolRow(
+                            icon = Icons.Filled.AdminPanelSettings,
+                            title = stringResource(R.string.tool_power),
+                            subtitle = stringResource(R.string.tool_power_desc),
+                            onClick = { onOpenTool("power") },
+                            accent = scheme.secondary,
                         )
                     }
                 }

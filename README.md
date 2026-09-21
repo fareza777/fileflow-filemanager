@@ -119,6 +119,26 @@ hotspot, and USB tethering — because the reachable one depends on which networ
 the other device is on. It runs in a foreground service, so leaving the screen
 or locking the phone keeps the connection up.
 
+**Delta sync.** The same server also answers with a file's *pieces* instead of
+the file: `/api/manifest` returns the content-defined chunks with their hashes,
+`/api/chunk` sends one of them. A client that already holds an older revision
+compares the two manifests and asks only for the pieces it is missing, so a
+paragraph edited into a large file moves a few kilobytes rather than the file —
+verified in the tests by counting the bytes the server actually sends. The
+Transfer screen has the client half: point it at another phone running FileFlow,
+give it that phone's token, and it will show how much has to move before moving
+anything.
+
+**Power access.** `Android/data` and its neighbours are unreadable to every app
+by design, which is why most file managers show them as empty. With **Shizuku**
+(a service running with the shell's rights, no root needed) or on a rooted
+device, FileFlow can read them: browse such a folder, copy a file out into
+ordinary storage where the rest of the app can work with it, or delete one. The
+Shizuku path binds a small service of the app's own that runs with the shell's
+uid; every path that goes into a command is quoted, and the quoting is unit
+tested, because a path with a quote in it is otherwise a path that runs
+commands. Nothing here is required for the rest of the app to work.
+
 **Compress and convert.** ZIP, TAR and TAR.GZ, with the compression level chosen
 rather than assumed; extraction reads each of them back, with the same
 path-escape guard as before. Conversion covers what a phone can actually do
@@ -144,6 +164,9 @@ app/src/main/java/com/fileflow/app/
 ├── core/
 │   ├── model/         FileItem, FileCategory, VolumeInfo, SortOrder
 │   ├── storage/       Volumes, permissions, file operations, trash
+│   ├── analysis/      Hashing, content-defined chunking, type detection, Merkle
+│   ├── delta/         The piece list and the transfer that follows from it
+│   ├── privileged/    Shizuku and root: the shell's eyes, and the quoting
 │   └── util/          Formatters, path rules, MIME and magic-byte detection
 ├── data/
 │   ├── db/            Room entities, DAOs, database
@@ -209,6 +232,18 @@ JSON column, so the condition and action vocabulary can grow without a database
 migration. Decoding is total — an unreadable rule falls back to a safe default
 instead of crashing the list.
 
+**The chunker cuts on the top of the hash, and that was a bug fix.** The rolling
+hash is built as `(hash shl 1) + GEAR[byte]`, which pushes older bytes up the
+register — so the *low* bits are decided almost entirely by the most recent
+byte, and testing those bits asks "was the last byte one of these few values"
+rather than "is this a boundary". The result was chunks several times larger
+than the 8 KB the mask was supposed to average: 6 chunks in a 220 KB file where
+there should have been 12, and one edited line moving half the file over the
+network instead of a few percent. The mask now tests the high bits, where the
+bytes are mixed. There is a test for the property that matters — a one-line edit
+must move a small fraction — and another that counts the bytes a real server
+sends over a real socket, so the claim is measured rather than assumed.
+
 **Scanners work on `Candidate`, not `File`.** The matcher, the rename heuristics
 and the schedulers are pure functions over a value type, which is why they are
 exhaustively unit-tested without a device.
@@ -234,7 +269,7 @@ Requirements: JDK 17 or newer, Android SDK with platform 36.
 ```bash
 ./gradlew assembleDebug        # APK for a device
 ./gradlew bundleRelease        # AAB for Play
-./gradlew testDebugUnitTest    # 109 unit tests
+./gradlew testDebugUnitTest    # 185 unit tests
 ./gradlew lintDebug            # lint, run deliberately — a release pass takes a long time
 ```
 
@@ -278,9 +313,11 @@ flow says a request is allowed.
 | --- | --- |
 | `MANAGE_EXTERNAL_STORAGE` | Browsing and organising files outside the app folder — the core function of a file manager. Declared in Play Console as *File management*. |
 | `READ`/`WRITE_EXTERNAL_STORAGE` (maxSdk 29) | The same access on Android 9 and older. |
-| `POST_NOTIFICATIONS` | Optional summary after a scheduled rule runs. |
+| `POST_NOTIFICATIONS` | Optional summary after a scheduled rule runs, and the transfer server's notification. |
 | `RECEIVE_BOOT_COMPLETED` | Re-arms scheduled rules after a restart. |
-| `INTERNET`, `ACCESS_NETWORK_STATE`, `AD_ID` | Google AdMob only. |
+| `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC` | Keeps the transfer server answering while the app is not on screen. |
+| `INTERNET`, `ACCESS_NETWORK_STATE`, `AD_ID` | AdMob, the transfer server, and remote storage. |
+| `moe.shizuku.manager.permission.API_V23` | Optional, and only for Power access. Granted by the user inside the Shizuku app, never requested at install time; without it the app behaves exactly as it does without Shizuku installed. |
 
 No account, no backend, no analytics. Nothing is uploaded.
 

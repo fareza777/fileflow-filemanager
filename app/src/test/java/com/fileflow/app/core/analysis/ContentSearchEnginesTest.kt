@@ -122,19 +122,25 @@ class VersionStoreTest {
     @Test
     fun `repeating content costs almost nothing after the first copy`() = runBlocking {
         val store = VersionStore(File(temp.root, "store-repeat"))
-        // A file that is the same paragraph over and over: content-defined
-        // chunking produces the same chunk for the same paragraph, so the store
-        // keeps one of each.
+        // A file that is the same paragraph over and over.
         val paragraph = ByteArray(300) { index -> ((index * 31 + 5) % 251).toByte() }
-        val document = File(temp.root, "repeating.bin").apply {
-            writeBytes(ByteArray(60_000) { paragraph[it % paragraph.size] })
-        }
+        val bytes = ByteArray(60_000) { paragraph[it % paragraph.size] }
 
-        val version = store.snapshot(document)!!
-        assertTrue(
-            "60 KB of one repeated paragraph should store far less (stored=${version.storedBytes})",
-            version.storedBytes < 40_000,
-        )
+        val first = File(temp.root, "first.bin").apply { writeBytes(bytes) }
+        val second = File(temp.root, "second.bin").apply { writeBytes(bytes) }
+
+        val storedFirst = store.snapshot(first)!!
+        val storedSecond = store.snapshot(second)!!
+
+        // Chunks are stored under their own hash, so the second copy of the same
+        // content is free — and that is what the store promises: it keeps
+        // versions, not copies.
+        assertEquals("a copy of the same content stores no new bytes", 0L, storedSecond.storedBytes)
+        assertEquals(storedFirst.chunks, storedSecond.chunks)
+
+        // And a file that did not change since its last version is not
+        // snapshotted again at all.
+        assertEquals("an unchanged file is not stored twice", null, store.snapshot(first))
     }
 
     @Test

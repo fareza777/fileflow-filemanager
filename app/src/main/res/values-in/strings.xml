@@ -330,6 +330,20 @@
     <string name="transfer_received">Diterima</string>
     <string name="transfer_log_empty">Belum ada transfer.</string>
     <string name="transfer_note">Server tetap jalan walau kamu keluar dari layar ini — pindah tab, buka app lain, atau kunci HP, koneksi ke komputer tetap hidup. Matikan dari sini atau dari notifikasi.</string>
+
+    <!-- Delta sync -->
+    <string name="delta_title">Sinkron delta</string>
+    <string name="delta_note">Tarik file dari perangkat lain yang menjalankan FileFlow — cuma bagian yang belum ada di sini yang lewat jaringan. Link dan token perangkat itu ada di layar Transfer-nya.</string>
+    <string name="delta_host">Perangkat lain (host:port)</string>
+    <string name="delta_token">Token-nya</string>
+    <string name="delta_remote">File di perangkat itu</string>
+    <string name="delta_destination">Disimpan ke mana di sini</string>
+    <string name="delta_no_destination">Belum pilih tujuan</string>
+    <string name="delta_choose_folder">Pilih</string>
+    <string name="delta_check">Cek dulu</string>
+    <string name="delta_pull">Sinkronkan</string>
+    <string name="delta_plan">%1$s dari %2$s perlu lewat · %3$d%% sudah ada di sini</string>
+    <string name="delta_failed">Gagal. Cek alamatnya, tokennya, dan pastikan perangkat lain masih menyalakan server.</string>
     <string name="transfer_channel">Transfer file</string>
     <string name="transfer_channel_desc">Menampilkan alamat selama server transfer jalan</string>
     <string name="transfer_notification_title">Server transfer aktif</string>
@@ -546,6 +560,29 @@
     <string name="versions_stats">%1$d versi · %2$s tersimpan · %3$s dihemat dari berbagi potongan</string>
     <string name="tool_versions">Versi file</string>
     <string name="tool_versions_desc">Mesin waktu yang hanya menyimpan perubahannya</string>
+
+    <!-- Akses istimewa -->
+    <string name="power_title">Akses istimewa</string>
+    <string name="power_via_shizuku">Bisa lewat Shizuku</string>
+    <string name="power_via_root">Bisa lewat root</string>
+    <string name="power_none">Belum ada akses istimewa</string>
+    <string name="power_shizuku_state">Shizuku</string>
+    <string name="power_shizuku_missing">belum terpasang</string>
+    <string name="power_shizuku_stopped">terpasang, belum jalan</string>
+    <string name="power_shizuku_running">jalan, izin belum diberikan</string>
+    <string name="power_shizuku_granted">izin diberikan</string>
+    <string name="power_root_yes">ada</string>
+    <string name="power_root_no">tidak ada</string>
+    <string name="power_grant">Beri izin Shizuku</string>
+    <string name="power_note">Android menyembunyikan folder ini dari semua aplikasi. Dengan Shizuku atau root, shell bisa membacanya, jadi file bisa disalin keluar ke penyimpanan biasa — tempat aplikasi ini bisa mengolahnya.</string>
+    <string name="power_no_engine">Belum ada yang tersedia. Pasang dan jalankan Shizuku, beri izin untuk app ini, atau pakai perangkat yang sudah root.</string>
+    <string name="power_reading">Membaca folder…</string>
+    <string name="power_copy_out">Salin keluar</string>
+    <string name="power_copy_to">Salinannya disimpan ke mana?</string>
+    <string name="power_delete_title">Hapus lewat shell?</string>
+    <string name="power_delete_warning">Ini menjalankan rm -rf sebagai shell. Tidak masuk Sampah FileFlow dan tidak bisa dibatalkan.</string>
+    <string name="tool_power">Akses istimewa</string>
+    <string name="tool_power_desc">Baca dan salin folder yang disembunyikan Android, lewat Shizuku atau root</string>
 
     <!-- Analisis -->
     <string name="analyzer_title">Analisis penyimpanan</string>
@@ -915,6 +952,80 @@
     <plurals name="bytes_found">
         <item quantity="one">%1$d ditemukan</item>
         <item quantity="other">%1$d ditemukan</item>
+    </plurals>
+
+    <!-- Yang belum sempat diterjemahkan -->
+    <string name="cd_collapse">Tampilkan lebih sedikit</string>
+    <string name="cd_expand">Tampilkan lebih banyak</string>
+    <string name="cd_deselect_all">Kosongkan pilihan</string>
+    <string name="cd_history">Riwayat jalannya aturan</string>
+    <string name="cd_next_month">Bulan berikutnya</string>
+    <string name="cd_previous_month">Bulan sebelumnya</string>
+    <string name="cd_open_with">Buka dengan aplikasi lain</string>
+    <string name="cd_view_calendar">Lihat file per tanggal</string>
+    <string name="cd_view_list">Ganti ke tampilan daftar</string>
+    <string name="error_delete_failed">Sebagian item tidak bisa dihapus</string>
+    <string name="error_index_failed">Gagal membangun indeks</string>
+    <string name="error_index_failed_title">Indeks gagal dibuat</string>
+    <string name="error_load_failed">Layar ini gagal dimuat</string>
+    <string name="outcome_all_reversed">Semua perubahan dibatalkan</string>
+    <string name="outcome_nothing_changed">Tidak ada yang berubah</string>
+    <string name="outcome_undo">Batalkan</string>
+    <string name="outcome_with_failures">%1$s · %2$s</string>
+    <string name="rules_unreadable">Tidak dijalankan: pengaturan aturan ini tidak bisa dibaca. Buka, periksa, lalu simpan ulang.</string>
+    <string name="state_loading">Sebentar…</string>
+    <string name="state_scanning">Menelusuri file-file kamu…</string>
+    <string name="trash_emptied">Sampah dikosongkan</string>
+    <string name="trash_nothing_to_empty">Tidak ada yang perlu dikosongkan</string>
+
+    <plurals name="outcome_copied">
+        <item quantity="one">%1$d item disalin</item>
+        <item quantity="other">%1$d item disalin</item>
+    </plurals>
+
+    <plurals name="outcome_deleted">
+        <item quantity="one">%1$d item dihapus</item>
+        <item quantity="other">%1$d item dihapus</item>
+    </plurals>
+
+    <plurals name="outcome_failed">
+        <item quantity="one">%1$d gagal</item>
+        <item quantity="other">%1$d gagal</item>
+    </plurals>
+
+    <plurals name="outcome_moved">
+        <item quantity="one">%1$d item dipindah</item>
+        <item quantity="other">%1$d item dipindah</item>
+    </plurals>
+
+    <plurals name="outcome_moved_to_trash">
+        <item quantity="one">%1$d item masuk Sampah</item>
+        <item quantity="other">%1$d item masuk Sampah</item>
+    </plurals>
+
+    <plurals name="outcome_removed">
+        <item quantity="one">%1$d item dibuang</item>
+        <item quantity="other">%1$d item dibuang</item>
+    </plurals>
+
+    <plurals name="outcome_renamed">
+        <item quantity="one">%1$d item diganti nama</item>
+        <item quantity="other">%1$d item diganti nama</item>
+    </plurals>
+
+    <plurals name="outcome_restored">
+        <item quantity="one">%1$d item dipulihkan</item>
+        <item quantity="other">%1$d item dipulihkan</item>
+    </plurals>
+
+    <plurals name="outcome_reversed_partial">
+        <item quantity="one">%1$d dari %2$d dibatalkan</item>
+        <item quantity="other">%1$d dari %2$d dibatalkan</item>
+    </plurals>
+
+    <plurals name="outcome_skipped">
+        <item quantity="one">%1$d dilewati</item>
+        <item quantity="other">%1$d dilewati</item>
     </plurals>
 
 </resources>

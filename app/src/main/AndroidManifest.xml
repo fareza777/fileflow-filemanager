@@ -26,6 +26,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- Shizuku runs with the shell's rights, so the app can reach the folders
+         Android hides from it without being rooted. The permission is granted by
+         the user in the Shizuku app, and everything here works without it. -->
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+
     <uses-feature
         android:name="android.hardware.storage"
         android:required="false" />
@@ -84,6 +89,23 @@
             android:name=".service.TransferService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- The service Shizuku starts with the shell's uid. It is not exported:
+             only the Shizuku manager binds it, and only with the permission the
+             user granted. -->
+        <service
+            android:name=".core.privileged.PrivilegedUserService"
+            android:exported="false"
+            android:process=":privileged" />
+
+        <!-- The other half of the Shizuku handshake: the Shizuku app talks back
+             through this provider to hand over the permission. -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

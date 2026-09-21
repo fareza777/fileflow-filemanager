@@ -34,8 +34,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -64,6 +66,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.fileflow.app.R
+import com.fileflow.app.core.delta.DeltaClient
+import com.fileflow.app.core.delta.DeltaPlan
+import com.fileflow.app.core.delta.DeltaTransfer
 import com.fileflow.app.core.storage.VolumeRepository
 import com.fileflow.app.core.util.Formatters
 import com.fileflow.app.data.prefs.SettingsRepository
@@ -75,21 +80,39 @@ import com.fileflow.app.service.TransferService
 import com.fileflow.app.ui.components.FolderPickerSheet
 import com.fileflow.app.ui.components.SectionCard
 import com.fileflow.app.ui.components.SectionHeader
+import com.fileflow.app.ui.util.UiMessage
+import com.fileflow.app.ui.util.showMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 
 data class TransferUiState(
     val addresses: List<TransferAddress> = emptyList(),
     val shareRoot: String = "",
     val portText: String = HttpFileServer.DEFAULT_PORT.toString(),
+    // The other end of a delta sync: a device running this same screen, with its
+    // own address and token.
+    val peerHost: String = "",
+    val peerToken: String = "",
+    val peerPath: String = "",
+    val destination: String = "",
+    val checking: Boolean = false,
+    val syncing: Boolean = false,
+    val plan: DeltaPlan? = null,
+    val planError: Boolean = false,
 )
 
 @HiltViewModel
@@ -103,6 +126,9 @@ class TransferViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(TransferUiState())
     val state: StateFlow<TransferUiState> = _state.asStateFlow()
+
+    private val _messages = Channel<UiMessage>(Channel.BUFFERED)
+    val messages = _messages.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -159,6 +185,77 @@ class TransferViewModel @Inject constructor(
     fun stop(context: android.content.Context) {
         TransferService.stop(context)
     }
+
+    fun setPeerHost(text: String) {
+        _state.update { it.copy(peerHost = text.trim(), plan = null, planError = false) }
+    }
+
+    fun setPeerToken(text: String) {
+        _state.update { it.copy(peerToken = text.trim(), plan = null, planError = false) }
+    }
+
+    fun setPeerPath(text: String) {
+        _state.update { it.copy(peerPath = text.trim(), plan = null, planError = false) }
+    }
+
+    fun setDestination(path: String) {
+        _state.update { it.copy(destination = path, plan = null, planError = false) }
+    }
+
+    /** The file this sync would write on this side. */
+    private fun target(): File? {
+        val name = _state.value.peerPath.trimEnd('/').substringAfterLast('/')
+        val folder = _state.value.destination
+        if (name.isEmpty() || folder.isEmpty()) return null
+        return File(folder, name)
+    }
+
+    private fun client(): DeltaClient? {
+        val host = _state.value.peerHost
+        val token = _state.value.peerToken
+        if (host.isEmpty() || token.isEmpty()) return null
+        val base = if (host.startsWith("http")) host else "http://$host"
+        return DeltaClient(base, token, OkHttpClient())
+    }
+
+    /**
+     * Works out what would move, without moving anything.
+     *
+     * The number is the whole point of the feature, so it is shown before the
+     * transfer rather than after: a sync that is going to move 4 MB of a 400 MB
+     * file should be allowed to say so first.
+     */
+    fun checkPeer() {
+        val client = client() ?: return
+        val target = target() ?: return
+        _state.update { it.copy(checking = true, plan = null, planError = false) }
+        viewModelScope.launch {
+            val remote = withContext(Dispatchers.IO) { client.fetchManifest(_state.value.peerPath) }
+            if (remote == null) {
+                _state.update { it.copy(checking = false, planError = true) }
+                return@launch
+            }
+            val plan = DeltaTransfer.plan(target, remote)
+            _state.update { it.copy(checking = false, plan = plan) }
+        }
+    }
+
+    fun pull() {
+        val client = client() ?: return
+        val target = target() ?: return
+        _state.update { it.copy(syncing = true) }
+        viewModelScope.launch {
+            val plan = withContext(Dispatchers.IO) { client.pull(_state.value.peerPath, target) }
+            _state.update { it.copy(syncing = false, plan = plan ?: it.plan, planError = plan == null) }
+            _messages.send(
+                if (plan != null) {
+                    UiMessage.Info("Synced ${target.name}")
+                } else {
+                    UiMessage.Info("The sync did not finish")
+                }
+            )
+        }
+    }
 }
 
 /**
@@ -180,8 +277,19 @@ fun TransferScreen(
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
     var showPicker by remember { mutableStateOf(false) }
+    var showDestination by remember { mutableStateOf(false) }
     val copied = stringResource(R.string.transfer_copied)
     val scope = rememberCoroutineScope()
+
+    // The delta fields have to be filled before either button means anything.
+    val ready = state.peerHost.isNotEmpty() &&
+        state.peerToken.isNotEmpty() &&
+        state.peerPath.isNotEmpty() &&
+        state.destination.isNotEmpty()
+
+    LaunchedEffect(Unit) {
+        viewModel.messages.collect { message -> snackbar.showMessage(context, message) { } }
+    }
 
     // Deliberately no stop-on-exit: the server is owned by TransferService, so
     // switching tabs, leaving the app or locking the screen keeps the PC
@@ -373,6 +481,96 @@ fun TransferScreen(
             }
 
             item {
+                SectionHeader(stringResource(R.string.delta_title))
+                SectionCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = stringResource(R.string.delta_note),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        OutlinedTextField(
+                            value = state.peerHost,
+                            onValueChange = viewModel::setPeerHost,
+                            label = { Text(stringResource(R.string.delta_host)) },
+                            placeholder = { Text("192.168.1.7:8080") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = state.peerToken,
+                            onValueChange = viewModel::setPeerToken,
+                            label = { Text(stringResource(R.string.delta_token)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = state.peerPath,
+                            onValueChange = viewModel::setPeerPath,
+                            label = { Text(stringResource(R.string.delta_remote)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = state.destination.ifEmpty {
+                                    stringResource(R.string.delta_no_destination)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { showDestination = true }) {
+                                Text(stringResource(R.string.delta_choose_folder))
+                            }
+                        }
+
+                        if (state.planError) {
+                            Text(
+                                text = stringResource(R.string.delta_failed),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+
+                        state.plan?.let { plan ->
+                            Text(
+                                text = stringResource(
+                                    R.string.delta_plan,
+                                    Formatters.bytes(plan.fetchBytes),
+                                    Formatters.bytes(plan.remoteSize),
+                                    plan.savedPercent,
+                                ),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            OutlinedButton(
+                                onClick = viewModel::checkPeer,
+                                enabled = ready && !state.checking && !state.syncing,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(stringResource(R.string.delta_check))
+                            }
+                            Button(
+                                onClick = viewModel::pull,
+                                enabled = ready && state.plan != null && !state.syncing,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(stringResource(R.string.delta_pull))
+                            }
+                        }
+                        if (state.checking || state.syncing) {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                }
+            }
+
+            item {
                 Text(
                     text = stringResource(R.string.transfer_note),
                     style = MaterialTheme.typography.labelSmall,
@@ -390,6 +588,18 @@ fun TransferScreen(
             onPick = { path ->
                 viewModel.setShareRoot(context, path)
                 showPicker = false
+            },
+        )
+    }
+
+    if (showDestination) {
+        FolderPickerSheet(
+            startPath = state.destination.ifEmpty { state.shareRoot },
+            title = stringResource(R.string.delta_destination),
+            onDismiss = { showDestination = false },
+            onPick = { path ->
+                viewModel.setDestination(path)
+                showDestination = false
             },
         )
     }
