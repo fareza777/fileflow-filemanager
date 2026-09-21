@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.ArrowBack
@@ -100,11 +101,14 @@ import com.fileflow.app.ui.components.FileThumb
 import com.fileflow.app.ui.components.FolderPickerSheet
 import com.fileflow.app.ui.components.ProgressPanel
 import com.fileflow.app.ui.components.folderSubtitle
+import com.fileflow.app.domain.privacy.MetadataReport
+import com.fileflow.app.domain.privacy.MetadataStripper
 import com.fileflow.app.ui.util.FileIntents
 import com.fileflow.app.ui.util.FileOpen
 import com.fileflow.app.ui.util.LocalUserSettings
 import com.fileflow.app.ui.util.PreviewKind
 import com.fileflow.app.ui.util.showMessage
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,6 +135,7 @@ fun BrowserScreen(
     var confirmDelete by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showBreadcrumbs by remember { mutableStateOf(false) }
+    var metadataReport by remember { mutableStateOf<Pair<FileItem, MetadataReport>?>(null) }
 
     val visibleItems = remember(state.items, state.filterCategory) {
         state.filterCategory?.let { category ->
@@ -560,6 +565,46 @@ fun BrowserScreen(
 
     // ------------------------------------------------------------- overlays
 
+    metadataReport?.let { (item, report) ->
+        AlertDialog(
+            onDismissRequest = { metadataReport = null },
+            title = { Text(stringResource(R.string.metadata_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(item.name, style = MaterialTheme.typography.titleSmall, maxLines = 2)
+                    if (report.segments.isEmpty()) {
+                        Text(stringResource(R.string.metadata_none))
+                    } else {
+                        Text(stringResource(R.string.metadata_found, report.segments.joinToString(", ")))
+                        if (report.hasLocation) {
+                            Text(
+                                text = stringResource(R.string.metadata_location),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.cleanMetadata(item)
+                        metadataReport = null
+                    },
+                    enabled = report.segments.isNotEmpty(),
+                ) {
+                    Text(stringResource(R.string.metadata_clean))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { metadataReport = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+
     if (showNewFolder) {
         NameDialog(
             title = stringResource(R.string.browser_new_folder),
@@ -629,6 +674,15 @@ fun BrowserScreen(
                 }
 
                 else -> null
+            },
+            onCleanMetadata = if (!item.isDirectory && MetadataStripper.canStrip(File(item.path))) {
+                {
+                    val target = item
+                    actionTarget = null
+                    viewModel.inspectMetadata(target) { report -> metadataReport = target to report }
+                }
+            } else {
+                null
             },
             onRename = {
                 renameTarget = item

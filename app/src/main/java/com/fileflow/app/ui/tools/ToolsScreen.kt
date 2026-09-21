@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CleaningServices
@@ -26,10 +27,13 @@ import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Splitscreen
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Troubleshoot
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -206,6 +210,42 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
                             subtitle = stringResource(R.string.tool_remote_desc),
                             onClick = { onOpenTool("remote") },
                             accent = scheme.secondary,
+                        )
+                    }
+                }
+            }
+
+            item { SectionHeader(stringResource(R.string.tools_analysis)) }
+            item {
+                SectionCard {
+                    Column {
+                        ToolRow(
+                            icon = Icons.Filled.Troubleshoot,
+                            title = stringResource(R.string.tool_inspect),
+                            subtitle = stringResource(R.string.tool_inspect_desc),
+                            onClick = { onOpenTool("inspect") },
+                            accent = scheme.primary,
+                        )
+                        ToolRow(
+                            icon = Icons.Filled.PhotoLibrary,
+                            title = stringResource(R.string.tool_photos),
+                            subtitle = stringResource(R.string.tool_photos_desc),
+                            onClick = { onOpenTool("photos") },
+                            accent = scheme.tertiary,
+                        )
+                        ToolRow(
+                            icon = Icons.Filled.Shield,
+                            title = stringResource(R.string.tool_shield),
+                            subtitle = stringResource(R.string.tool_shield_desc),
+                            onClick = { onOpenTool("shield") },
+                            accent = scheme.secondary,
+                        )
+                        ToolRow(
+                            icon = Icons.Filled.Android,
+                            title = stringResource(R.string.tool_apps),
+                            subtitle = stringResource(R.string.tool_apps_desc),
+                            onClick = { onOpenTool("apps") },
+                            accent = scheme.primary,
                         )
                     }
                 }

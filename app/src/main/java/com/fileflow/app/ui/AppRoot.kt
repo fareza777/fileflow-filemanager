@@ -71,6 +71,7 @@ import com.fileflow.app.core.storage.OperationKind
 import com.fileflow.app.data.repo.ActiveOperation
 import com.fileflow.app.ui.about.AboutScreen
 import com.fileflow.app.ui.analyzer.AnalyzerScreen
+import com.fileflow.app.ui.apps.AppBackupScreen
 import com.fileflow.app.ui.browser.BrowserScreen
 import com.fileflow.app.ui.calendar.CalendarScreen
 import com.fileflow.app.ui.changes.RecentChangesScreen
@@ -81,8 +82,10 @@ import com.fileflow.app.ui.convert.ConvertScreen
 import com.fileflow.app.ui.dualpane.DualPaneScreen
 import com.fileflow.app.ui.duplicates.DuplicatesScreen
 import com.fileflow.app.ui.home.HomeScreen
+import com.fileflow.app.ui.inspect.InspectScreen
 import com.fileflow.app.ui.junk.JunkScreen
 import com.fileflow.app.ui.large.LargeFilesScreen
+import com.fileflow.app.ui.photos.SimilarPhotosScreen
 import com.fileflow.app.ui.recent.RecentFilesScreen
 import com.fileflow.app.ui.remote.RemoteBrowserScreen
 import com.fileflow.app.ui.remote.RemoteScreen
@@ -93,6 +96,7 @@ import com.fileflow.app.ui.rules.RulePreviewScreen
 import com.fileflow.app.ui.rules.RulesScreen
 import com.fileflow.app.ui.search.SearchScreen
 import com.fileflow.app.ui.settings.SettingsScreen
+import com.fileflow.app.ui.shield.ShieldScreen
 import com.fileflow.app.ui.starred.StarredScreen
 import com.fileflow.app.ui.tools.ToolsScreen
 import com.fileflow.app.ui.transfer.TransferScreen
@@ -141,6 +145,10 @@ private object Routes {
     const val COMPARE = "compare"
     const val REMOTE = "remote"
     const val REMOTE_BROWSE = "remote_browse"
+    const val INSPECT = "inspect"
+    const val PHOTOS = "photos"
+    const val SHIELD = "shield"
+    const val APPS = "apps"
 }
 
 @Composable
@@ -222,6 +230,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
             "dual" -> navController.navigate(Routes.DUAL)
             "compare" -> navController.navigate(Routes.COMPARE)
             "remote" -> navController.navigate(Routes.REMOTE)
+            "inspect" -> navController.navigate(Routes.INSPECT)
+            "photos" -> navController.navigate(Routes.PHOTOS)
+            "shield" -> navController.navigate(Routes.SHIELD)
+            "apps" -> navController.navigate(Routes.APPS)
             else -> Unit
         }
     }
@@ -461,6 +473,22 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                     ),
                 ) {
                     RemoteBrowserScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.INSPECT) {
+                    InspectScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.PHOTOS) {
+                    SimilarPhotosScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.SHIELD) {
+                    ShieldScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.APPS) {
+                    AppBackupScreen(onBack = { navController.popBackStack() })
                 }
 
                 composable(

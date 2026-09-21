@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -75,6 +76,8 @@ fun FileActionSheet(
     onExtract: (() -> Unit)? = null,
     /** One tap into the folder the transfer server shares with the computer. */
     onMoveToTransfer: (() -> Unit)? = null,
+    /** Strips EXIF, IPTC and comment segments out of an image, losslessly. */
+    onCleanMetadata: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -106,6 +109,9 @@ fun FileActionSheet(
             )
         }
         onSelect?.let { add(Triple(Icons.Filled.SelectAll, R.string.action_select, it)) }
+        onCleanMetadata?.let {
+            add(Triple(Icons.Filled.PrivacyTip, R.string.action_clean_metadata, it))
+        }
         onDetails?.let { add(Triple(Icons.Filled.Info, R.string.action_info, it)) }
     }
 

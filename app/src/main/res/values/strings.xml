@@ -268,6 +268,7 @@
     <string name="tools_insight">Understand</string>
     <string name="tools_keep">Keep &amp; recover</string>
     <string name="tools_power">Power tools</string>
+    <string name="tools_analysis">Analysis &amp; tools</string>
     <string name="tool_analyzer">Storage analyzer</string>
     <string name="tool_analyzer_desc">See what is eating your space</string>
     <string name="tool_duplicates">Duplicate files</string>
@@ -434,6 +435,85 @@
     <string name="remote_empty_folder_hint">Upload a file, or create a folder here.</string>
     <string name="tool_remote">Remote storage</string>
     <string name="tool_remote_desc">WebDAV, S3, SFTP and SMB servers</string>
+
+    <!-- Inspect -->
+    <string name="inspect_title">Inspect</string>
+    <string name="inspect_types">True types</string>
+    <string name="inspect_duplicates">Fast duplicates</string>
+    <string name="inspect_similar">Similar files</string>
+    <string name="inspect_run">Inspect this folder</string>
+    <string name="inspect_running">Inspecting…</string>
+    <string name="inspect_fingerprint">Folder fingerprint</string>
+    <string name="inspect_pick_folder">Choose a folder to inspect</string>
+    <string name="inspect_types_summary">%1$d files · %2$d with a wrong extension</string>
+    <string name="inspect_lies">really %1$s</string>
+    <string name="inspect_duplicates_summary">%1$d suspected groups</string>
+    <string name="inspect_group">%1$d copies</string>
+    <string name="inspect_wasted">%1$s wasted</string>
+    <string name="inspect_more">+%1$d more</string>
+    <string name="inspect_similar_summary">%1$d similar pairs</string>
+    <string name="inspect_distance">fuzzy distance %1$d</string>
+    <string name="tool_inspect">Inspect files</string>
+    <string name="tool_inspect_desc">True types, fast duplicates, similar files</string>
+
+    <!-- Similar photos -->
+    <string name="photos_title">Similar photos</string>
+    <string name="photos_scan">Find similar photos</string>
+    <string name="photos_scanning">Comparing…</string>
+    <string name="photos_auto">Mark all but the best</string>
+    <string name="photos_summary">%1$d groups · %2$s recoverable</string>
+    <string name="photos_none">No similar photos</string>
+    <string name="photos_none_hint">Every photo in this folder looks different from the others.</string>
+    <string name="photos_group">%1$d photos · %2$s</string>
+    <string name="photos_keep">best copy</string>
+    <string name="photos_marked">%1$d marked</string>
+    <string name="photos_remove">Remove</string>
+    <string name="photos_pick_folder">Choose a folder to scan</string>
+    <string name="tool_photos">Similar photos</string>
+    <string name="tool_photos_desc">Group look-alike shots and keep the best</string>
+
+    <!-- Recovery shield -->
+    <string name="shield_title">Recovery shield</string>
+    <string name="shield_section_create">Shard files</string>
+    <string name="shield_hint">Any %1$d of %2$d shards rebuild the file. Pick the files, then the folder to write them to.</string>
+    <string name="shield_create">Shard %1$d file(s) into %2$d parts</string>
+    <string name="shield_section_restore">Rebuild from shards</string>
+    <string name="shield_no_shards">No shards in this folder.</string>
+    <string name="shield_restore">%1$s · %2$d shards</string>
+    <string name="shield_section_check">Check this storage</string>
+    <string name="shield_check_hint">Writes test data and reads it back, which is the only way to catch a card that lies about its size. The test files are deleted afterwards.</string>
+    <string name="shield_check_run">Check capacity</string>
+    <string name="shield_check_ok">Storage verified</string>
+    <string name="shield_check_bad">This storage did not check out</string>
+    <string name="shield_check_detail">Claims %1$s · wrote and verified %2$s in %3$d files</string>
+    <string name="shield_check_wrote">Wrote and verified %1$s</string>
+    <string name="shield_pick_folder">Choose the folder with the files</string>
+    <string name="shield_pick_destination">Where should the shards go?</string>
+    <string name="shield_pick_check">Storage to check</string>
+    <string name="tool_shield">Recovery shield</string>
+    <string name="tool_shield_desc">Erasure-coded shards and a fake-card check</string>
+
+    <!-- App backup -->
+    <string name="apps_title">App backup</string>
+    <string name="apps_system_toggle">Show system apps</string>
+    <string name="apps_selected">%1$d selected</string>
+    <string name="apps_export">Export</string>
+    <string name="apps_export_hint">APKs, with their splits</string>
+    <string name="apps_none">No apps to show</string>
+    <string name="apps_none_hint">Nothing matched. System apps are hidden unless you turn them on.</string>
+    <string name="apps_pick_destination">Where should the APKs go?</string>
+    <string name="tool_apps">App backup</string>
+    <string name="tool_apps_desc">Export installed APKs, splits included</string>
+
+    <!-- Metadata -->
+    <string name="action_clean_metadata">Clean metadata</string>
+    <string name="metadata_title">Metadata</string>
+    <string name="metadata_found">Found: %1$s</string>
+    <string name="metadata_none">No metadata found in this file.</string>
+    <string name="metadata_location">This file records where it was taken.</string>
+    <string name="metadata_clean">Remove and save a copy</string>
+    <string name="metadata_removed">Removed %1$s of metadata · copy saved as %2$s</string>
+    <string name="metadata_unchanged">Nothing to remove</string>
 
     <!-- Analyzer -->
     <string name="analyzer_title">Storage analyzer</string>

@@ -251,6 +251,7 @@
     <string name="tools_insight">Telusuri</string>
     <string name="tools_keep">Simpan &amp; pulihkan</string>
     <string name="tools_power">Alat lanjutan</string>
+    <string name="tools_analysis">Analisis &amp; perkakas</string>
     <string name="tool_analyzer">Analisis penyimpanan</string>
     <string name="tool_analyzer_desc">Lihat apa yang menghabiskan ruang</string>
     <string name="tool_duplicates">File duplikat</string>
@@ -417,6 +418,85 @@
     <string name="remote_empty_folder_hint">Unggah file, atau buat folder di sini.</string>
     <string name="tool_remote">Penyimpanan remote</string>
     <string name="tool_remote_desc">Server WebDAV, S3, SFTP, dan SMB</string>
+
+    <!-- Periksa -->
+    <string name="inspect_title">Periksa</string>
+    <string name="inspect_types">Tipe sebenarnya</string>
+    <string name="inspect_duplicates">Duplikat cepat</string>
+    <string name="inspect_similar">File mirip</string>
+    <string name="inspect_run">Periksa folder ini</string>
+    <string name="inspect_running">Memeriksa…</string>
+    <string name="inspect_fingerprint">Sidik folder</string>
+    <string name="inspect_pick_folder">Pilih folder yang mau diperiksa</string>
+    <string name="inspect_types_summary">%1$d file · %2$d ekstensinya salah</string>
+    <string name="inspect_lies">sebenarnya %1$s</string>
+    <string name="inspect_duplicates_summary">%1$d grup terduga</string>
+    <string name="inspect_group">%1$d salinan</string>
+    <string name="inspect_wasted">%1$s terbuang</string>
+    <string name="inspect_more">+%1$d lagi</string>
+    <string name="inspect_similar_summary">%1$d pasangan mirip</string>
+    <string name="inspect_distance">jarak fuzzy %1$d</string>
+    <string name="tool_inspect">Periksa file</string>
+    <string name="tool_inspect_desc">Tipe sebenarnya, duplikat cepat, file mirip</string>
+
+    <!-- Foto mirip -->
+    <string name="photos_title">Foto mirip</string>
+    <string name="photos_scan">Cari foto mirip</string>
+    <string name="photos_scanning">Membandingkan…</string>
+    <string name="photos_auto">Tandai semua kecuali yang terbaik</string>
+    <string name="photos_summary">%1$d grup · %2$s bisa dihemat</string>
+    <string name="photos_none">Tidak ada foto mirip</string>
+    <string name="photos_none_hint">Semua foto di folder ini terlihat berbeda satu sama lain.</string>
+    <string name="photos_group">%1$d foto · %2$s</string>
+    <string name="photos_keep">salinan terbaik</string>
+    <string name="photos_marked">%1$d ditandai</string>
+    <string name="photos_remove">Hapus</string>
+    <string name="photos_pick_folder">Pilih folder untuk dipindai</string>
+    <string name="tool_photos">Foto mirip</string>
+    <string name="tool_photos_desc">Kelompokkan foto yang mirip, simpan yang terbaik</string>
+
+    <!-- Pelindung pemulihan -->
+    <string name="shield_title">Pelindung pemulihan</string>
+    <string name="shield_section_create">Pecah jadi shard</string>
+    <string name="shield_hint">Sembarang %1$d dari %2$d shard bisa menyusun ulang filenya. Pilih filenya, lalu folder tujuan shard.</string>
+    <string name="shield_create">Pecah %1$d file jadi %2$d bagian</string>
+    <string name="shield_section_restore">Susun ulang dari shard</string>
+    <string name="shield_no_shards">Tidak ada shard di folder ini.</string>
+    <string name="shield_restore">%1$s · %2$d shard</string>
+    <string name="shield_section_check">Cek penyimpanan ini</string>
+    <string name="shield_check_hint">Menulis data uji lalu membacanya kembali — satu-satunya cara menangkap kartu yang berbohong soal kapasitas. File ujinya dihapus lagi setelah selesai.</string>
+    <string name="shield_check_run">Cek kapasitas</string>
+    <string name="shield_check_ok">Penyimpanan terbukti asli</string>
+    <string name="shield_check_bad">Penyimpanan ini tidak lolos</string>
+    <string name="shield_check_detail">Mengaku %1$s · tertulis dan terverifikasi %2$s dalam %3$d file</string>
+    <string name="shield_check_wrote">Tertulis dan terverifikasi %1$s</string>
+    <string name="shield_pick_folder">Pilih folder berisi filenya</string>
+    <string name="shield_pick_destination">Shard-nya disimpan ke mana?</string>
+    <string name="shield_pick_check">Penyimpanan yang mau dicek</string>
+    <string name="tool_shield">Pelindung pemulihan</string>
+    <string name="tool_shield_desc">Shard erasure-code dan cek kartu palsu</string>
+
+    <!-- Backup aplikasi -->
+    <string name="apps_title">Backup aplikasi</string>
+    <string name="apps_system_toggle">Tampilkan aplikasi sistem</string>
+    <string name="apps_selected">%1$d dipilih</string>
+    <string name="apps_export">Ekspor</string>
+    <string name="apps_export_hint">APK, termasuk split-nya</string>
+    <string name="apps_none">Tidak ada aplikasi</string>
+    <string name="apps_none_hint">Tidak ada yang cocok. Aplikasi sistem disembunyikan kecuali kamu menampilkannya.</string>
+    <string name="apps_pick_destination">APK-nya disimpan ke mana?</string>
+    <string name="tool_apps">Backup aplikasi</string>
+    <string name="tool_apps_desc">Ekspor APK terpasang, termasuk split</string>
+
+    <!-- Metadata -->
+    <string name="action_clean_metadata">Bersihkan metadata</string>
+    <string name="metadata_title">Metadata</string>
+    <string name="metadata_found">Ditemukan: %1$s</string>
+    <string name="metadata_none">Tidak ada metadata di file ini.</string>
+    <string name="metadata_location">File ini menyimpan lokasi pengambilannya.</string>
+    <string name="metadata_clean">Hapus dan simpan salinan</string>
+    <string name="metadata_removed">%1$s metadata dihapus · salinan disimpan sebagai %2$s</string>
+    <string name="metadata_unchanged">Tidak ada yang perlu dihapus</string>
 
     <!-- Analisis -->
     <string name="analyzer_title">Analisis penyimpanan</string>

@@ -80,6 +80,38 @@ it, read one entry (a text file opens in the reader, a photo in the viewer,
 straight from inside the archive), or extract a single entry beside it. Tars are
 indexed once and cached; a plain tar is opened by seeking to the entry's offset.
 
+**Inspection.** A folder can be inspected three ways: the true type behind each
+extension (magic-byte signatures, with a file renamed to a lie reported as one),
+a fast duplicate pre-scan that samples the head, middle and tail of every file
+so a hundred gigabytes of media is screened in seconds, and a fuzzy distance
+between documents that finds near-duplicates rather than exact copies. The same
+screen shows the folder's Merkle fingerprint, which changes when anything inside
+it does.
+
+**Similar photos.** Two perceptual hashes — a difference hash and an average
+hash — reduce each photo to 64 bits of "how it looks", and shots of the same
+moment group together regardless of name, size or re-compression. The best copy
+of each group is identified and never pre-selected; everything else is ticked and
+goes to the trash, which makes the decision reversible.
+
+**Privacy.** Metadata is removed from JPEG and PNG *without re-encoding*: the
+EXIF, IPTC, XMP and comment segments are cut out of the file's segment structure
+and every byte of image data is copied through untouched, so the result is
+pixel-identical. The ICC colour profile and the Adobe transform marker stay,
+because removing those would change how the photo looks. The screen reports what
+was found — including whether the file records where it was taken — before
+anything is written.
+
+**Recovery shield.** A file is erasure-coded into `n` data shards plus `m` parity
+shards over GF(256), and any `n` of them rebuild it — insurance against the one
+failure a copy does not protect against, a card or stick quietly going bad. The
+same screen writes and reads back test data to catch a card that lies about its
+capacity.
+
+**App backup.** Installed apps are exported as APKs, base *and* every split, so
+a backup of a modern app is a set that installs rather than a base APK that
+crashes.
+
 **Transfer to PC.** The phone serves its own storage over the local network:
 start the server, open the address it shows in a browser on the computer, and
 browse, download and upload from there. Every local address is listed — Wi-Fi,

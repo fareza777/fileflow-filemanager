@@ -25,6 +25,8 @@ import com.fileflow.app.core.storage.VolumeRepository
 import com.fileflow.app.data.repo.FileActionsRepository
 import com.fileflow.app.data.repo.FileIndexRepository
 import com.fileflow.app.data.repo.OperationRunner
+import com.fileflow.app.domain.privacy.MetadataReport
+import com.fileflow.app.domain.privacy.MetadataStripper
 import com.fileflow.app.ui.util.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -111,6 +113,7 @@ class BrowserViewModel @Inject constructor(
     private val archiveBrowser: ArchiveBrowser,
     private val indexRepository: FileIndexRepository,
     private val mediaScanner: MediaScanner,
+    private val stripper: MetadataStripper,
     @ApplicationContext private val context: android.content.Context,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -257,6 +260,57 @@ class BrowserViewModel @Inject constructor(
                     _messages.send(UiMessage.Info("${Formatters.bytes(bytes)} extracted"))
                 },
                 onFailure = { _messages.send(UiMessage.Info(it.message ?: "Could not extract")) },
+            )
+        }
+    }
+
+    // --------------------------------------------------------------- privacy
+
+    /**
+     * What an image carries before anything is removed. Read-only: the sheet
+     * shows the inventory and the user decides.
+     */
+    fun inspectMetadata(item: FileItem, onResult: (MetadataReport) -> Unit) {
+        viewModelScope.launch {
+            val report = runCatching { stripper.inspect(File(item.path)) }.getOrNull()
+            if (report == null) {
+                _messages.send(UiMessage.Info("Could not read ${item.name}"))
+                return@launch
+            }
+            onResult(report)
+        }
+    }
+
+    /**
+     * Writes a cleaned copy beside the original and never touches the original:
+     * a photo that has had its metadata removed is still the user's photo, and
+     * the one they keep should be the one they chose to keep.
+     */
+    fun cleanMetadata(item: FileItem) {
+        val source = File(item.path)
+        val parent = source.parentFile ?: return
+        viewModelScope.launch {
+            val result = runCatching {
+                val name = CollisionResolver.unique(parent, source.name.substringBeforeLast('.') + ".clean." + source.name.substringAfterLast('.', "jpg"))
+                val target = File(parent, name)
+                val report = stripper.strip(source, target)
+                target.absolutePath to report
+            }
+            result.fold(
+                onSuccess = { (path, report) ->
+                    browseRepository.invalidateListing(parent.absolutePath)
+                    indexRepository.upsertPaths(listOf(path))
+                    mediaScanner.announce(listOf(path))
+                    _messages.send(
+                        UiMessage.Info(
+                            "Removed ${Formatters.bytes(report.removedBytes)} of metadata · " +
+                                File(path).name
+                        )
+                    )
+                },
+                onFailure = { error ->
+                    _messages.send(UiMessage.Info(error.message ?: "Could not clean that file"))
+                },
             )
         }
     }
