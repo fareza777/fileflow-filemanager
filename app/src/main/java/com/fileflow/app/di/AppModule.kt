@@ -2,6 +2,7 @@ package com.fileflow.app.di
 
 import android.content.Context
 import androidx.room.Room
+import com.fileflow.app.data.db.ContentIndexDao
 import com.fileflow.app.data.db.FileFlowDatabase
 import com.fileflow.app.data.db.FileIndexDao
 import com.fileflow.app.data.db.JournalDao
@@ -75,4 +76,8 @@ object AppModule {
     @Provides
     fun provideTrashJournalDao(database: FileFlowDatabase): TrashJournalDao =
         database.trashJournalDao()
+
+    @Provides
+    fun provideContentIndexDao(database: FileFlowDatabase): ContentIndexDao =
+        database.contentIndexDao()
 }

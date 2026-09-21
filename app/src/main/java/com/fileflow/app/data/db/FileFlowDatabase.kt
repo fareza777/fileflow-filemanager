@@ -17,8 +17,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         RecentFolderEntity::class,
         IndexedFileEntity::class,
         StarredFileEntity::class,
+        ContentIndexEntity::class,
+        ContentVectorEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class FileFlowDatabase : RoomDatabase() {
@@ -31,6 +33,7 @@ abstract class FileFlowDatabase : RoomDatabase() {
     abstract fun fileIndexDao(): FileIndexDao
     abstract fun starredFileDao(): StarredFileDao
     abstract fun trashJournalDao(): TrashJournalDao
+    abstract fun contentIndexDao(): ContentIndexDao
 
     companion object {
         const val NAME = "fileflow.db"
@@ -80,9 +83,53 @@ abstract class FileFlowDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Adding the content index and its vectors.
+         *
+         * Two plain tables: the text of every readable document, and the vector
+         * that stands in for "about the same thing". Both are rebuildable from
+         * the filesystem, so an update that cannot migrate them would only cost
+         * a re-index — but they are created properly anyway, because a database
+         * version that fails to open takes the rules and the journal with it.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `content_index` (
+                        `path` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `extension` TEXT NOT NULL,
+                        `modified` INTEGER NOT NULL,
+                        `sizeBytes` INTEGER NOT NULL,
+                        `body` TEXT NOT NULL,
+                        `folded` TEXT NOT NULL,
+                        `indexedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`path`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_content_index_modified` ON `content_index` (`modified`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_content_index_name` ON `content_index` (`name`)")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `content_vectors` (
+                        `path` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `dimension` INTEGER NOT NULL,
+                        `vector` BLOB NOT NULL,
+                        `indexedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`path`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         fun build(context: Context): FileFlowDatabase =
             Room.databaseBuilder(context, FileFlowDatabase::class.java, NAME)
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
     }
 }

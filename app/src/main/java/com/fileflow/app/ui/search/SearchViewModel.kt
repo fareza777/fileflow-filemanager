@@ -7,6 +7,8 @@ import com.fileflow.app.core.model.FileItem
 import com.fileflow.app.core.storage.OperationKind
 import com.fileflow.app.core.storage.OperationReport
 import com.fileflow.app.data.repo.BrowseRepository
+import com.fileflow.app.data.repo.ContentHit
+import com.fileflow.app.data.repo.ContentIndexRepository
 import com.fileflow.app.data.repo.FileActionsRepository
 import com.fileflow.app.data.repo.FileIndexRepository
 import com.fileflow.app.data.repo.OperationRunner
@@ -21,6 +23,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +33,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class SearchSort { RELEVANCE, NAME, SIZE, NEWEST }
+
+/**
+ * What the query is matched against.
+ *
+ * Names are instant and cheap. Contents answer the question a name never can —
+ * "which of my files talks about this?" — and the vector mode answers it for
+ * documents that do not use the same words. Each is a different index and a
+ * different cost, so the user picks rather than the app guessing.
+ */
+enum class SearchMode { NAME, CONTENT, SIMILAR }
 
 data class SearchState(
     val query: String = "",
@@ -43,6 +56,12 @@ data class SearchState(
     val selectionMode: Boolean = false,
     val showFilters: Boolean = true,
     val sort: SearchSort = SearchSort.RELEVANCE,
+    val mode: SearchMode = SearchMode.NAME,
+    /** Hits from the content index, when the mode is not [SearchMode.NAME]. */
+    val hits: List<ContentHit> = emptyList(),
+    val contentIndexed: Int = 0,
+    val contentIndexing: Boolean = false,
+    val contentProgress: String? = null,
     /** True when the results came from the index rather than a live scan. */
     val indexed: Boolean = false,
     /**
@@ -65,6 +84,7 @@ class SearchViewModel @Inject constructor(
     private val browseRepository: BrowseRepository,
     private val actions: FileActionsRepository,
     private val indexRepository: FileIndexRepository,
+    private val contentIndex: ContentIndexRepository,
     private val operationRunner: OperationRunner,
 ) : ViewModel() {
 
@@ -91,6 +111,11 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             _deviceRoot.value = withContext(Dispatchers.IO) { browseRepository.primaryRoot() }
         }
+        viewModelScope.launch {
+            contentIndex.observeCount().collect { count ->
+                _state.update { it.copy(contentIndexed = count) }
+            }
+        }
     }
 
     fun setRoot(path: String) {
@@ -106,7 +131,66 @@ class SearchViewModel @Inject constructor(
 
     fun setQuery(query: String) {
         _state.update { it.copy(query = query) }
-        scheduleSearch()
+        if (_state.value.mode == SearchMode.NAME) scheduleSearch() else scheduleContentSearch()
+    }
+
+    // ------------------------------------------------------ content search
+
+    fun setMode(mode: SearchMode) {
+        if (_state.value.mode == mode) return
+        _state.update { it.copy(mode = mode, hits = emptyList()) }
+        if (mode == SearchMode.NAME) runSearch() else runContentSearch()
+    }
+
+    private fun scheduleContentSearch() {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(250)
+            runContentSearchNow()
+        }
+    }
+
+    fun runContentSearch() {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch { runContentSearchNow() }
+    }
+
+    private suspend fun runContentSearchNow() {
+        val snapshot = _state.value
+        val needle = snapshot.query.trim()
+        if (needle.isEmpty()) {
+            _state.update { it.copy(hits = emptyList(), searching = false) }
+            return
+        }
+        _state.update { it.copy(searching = true, hits = emptyList()) }
+        val hits = runCatching {
+            when (snapshot.mode) {
+                SearchMode.SIMILAR -> contentIndex.searchSimilar(needle)
+                else -> contentIndex.search(needle)
+            }
+        }.getOrDefault(emptyList())
+        _state.update { it.copy(searching = false, hits = hits, scanned = hits.size) }
+    }
+
+    /**
+     * Reads every readable document into the index. Run by hand because it is
+     * the one operation here that touches every file on the device — a search
+     * that starts that on its own is a search that heats the phone.
+     */
+    fun buildContentIndex() {
+        if (_state.value.contentIndexing) return
+        viewModelScope.launch {
+            _state.update { it.copy(contentIndexing = true, contentProgress = null) }
+            val total = runCatching {
+                contentIndex.rebuild { indexed, name ->
+                    _state.update { it.copy(contentProgress = "$indexed · $name") }
+                }
+            }.getOrDefault(0)
+            _state.update {
+                it.copy(contentIndexing = false, contentProgress = null, contentIndexed = total)
+            }
+            _messages.send(UiMessage.Info("Indexed $total documents"))
+        }
     }
 
     fun toggleDeep() {

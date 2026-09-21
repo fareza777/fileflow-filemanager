@@ -247,6 +247,13 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
                             onClick = { onOpenTool("apps") },
                             accent = scheme.primary,
                         )
+                        ToolRow(
+                            icon = Icons.Filled.History,
+                            title = stringResource(R.string.tool_versions),
+                            subtitle = stringResource(R.string.tool_versions_desc),
+                            onClick = { onOpenTool("versions") },
+                            accent = scheme.tertiary,
+                        )
                     }
                 }
             }

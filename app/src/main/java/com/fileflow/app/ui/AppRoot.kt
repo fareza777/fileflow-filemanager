@@ -106,6 +106,7 @@ import com.fileflow.app.ui.viewer.TextFileScreen
 import com.fileflow.app.ui.util.FileIntents
 import com.fileflow.app.ui.util.FileOpen
 import com.fileflow.app.ui.util.PreviewKind
+import com.fileflow.app.ui.versions.VersionsScreen
 
 private enum class Tab(
     val route: String,
@@ -149,6 +150,7 @@ private object Routes {
     const val PHOTOS = "photos"
     const val SHIELD = "shield"
     const val APPS = "apps"
+    const val VERSIONS = "versions"
 }
 
 @Composable
@@ -234,6 +236,7 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
             "photos" -> navController.navigate(Routes.PHOTOS)
             "shield" -> navController.navigate(Routes.SHIELD)
             "apps" -> navController.navigate(Routes.APPS)
+            "versions" -> navController.navigate(Routes.VERSIONS)
             else -> Unit
         }
     }
@@ -489,6 +492,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
 
                 composable(Routes.APPS) {
                     AppBackupScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.VERSIONS) {
+                    VersionsScreen(onBack = { navController.popBackStack() })
                 }
 
                 composable(

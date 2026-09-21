@@ -261,6 +261,14 @@
     <string name="search_index_stale">Index last updated %1$s</string>
     <string name="search_rescan">Scan device now</string>
     <string name="search_live_scan">Searching storage…</string>
+    <string name="search_mode_name">Name</string>
+    <string name="search_mode_content">Inside files</string>
+    <string name="search_mode_similar">Similar</string>
+    <string name="search_index_documents">Index %1$d documents</string>
+    <string name="search_indexing">Reading documents…</string>
+    <string name="search_no_index">Nothing indexed yet</string>
+    <string name="search_no_index_hint">Tap the counter above to read the documents on this device. Then this search can look inside them.</string>
+    <string name="search_similar_badge">similar</string>
 
     <!-- Tools -->
     <string name="tools_title">Tools</string>
@@ -514,6 +522,22 @@
     <string name="metadata_clean">Remove and save a copy</string>
     <string name="metadata_removed">Removed %1$s of metadata · copy saved as %2$s</string>
     <string name="metadata_unchanged">Nothing to remove</string>
+
+    <!-- Versions -->
+    <string name="versions_title">Versions</string>
+    <string name="versions_pick_file">Pick a file to version</string>
+    <string name="versions_pick_folder">Choose a folder</string>
+    <string name="versions_snapshot">Store a version</string>
+    <string name="versions_none">No versions yet</string>
+    <string name="versions_none_hint">Store one before editing the file, and this screen can put it back.</string>
+    <string name="versions_empty_hint">This folder has no files to version.</string>
+    <string name="versions_no_versions">no versions</string>
+    <string name="versions_count">%1$d versions</string>
+    <string name="versions_detail">%1$d chunks · %2$s stored · %3$s of file</string>
+    <string name="versions_restore">Restore this version</string>
+    <string name="versions_stats">%1$d versions · %2$s stored · %3$s saved by chunk sharing</string>
+    <string name="tool_versions">Versions</string>
+    <string name="tool_versions_desc">A time machine that stores only what changed</string>
 
     <!-- Analyzer -->
     <string name="analyzer_title">Storage analyzer</string>

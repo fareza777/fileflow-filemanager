@@ -60,6 +60,7 @@ class FileActionsRepository @Inject constructor(
     private val trashJournalDao: TrashJournalDao,
     private val mediaScanner: MediaScanner,
     private val indexRepository: FileIndexRepository,
+    private val contentIndex: ContentIndexRepository,
     private val starredDao: StarredFileDao,
     private val archiveEngine: ArchiveEngine,
 ) {
@@ -443,6 +444,14 @@ class FileActionsRepository @Inject constructor(
     private suspend fun syncIndex(removed: List<String>, added: List<String>) {
         if (removed.isNotEmpty()) indexRepository.removePaths(removed)
         if (added.isNotEmpty()) indexRepository.upsertPaths(added)
+        // The content index follows the same changes. A document that was moved
+        // has to be findable in its new place, and one that was deleted has to
+        // stop being found at all — a search that answers with a path that is
+        // gone is worse than one that finds nothing.
+        runCatching {
+            if (removed.isNotEmpty()) contentIndex.removePaths(removed)
+            if (added.isNotEmpty()) contentIndex.refreshPaths(added)
+        }
     }
 
     private companion object {

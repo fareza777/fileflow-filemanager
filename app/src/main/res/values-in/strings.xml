@@ -244,6 +244,14 @@
     <string name="search_index_stale">Indeks terakhir diperbarui %1$s</string>
     <string name="search_rescan">Pindai perangkat sekarang</string>
     <string name="search_live_scan">Mencari di penyimpanan…</string>
+    <string name="search_mode_name">Nama</string>
+    <string name="search_mode_content">Isi file</string>
+    <string name="search_mode_similar">Mirip</string>
+    <string name="search_index_documents">Indeks %1$d dokumen</string>
+    <string name="search_indexing">Membaca dokumen…</string>
+    <string name="search_no_index">Belum ada yang diindeks</string>
+    <string name="search_no_index_hint">Ketuk penghitung di atas untuk membaca dokumen di HP ini. Setelah itu pencarian bisa menelusuri isinya.</string>
+    <string name="search_similar_badge">mirip</string>
 
     <!-- Alat -->
     <string name="tools_title">Alat</string>
@@ -497,6 +505,22 @@
     <string name="metadata_clean">Hapus dan simpan salinan</string>
     <string name="metadata_removed">%1$s metadata dihapus · salinan disimpan sebagai %2$s</string>
     <string name="metadata_unchanged">Tidak ada yang perlu dihapus</string>
+
+    <!-- Versi -->
+    <string name="versions_title">Versi</string>
+    <string name="versions_pick_file">Pilih file untuk diberi versi</string>
+    <string name="versions_pick_folder">Pilih folder</string>
+    <string name="versions_snapshot">Simpan versi</string>
+    <string name="versions_none">Belum ada versi</string>
+    <string name="versions_none_hint">Simpan satu versi sebelum mengedit file, dan layar ini bisa mengembalikannya.</string>
+    <string name="versions_empty_hint">Folder ini tidak punya file untuk diberi versi.</string>
+    <string name="versions_no_versions">belum ada versi</string>
+    <string name="versions_count">%1$d versi</string>
+    <string name="versions_detail">%1$d potongan · %2$s tersimpan · %3$s ukuran file</string>
+    <string name="versions_restore">Kembalikan versi ini</string>
+    <string name="versions_stats">%1$d versi · %2$s tersimpan · %3$s dihemat dari berbagi potongan</string>
+    <string name="tool_versions">Versi file</string>
+    <string name="tool_versions_desc">Mesin waktu yang hanya menyimpan perubahannya</string>
 
     <!-- Analisis -->
     <string name="analyzer_title">Analisis penyimpanan</string>

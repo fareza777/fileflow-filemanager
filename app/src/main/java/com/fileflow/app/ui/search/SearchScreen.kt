@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -65,7 +66,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fileflow.app.R
 import com.fileflow.app.core.model.FileCategory
 import com.fileflow.app.core.util.Formatters
+import com.fileflow.app.core.util.MimeTypes
 import com.fileflow.app.core.util.Paths
+import com.fileflow.app.data.repo.ContentHit
 import com.fileflow.app.domain.toFileItem
 import com.fileflow.app.ui.components.ConfirmDialog
 import com.fileflow.app.ui.components.EmptyState
@@ -176,10 +179,24 @@ fun SearchScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        SearchMode.entries.forEach { mode ->
+                            FilterChip(
+                                selected = state.mode == mode,
+                                onClick = { viewModel.setMode(mode) },
+                                label = { Text(labelForMode(mode)) },
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         // Where this search is looking. Without it, a search
                         // opened from inside a folder is silently scoped there
                         // and its empty result set reads as "the file is gone".
-                        if (state.rootPath.isNotBlank()) {
+                        if (state.rootPath.isNotBlank() && state.mode == SearchMode.NAME) {
                             InputChip(
                                 selected = true,
                                 onClick = { viewModel.clearRoot() },
@@ -205,45 +222,69 @@ fun SearchScreen(
                                     )
                                 },
                             )
-                        } else {
+                        } else if (state.mode == SearchMode.NAME) {
                             AssistChip(
                                 onClick = { },
                                 enabled = false,
                                 label = { Text(stringResource(R.string.search_whole_device)) },
                             )
                         }
-                        AssistChip(
-                            onClick = { viewModel.toggleDeep() },
-                            label = {
-                                Text(
-                                    if (state.deep) stringResource(R.string.search_deep)
-                                    else stringResource(R.string.search_any)
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Filled.FolderOpen,
-                                    contentDescription = null,
-                                    modifier = Modifier.width(16.dp),
-                                )
-                            },
-                        )
-                        AssistChip(
-                            onClick = { onCreateRule(state.query) },
-                            label = { Text(stringResource(R.string.search_save_as_rule)) },
-                        )
+                        if (state.mode == SearchMode.NAME) {
+                            AssistChip(
+                                onClick = { viewModel.toggleDeep() },
+                                label = {
+                                    Text(
+                                        if (state.deep) stringResource(R.string.search_deep)
+                                        else stringResource(R.string.search_any)
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Filled.FolderOpen,
+                                        contentDescription = null,
+                                        modifier = Modifier.width(16.dp),
+                                    )
+                                },
+                            )
+                            AssistChip(
+                                onClick = { onCreateRule(state.query) },
+                                label = { Text(stringResource(R.string.search_save_as_rule)) },
+                            )
+                        } else {
+                            AssistChip(
+                                onClick = viewModel::buildContentIndex,
+                                label = {
+                                    Text(
+                                        if (state.contentIndexing) {
+                                            state.contentProgress ?: stringResource(R.string.search_indexing)
+                                        } else {
+                                            stringResource(R.string.search_index_documents, state.contentIndexed)
+                                        }
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Filled.Description,
+                                        contentDescription = null,
+                                        modifier = Modifier.width(16.dp),
+                                    )
+                                },
+                            )
+                        }
                     }
 
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        FileCategory.entries.forEach { category ->
-                            FilterChip(
-                                selected = category in state.filters.categories,
-                                onClick = { viewModel.toggleCategory(category) },
-                                label = { Text(labelForCategory(category)) },
-                            )
+                    if (state.mode == SearchMode.NAME) {
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FileCategory.entries.forEach { category ->
+                                FilterChip(
+                                    selected = category in state.filters.categories,
+                                    onClick = { viewModel.toggleCategory(category) },
+                                    label = { Text(labelForCategory(category)) },
+                                )
+                            }
                         }
                     }
 
@@ -336,7 +377,51 @@ fun SearchScreen(
                     }
                 }
 
-                if (state.results.isEmpty() && !state.searching) {
+                if (state.mode != SearchMode.NAME) {
+                    if (state.hits.isEmpty() && !state.searching) {
+                        EmptyState(
+                            icon = Icons.Filled.Description,
+                            title = if (state.contentIndexed == 0) {
+                                stringResource(R.string.search_no_index)
+                            } else {
+                                stringResource(R.string.search_empty)
+                            },
+                            body = if (state.contentIndexed == 0) {
+                                stringResource(R.string.search_no_index_hint)
+                            } else {
+                                stringResource(R.string.search_empty_hint)
+                            },
+                        )
+                    } else {
+                        LazyColumn(
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            items(state.hits, key = { it.path }) { hit ->
+                                ContentHitRow(
+                                    hit = hit,
+                                    onClick = {
+                                        val extension = hit.name.substringAfterLast('.', "")
+                                        FileIntents.open(
+                                            context,
+                                            FileItem(
+                                                path = hit.path,
+                                                name = hit.name,
+                                                isDirectory = false,
+                                                sizeBytes = 0L,
+                                                lastModified = 0L,
+                                                extension = extension,
+                                                mimeType = MimeTypes.mimeFor(extension),
+                                                category = MimeTypes.categoryOf(extension),
+                                                isHidden = false,
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+                } else if (state.results.isEmpty() && !state.searching) {
                     EmptyState(
                         icon = Icons.Filled.Search,
                         title = stringResource(R.string.search_empty),
@@ -458,6 +543,64 @@ fun SearchScreen(
                 viewModel.moveSelectedTo(destination)
                 showPicker = false
             },
+        )
+    }
+}
+
+@Composable
+private fun labelForMode(mode: SearchMode): String = when (mode) {
+    SearchMode.NAME -> stringResource(R.string.search_mode_name)
+    SearchMode.CONTENT -> stringResource(R.string.search_mode_content)
+    SearchMode.SIMILAR -> stringResource(R.string.search_mode_similar)
+}
+
+/**
+ * A document that matched inside, with the words around the hit. The snippet is
+ * the whole point: a result that says only which file matched makes the user
+ * open it to find out why.
+ */
+@Composable
+private fun ContentHitRow(
+    hit: ContentHit,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = hit.name,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (hit.fromVector) {
+                Text(
+                    text = stringResource(R.string.search_similar_badge),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
+        }
+        Text(
+            text = hit.snippet,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = Paths.display(hit.path.substringBeforeLast('/')),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

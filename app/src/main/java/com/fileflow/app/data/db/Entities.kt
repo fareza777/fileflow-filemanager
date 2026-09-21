@@ -128,11 +128,50 @@ data class StarredFileEntity(
 )
 
 /**
- * One reversible batch of changes, as summarised for the "recent changes" list.
+ * The text of a file, for searching inside documents rather than names.
  *
- * The journal already recorded every manual operation; nothing ever showed it,
- * so an undo was only reachable from the snackbar that had already disappeared
- * by the time the user realised what they had done.
+ * A plain table rather than an FTS index: Room's FTS entities have to be
+ * created by a migration that matches their generated schema exactly, and a
+ * mismatch is a broken database on update. A body column with a bounded size
+ * keeps the query a scan — a few hundred milliseconds over a few thousand
+ * documents — which is a fair price for a schema that cannot go wrong.
+ */
+@Entity(
+    tableName = "content_index",
+    indices = [Index("modified"), Index("name")],
+)
+data class ContentIndexEntity(
+    @PrimaryKey val path: String,
+    val name: String,
+    val extension: String,
+    val modified: Long,
+    val sizeBytes: Long,
+    /** The readable text, capped when it was indexed. */
+    val body: String,
+    /** Lower-cased body, so the search does not lower-case it on every query. */
+    val folded: String,
+    val indexedAt: Long,
+)
+
+/**
+ * The same document as a vector, for the search that is not substring matching.
+ *
+ * Kept in its own table because it is only ever read by one feature and it is
+ * the bulky one: a document that fails to embed can still be found by its
+ * words, and dropping the vectors should never cost the text index.
+ */
+@Entity(tableName = "content_vectors")
+data class ContentVectorEntity(
+    @PrimaryKey val path: String,
+    val name: String,
+    val dimension: Int,
+    /** Floats, little-endian, normalised. */
+    val vector: ByteArray,
+    val indexedAt: Long,
+)
+
+/**
+ * One reversible batch of changes, as summarised for the "recent changes" list.
  */
 data class JournalGroupSummary(
     val groupId: String,

@@ -424,3 +424,70 @@ interface StarredFileDao {
     @Query("SELECT COUNT(*) FROM starred_files")
     suspend fun count(): Int
 }
+
+@Dao
+interface ContentIndexDao {
+
+    @Query("SELECT COUNT(*) FROM content_index")
+    suspend fun count(): Int
+
+    @Query("SELECT COUNT(*) FROM content_index")
+    fun observeCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM content_vectors")
+    suspend fun vectorCount(): Int
+
+    @Query("SELECT indexedAt FROM content_index ORDER BY indexedAt DESC LIMIT 1")
+    suspend fun indexedAt(): Long?
+
+    @Query("DELETE FROM content_index")
+    suspend fun clear()
+
+    @Query("DELETE FROM content_vectors")
+    suspend fun clearVectors()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entries: List<ContentIndexEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertVectors(entries: List<ContentVectorEntity>)
+
+    @Query("DELETE FROM content_index WHERE path = :path")
+    suspend fun remove(path: String)
+
+    @Query("DELETE FROM content_vectors WHERE path = :path")
+    suspend fun removeVector(path: String)
+
+    /**
+     * The candidate scan. Every term has to appear somewhere in the folded
+     * body; the caller then confirms the same terms and extracts the snippet,
+     * because SQL cannot say where a hit was without an FTS index.
+     */
+    @Query(
+        """
+        SELECT * FROM content_index
+        WHERE (:t1 = '' OR folded LIKE :t1)
+          AND (:t2 = '' OR folded LIKE :t2)
+          AND (:t3 = '' OR folded LIKE :t3)
+          AND (:t4 = '' OR folded LIKE :t4)
+        ORDER BY modified DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun search(
+        t1: String,
+        t2: String,
+        t3: String,
+        t4: String,
+        limit: Int,
+    ): List<ContentIndexEntity>
+
+    @Query("SELECT * FROM content_vectors")
+    suspend fun allVectors(): List<ContentVectorEntity>
+
+    @Query("SELECT * FROM content_index WHERE path = :path")
+    suspend fun entry(path: String): ContentIndexEntity?
+
+    @Query("SELECT * FROM content_index ORDER BY modified DESC LIMIT :limit")
+    suspend fun recent(limit: Int): List<ContentIndexEntity>
+}
