@@ -300,7 +300,7 @@
     <string name="compress_settings">Pengaturan arsip</string>
     <string name="compress_name">Nama arsip</string>
     <string name="compress_format">Format</string>
-    <string name="compress_format_hint">ZIP bisa dibuka di mana saja. TAR.GZ yang biasa dipakai Linux dan server.</string>
+    <string name="compress_format_hint">ZIP bisa dibuka di mana saja. TAR.GZ yang biasa dipakai Linux dan server. FFZ tetap terkompresi tapi masih bisa ditelusuri seketika, sebesar apa pun isinya.</string>
     <string name="compress_level">Kompresi</string>
     <string name="compress_pick_folder">Pilih folder</string>
     <string name="compress_change_folder">Ganti folder</string>
@@ -505,6 +505,31 @@
     <string name="metadata_clean">Hapus dan simpan salinan</string>
     <string name="metadata_removed">%1$s metadata dihapus · salinan disimpan sebagai %2$s</string>
     <string name="metadata_unchanged">Tidak ada yang perlu dihapus</string>
+
+    <!-- Sinkronisasi -->
+    <string name="sync_title">Sinkronkan folder</string>
+    <string name="sync_preview">Pratinjau</string>
+    <string name="sync_run">Sinkronkan</string>
+    <string name="sync_comparing">Membandingkan… %1$d file</string>
+    <string name="sync_prompt">Belum ada yang dibandingkan</string>
+    <string name="sync_prompt_hint">Pilih dua folder, tentukan arahnya, lalu lihat pratinjau apa yang akan berubah sebelum ada yang dipindah.</string>
+    <string name="sync_mode_incremental">Tambahan · file ekstra dibiarkan</string>
+    <string name="sync_mode_mirror">Cermin · hapus yang tidak ada di sumber</string>
+    <string name="sync_mirror_warning">Mode cermin menghapus file di sisi target. Hapusnya masuk ke Sampah FileFlow.</string>
+    <string name="sync_dir_right">Kiri → kanan</string>
+    <string name="sync_dir_left">Kanan → kiri</string>
+    <string name="sync_dir_both">Dua arah</string>
+    <string name="sync_plan">Rencana</string>
+    <string name="sync_plan_bytes">%1$s akan disalin</string>
+    <string name="sync_conflict_note">File yang beda di kedua sisi dibiarkan apa adanya: tanpa catatan sisi mana yang terakhir berubah, menimpanya cuma tebak-tebakan.</string>
+    <string name="sync_to_right">Salin ke kanan · %1$d</string>
+    <string name="sync_to_left">Salin ke kiri · %1$d</string>
+    <string name="sync_deletions">Hapus dari target · %1$d</string>
+    <string name="sync_conflicts">Dibiarkan sebagai konflik · %1$d</string>
+    <string name="sync_confirm_title">Hapus dari sisi target?</string>
+    <string name="sync_confirm_body">%1$d file hanya ada di sisi target. Mode cermin memindahkannya ke Sampah FileFlow, dan masih bisa dikembalikan.</string>
+    <string name="tool_sync">Sinkron folder</string>
+    <string name="tool_sync_desc">Satu atau dua arah, rencananya ditampilkan dulu</string>
 
     <!-- Versi -->
     <string name="versions_title">Versi</string>

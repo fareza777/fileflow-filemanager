@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Splitscreen
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Troubleshoot
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -202,6 +203,13 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
                             title = stringResource(R.string.tool_compare),
                             subtitle = stringResource(R.string.tool_compare_desc),
                             onClick = { onOpenTool("compare") },
+                            accent = scheme.tertiary,
+                        )
+                        ToolRow(
+                            icon = Icons.Filled.Sync,
+                            title = stringResource(R.string.tool_sync),
+                            subtitle = stringResource(R.string.tool_sync_desc),
+                            onClick = { onOpenTool("sync") },
                             accent = scheme.tertiary,
                         )
                         ToolRow(

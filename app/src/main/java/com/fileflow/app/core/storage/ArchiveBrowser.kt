@@ -103,6 +103,19 @@ class ArchiveBrowser @Inject constructor() {
                     )
                 }
 
+            ArchiveFormat.SEEKABLE ->
+                // The index is already in the file, so this is one read of a
+                // few hundred bytes rather than a walk of the archive.
+                SeekableArchive.list(archive).forEach { entry ->
+                    if (!entry.name.startsWith(prefix)) return@forEach
+                    add(
+                        entryPath = entry.name.removePrefix(prefix).trimEnd('/'),
+                        isDirectory = entry.isDirectory,
+                        size = entry.sizeBytes,
+                        modified = entry.modified,
+                    )
+                }
+
             null -> Unit
         }
 
@@ -171,6 +184,9 @@ class ArchiveBrowser @Inject constructor() {
                 val input = GZIPInputStream(BufferedInputStream(FileInputStream(archive), COPY_BUFFER))
                 TarFormat.openEntry(input, match)
             }
+
+            // Two seeks and one inflate, however large the archive is.
+            ArchiveFormat.SEEKABLE -> SeekableArchive.open(archive, entryPath)
 
             null -> throw IllegalArgumentException("Not an archive: ${archive.name}")
         }

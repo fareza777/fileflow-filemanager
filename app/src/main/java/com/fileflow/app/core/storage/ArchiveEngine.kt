@@ -31,6 +31,13 @@ enum class ArchiveFormat(val extension: String, val label: String) {
     ZIP("zip", "ZIP"),
     TAR("tar", "TAR"),
     TAR_GZ("tar.gz", "TAR.GZ"),
+
+    /**
+     * Deflate in independent members with an index, so a member can be read
+     * without decompressing the ones before it. The format this app writes when
+     * the archive is going to be browsed rather than shipped.
+     */
+    SEEKABLE(SeekableArchive.EXTENSION, "FFZ"),
     ;
 
     companion object {
@@ -41,6 +48,7 @@ enum class ArchiveFormat(val extension: String, val label: String) {
                 lower.endsWith(".tar.gz") || lower.endsWith(".tgz") -> TAR_GZ
                 lower.endsWith(".tar") -> TAR
                 lower.endsWith(".zip") -> ZIP
+                lower.endsWith(".${SeekableArchive.EXTENSION}") -> SEEKABLE
                 else -> null
             }
         }
@@ -94,6 +102,19 @@ class ArchiveEngine @Inject constructor() {
             if (files.isEmpty()) error("Nothing to compress")
 
             destination.parentFile?.mkdirs()
+
+            // The seekable format writes its own file, index and all: it needs
+            // to seek back to patch the header, which a stream cannot do.
+            if (format == ArchiveFormat.SEEKABLE) {
+                return@runCatching SeekableArchive.write(
+                    sources = files,
+                    destination = destination,
+                    onProgress = { done, total, name ->
+                        onProgress(ArchiveProgress(done = done, total = total, name = name))
+                    },
+                )
+            }
+
             val partial = File(destination.parentFile, destination.name + PARTIAL_SUFFIX)
             var count = 0
             var bytes = 0L
@@ -141,6 +162,8 @@ class ArchiveEngine @Inject constructor() {
                                 bytes = written.second
                             }
                         }
+
+                        ArchiveFormat.SEEKABLE -> Unit
                     }
                 }
                 if (!partial.renameTo(destination)) {
@@ -265,6 +288,42 @@ class ArchiveEngine @Inject constructor() {
                             ArchiveResult(entries, bytes, destinationDirectory.absolutePath, renamed)
                         }
                     }
+                }
+
+                ArchiveFormat.SEEKABLE -> {
+                    val root = destinationDirectory.canonicalFile
+                    var count = 0
+                    var bytes = 0L
+                    var renamed = 0
+                    val claimed = HashSet<String>()
+                    SeekableArchive.list(archive).forEach { entry ->
+                        currentCoroutineContext().ensureActive()
+                        val resolved = ArchivePaths.resolveSafely(root, entry.name)
+                        if (resolved == null) return@forEach
+                        onProgress(ArchiveProgress(0, 0, entry.name, bytes, 0))
+                        if (entry.isDirectory) {
+                            resolved.mkdirs()
+                            count++
+                            return@forEach
+                        }
+                        val target = ArchivePaths.claim(resolved, claimed)
+                        if (target != resolved) renamed++
+                        target.parentFile?.mkdirs()
+                        SeekableArchive.open(archive, entry.name).use { input ->
+                            FileOutputStream(target).use { output ->
+                                val buffer = ByteArray(COPY_BUFFER)
+                                while (true) {
+                                    currentCoroutineContext().ensureActive()
+                                    val read = input.read(buffer)
+                                    if (read <= 0) break
+                                    output.write(buffer, 0, read)
+                                    bytes += read
+                                }
+                            }
+                        }
+                        count++
+                    }
+                    ArchiveResult(count, bytes, destinationDirectory.absolutePath, renamed)
                 }
             }
         }

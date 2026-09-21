@@ -98,6 +98,7 @@ import com.fileflow.app.ui.search.SearchScreen
 import com.fileflow.app.ui.settings.SettingsScreen
 import com.fileflow.app.ui.shield.ShieldScreen
 import com.fileflow.app.ui.starred.StarredScreen
+import com.fileflow.app.ui.sync.SyncScreen
 import com.fileflow.app.ui.tools.ToolsScreen
 import com.fileflow.app.ui.transfer.TransferScreen
 import com.fileflow.app.ui.trash.TrashScreen
@@ -151,6 +152,7 @@ private object Routes {
     const val SHIELD = "shield"
     const val APPS = "apps"
     const val VERSIONS = "versions"
+    const val SYNC = "sync"
 }
 
 @Composable
@@ -237,6 +239,7 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
             "shield" -> navController.navigate(Routes.SHIELD)
             "apps" -> navController.navigate(Routes.APPS)
             "versions" -> navController.navigate(Routes.VERSIONS)
+            "sync" -> navController.navigate(Routes.SYNC)
             else -> Unit
         }
     }
@@ -496,6 +499,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
 
                 composable(Routes.VERSIONS) {
                     VersionsScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.SYNC) {
+                    SyncScreen(onBack = { navController.popBackStack() })
                 }
 
                 composable(

@@ -317,7 +317,7 @@
     <string name="compress_settings">Archive settings</string>
     <string name="compress_name">Archive name</string>
     <string name="compress_format">Format</string>
-    <string name="compress_format_hint">ZIP opens anywhere. TAR.GZ is what Linux and servers expect.</string>
+    <string name="compress_format_hint">ZIP opens anywhere. TAR.GZ is what Linux and servers expect. FFZ stays compressed and can still be browsed instantly, however large it gets.</string>
     <string name="compress_level">Compression</string>
     <string name="compress_pick_folder">Choose a folder</string>
     <string name="compress_change_folder">Change folder</string>
@@ -522,6 +522,31 @@
     <string name="metadata_clean">Remove and save a copy</string>
     <string name="metadata_removed">Removed %1$s of metadata · copy saved as %2$s</string>
     <string name="metadata_unchanged">Nothing to remove</string>
+
+    <!-- Sync -->
+    <string name="sync_title">Sync folders</string>
+    <string name="sync_preview">Preview</string>
+    <string name="sync_run">Sync</string>
+    <string name="sync_comparing">Comparing… %1$d files</string>
+    <string name="sync_prompt">Nothing compared yet</string>
+    <string name="sync_prompt_hint">Pick two folders, choose a direction, then preview what would change before anything moves.</string>
+    <string name="sync_mode_incremental">Incremental · leaves extra files alone</string>
+    <string name="sync_mode_mirror">Mirror · deletes what the source does not have</string>
+    <string name="sync_mirror_warning">Mirror deletes files from the target. The deletions go to FileFlow Trash.</string>
+    <string name="sync_dir_right">Left → right</string>
+    <string name="sync_dir_left">Right → left</string>
+    <string name="sync_dir_both">Both ways</string>
+    <string name="sync_plan">The plan</string>
+    <string name="sync_plan_bytes">%1$s to copy</string>
+    <string name="sync_conflict_note">Files that differ on both sides are kept as they are: without a record of which side changed last, overwriting one is a coin toss.</string>
+    <string name="sync_to_right">Copy to the right · %1$d</string>
+    <string name="sync_to_left">Copy to the left · %1$d</string>
+    <string name="sync_deletions">Delete from the target · %1$d</string>
+    <string name="sync_conflicts">Kept as conflicts · %1$d</string>
+    <string name="sync_confirm_title">Delete from the target?</string>
+    <string name="sync_confirm_body">%1$d files exist only on the target side. Mirroring moves them to FileFlow Trash, where they can be restored.</string>
+    <string name="tool_sync">Sync folders</string>
+    <string name="tool_sync_desc">One-way or two-way, with the plan shown first</string>
 
     <!-- Versions -->
     <string name="versions_title">Versions</string>
