@@ -84,8 +84,9 @@ import com.fileflow.app.ui.util.UiMessage
 import com.fileflow.app.ui.util.showMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -449,7 +450,7 @@ fun TransferScreen(
                             server.events.take(8).forEach { event ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = TIME_FORMAT.format(Date(event.at)),
+                                        text = clockTime(event.at),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -756,4 +757,12 @@ private fun copyToClipboard(context: Context, text: String) {
     clipboard.setPrimaryClip(ClipData.newPlainText("FileFlow", text))
 }
 
-private val TIME_FORMAT = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+/**
+ * A clock time, built where it is used rather than kept in a field: a cached
+ * formatter keeps the locale it was created with, and a `SimpleDateFormat` is
+ * not thread-safe either.
+ */
+private fun clockTime(millis: Long): String =
+    DateTimeFormatter.ofPattern("HH:mm:ss", Locale.getDefault())
+        .withZone(ZoneId.systemDefault())
+        .format(Instant.ofEpochMilli(millis))

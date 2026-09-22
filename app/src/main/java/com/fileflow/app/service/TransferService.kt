@@ -126,7 +126,6 @@ class TransferService : Service() {
     }
 
     private fun ensureChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = getSystemService(NotificationManager::class.java) ?: return
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         manager.createNotificationChannel(
@@ -153,13 +152,9 @@ class TransferService : Service() {
             val intent = Intent(context, TransferService::class.java)
                 .putExtra(EXTRA_ROOT, root)
                 .putExtra(EXTRA_PORT, port)
-            runCatching {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(intent)
-                } else {
-                    context.startService(intent)
-                }
-            }
+            // The app's floor is Oreo, so the foreground entry point is always
+            // the right one.
+            runCatching { context.startForegroundService(intent) }
         }
 
         fun stop(context: Context) {

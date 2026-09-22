@@ -3,7 +3,6 @@ package com.fileflow.app.core.privileged
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
-import java.util.concurrent.TimeUnit
 
 /**
  * The half of privileged access that runs with the shell's uid.
@@ -31,23 +30,24 @@ class PrivilegedUserService : Service() {
          * Runs one command and returns everything it printed, with the exit
          * code on the first line so the caller can tell "nothing to say" from
          * "it worked".
+         *
+         * stderr is folded into stdout here: this side runs as the shell, and
+         * the app has no use for the distinction — a command that failed prints
+         * why on whichever stream it likes.
          */
         override fun runCommand(command: String, timeoutSeconds: Int): String {
-            val timeout = timeoutSeconds.coerceIn(1, MAX_TIMEOUT_SECONDS)
-            return runCatching {
-                val process = ProcessBuilder("sh", "-c", command)
+            val timeout = timeoutSeconds.coerceIn(1, MAX_TIMEOUT_SECONDS).toLong()
+            val process = runCatching {
+                ProcessBuilder("sh", "-c", command)
                     .redirectErrorStream(true)
                     .start()
-                val finished = process.waitFor(timeout.toLong(), TimeUnit.SECONDS)
-                if (!finished) {
-                    process.destroy()
-                    return@runCatching "1\nThe command timed out"
-                }
-                val output = process.inputStream.bufferedReader().use { it.readText() }
-                "${process.exitValue()}\n$output"
             }.getOrElse { error ->
-                "1\n${error.message ?: "the command could not start"}"
+                return "1\n${error.message ?: "the command could not start"}"
             }
+            // Draining while the process runs, not after: output larger than a
+            // pipe buffer would otherwise deadlock this call until the timeout.
+            val result = ShellProcess.drain(process, timeout)
+            return "${result.code}\n${if (result.ok) result.stdout else result.stdout + result.stderr}"
         }
     }
 

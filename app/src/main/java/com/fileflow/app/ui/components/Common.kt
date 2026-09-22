@@ -202,8 +202,8 @@ private fun EmptyArt(
 fun EmptyState(
     icon: ImageVector,
     title: String,
-    body: String? = null,
     modifier: Modifier = Modifier,
+    body: String? = null,
     action: (@Composable () -> Unit)? = null,
 ) {
     Column(

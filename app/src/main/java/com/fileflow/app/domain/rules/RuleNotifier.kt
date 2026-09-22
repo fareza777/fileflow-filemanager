@@ -29,7 +29,7 @@ class RuleNotifier @Inject constructor(
 ) {
 
     fun ensureChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        // Channels arrived in Oreo, and the app's floor is Oreo: no check needed.
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(

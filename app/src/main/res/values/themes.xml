@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.FileFlow" parent="android:Theme.Material.NoActionBar">
+    <!-- The last two attributes arrived in API 27; below that the platform
+         ignores them rather than failing, which is exactly what a phone on 26
+         should do — hence targetApi rather than a duplicated -v27 theme. -->
+    <style name="Theme.FileFlow" parent="android:Theme.Material.NoActionBar" tools:targetApi="o_mr1">
         <item name="android:windowBackground">@color/splash_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>

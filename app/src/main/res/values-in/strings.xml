@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">FileFlow</string>
 
     <!-- Navigasi -->
     <string name="nav_home">Beranda</string>
@@ -14,8 +13,6 @@
     <string name="perm_title">Izinkan akses semua file</string>
     <string name="perm_body">FileFlow butuh izin \'Akses semua file\' untuk menjelajah, merapikan, dan membersihkan penyimpananmu. Semua tetap di HP ini — tidak ada yang diunggah.</string>
     <string name="perm_btn_grant">Beri izin</string>
-    <string name="perm_btn_settings">Buka setelan aplikasi</string>
-    <string name="perm_denied">Izin masih diblokir. Tanpa izin ini FileFlow hanya bisa melihat folder miliknya sendiri.</string>
     <string name="perm_why_title">Untuk apa izin ini dipakai</string>
     <string name="perm_why_1">Menjelajah dan mencari di semua folder di HP dan kartu SD</string>
     <string name="perm_why_2">Memindah, menyalin, mengganti nama, dan menghapus file yang kamu pilih</string>
@@ -32,9 +29,6 @@
     <string name="home_used_of">%1$s terpakai dari %2$s</string>
     <string name="home_free">%1$s tersisa</string>
     <string name="home_insights">Ringkasan</string>
-    <string name="home_insight_dupes">%1$d grup duplikat · %2$s bisa dihemat</string>
-    <string name="home_insight_large">%1$d file di atas %2$s</string>
-    <string name="home_insight_junk">%1$s sampah dan file sisa</string>
     <string name="home_insight_clean">Penyimpananmu sudah rapi. Mantap.</string>
     <string name="home_recent">File terbaru</string>
     <string name="home_view_all">Lihat semua</string>
@@ -55,26 +49,18 @@
     <string name="browser_new_folder">Folder baru</string>
     <string name="browser_new_folder_hint">Nama folder</string>
     <string name="browser_name_hint">Nama</string>
-    <string name="browser_sort">Urutkan</string>
     <string name="browser_sort_name">Nama</string>
     <string name="browser_sort_size">Ukuran</string>
     <string name="browser_sort_date">Tanggal diubah</string>
     <string name="browser_sort_type">Jenis</string>
-    <string name="browser_sort_ascending">Naik</string>
-    <string name="browser_sort_descending">Turun</string>
     <string name="browser_show_hidden">Tampilkan file tersembunyi</string>
-    <string name="browser_item_count">%1$d item</string>
     <string name="browser_selected_count">%1$d dipilih</string>
-    <string name="browser_folder_info">%1$d folder · %2$d file · %3$s</string>
-    <string name="browser_search_folder">Cari di folder ini</string>
-    <string name="browser_storage_details">Detail penyimpanan</string>
     <string name="browser_add_to_places">Tambah ke favorit</string>
     <string name="browser_filter_empty">Tidak ada file jenis ini di sini</string>
     <string name="browser_in_archive">Di dalam %1$s</string>
     <string name="restricted_folder_body">Android memblokir semua aplikasi dari folder ini, jadi FileFlow tidak bisa menampilkannya. Ini bukan masalah izin.</string>
     <string name="clipboard_to_move">%1$d akan dipindah</string>
     <string name="clipboard_to_copy">%1$d akan disalin</string>
-    <string name="browser_permission_lost">Akses file dicabut. Beri izin lagi untuk melanjutkan.</string>
 
     <!-- Kalender -->
     <string name="calendar_title">Kalender</string>
@@ -106,7 +92,6 @@
     <string name="settings_index_empty">Belum dibuat</string>
     <string name="settings_index_rebuild">Buat ulang sekarang</string>
     <string name="settings_index_running">Mengindeks… %1$d file</string>
-    <string name="settings_index_done">%1$d file terindeks</string>
 
     <!-- Perubahan terakhir -->
     <string name="changes_title">Perubahan terakhir</string>
@@ -138,7 +123,6 @@
     <string name="cd_undo">Batalkan</string>
     <string name="cd_open_folder">Lihat di folder</string>
     <string name="cd_unstar">Hapus bintang</string>
-    <string name="cd_play">Jalankan aturan ini</string>
 
     <!-- Penampil -->
     <string name="viewer_loading">Memuat…</string>
@@ -171,8 +155,6 @@
     <string name="action_select_all">Pilih semua</string>
     <string name="action_deselect_all">Hapus pilihan</string>
     <string name="action_cancel">Batal</string>
-    <string name="action_close">Tutup</string>
-    <string name="action_ok">OK</string>
     <string name="action_apply">Terapkan</string>
     <string name="action_save">Simpan</string>
     <string name="action_add">Tambah</string>
@@ -180,7 +162,6 @@
     <string name="action_undo">Batalkan</string>
     <string name="action_retry">Coba lagi</string>
     <string name="action_done">Selesai</string>
-    <string name="action_continue">Lanjutkan</string>
     <string name="action_paste">Tempel</string>
     <string name="action_show_less">Sembunyikan</string>
     <string name="action_show_more">Tampilkan semua</string>
@@ -192,28 +173,14 @@
     <string name="op_renaming">Mengganti nama…</string>
     <string name="op_archiving">Memproses arsip…</string>
     <string name="op_restoring">Memulihkan…</string>
-    <string name="op_progress">%1$d dari %2$d</string>
-    <string name="op_done_copied">%1$d item disalin</string>
-    <string name="op_done_moved">%1$d item dipindah</string>
-    <string name="op_done_deleted">%1$d item masuk sampah</string>
-    <string name="op_done_renamed">%1$d item diganti nama</string>
-    <string name="op_partial">%1$d berhasil, %2$d gagal</string>
-    <string name="op_failed">Proses gagal: %1$s</string>
-    <string name="op_cancelled">Dibatalkan</string>
-    <string name="op_undo_action">Batalkan</string>
-    <string name="op_undone">Perubahan dikembalikan</string>
-    <string name="op_undo_failed">Tidak semua bisa dibatalkan: %1$s</string>
     <string name="op_cancel">Stop</string>
 
     <!-- Dialog hapus / konflik -->
-    <string name="delete_title">Hapus %1$d item?</string>
     <string name="delete_body">File masuk ke Sampah FileFlow dulu, jadi masih bisa dikembalikan. Sampah dikosongkan setelah %1$d hari.</string>
     <string name="delete_body_permanent">Ini tidak bisa dibatalkan.</string>
     <string name="delete_move_to_trash">Masukkan ke sampah</string>
     <string name="delete_forever">Hapus permanen</string>
-    <string name="delete_ask_permanent">Selalu hapus permanen (lewati sampah)</string>
     <string name="conflict_title">Sudah ada</string>
-    <string name="conflict_body">%1$s sudah ada di folder tujuan.</string>
     <string name="conflict_rename">Simpan keduanya</string>
     <string name="conflict_overwrite">Timpa</string>
     <string name="conflict_skip">Lewati</string>
@@ -222,23 +189,14 @@
     <!-- Pencarian -->
     <string name="search_title">Cari</string>
     <string name="search_hint">Cari file dan folder</string>
-    <string name="search_scope">Cari di</string>
-    <string name="search_filters">Filter</string>
-    <string name="search_type">Jenis</string>
-    <string name="search_size">Ukuran</string>
     <string name="search_date">Tanggal diubah</string>
-    <string name="search_min">Min</string>
-    <string name="search_max">Maks</string>
     <string name="search_any">Semua</string>
-    <string name="search_results">%1$d hasil</string>
     <string name="search_scanning">Memindai… %1$d ditemukan</string>
     <string name="search_empty">Tidak ada hasil</string>
     <string name="search_empty_hint">Coba kata yang lebih pendek, atau hapus filternya.</string>
     <string name="search_save_as_rule">Buat aturan dari pencarian ini</string>
-    <string name="search_stopped">Pencarian dihentikan</string>
     <string name="search_sort_relevance">Paling cocok</string>
     <string name="search_deep">Termasuk subfolder</string>
-    <string name="search_in_folder">Di %1$s</string>
     <string name="search_whole_device">Seluruh perangkat</string>
     <string name="search_scope_all">Cari di semua lokasi</string>
     <string name="search_index_stale">Indeks terakhir diperbarui %1$s</string>
@@ -517,8 +475,6 @@
     <string name="metadata_none">Tidak ada metadata di file ini.</string>
     <string name="metadata_location">File ini menyimpan lokasi pengambilannya.</string>
     <string name="metadata_clean">Hapus dan simpan salinan</string>
-    <string name="metadata_removed">%1$s metadata dihapus · salinan disimpan sebagai %2$s</string>
-    <string name="metadata_unchanged">Tidak ada yang perlu dihapus</string>
 
     <!-- Sinkronisasi -->
     <string name="sync_title">Sinkronkan folder</string>
@@ -592,13 +548,11 @@
     <string name="analyzer_total">Total dipindai</string>
     <string name="analyzer_files">%1$d file</string>
     <string name="analyzer_none">Belum ada yang bisa ditampilkan</string>
-    <string name="analyzer_scan_root">Memindai %1$s</string>
     <string name="analyzer_empty_hint">Lihat apa yang menghabiskan ruang, folder per folder.</string>
     <string name="analyzer_scan">Analisis penyimpanan</string>
     <string name="analyzer_root">Penyimpanan internal</string>
     <string name="analyzer_largest">File terbesar</string>
     <string name="analyzer_browse">Buka di Files</string>
-    <string name="analyzer_showing">Menampilkan %1$s dari %2$s</string>
     <string name="analyzer_unknown_size">Ukuran belum diketahui, jalankan pindai lagi</string>
     <string name="analyzer_tap_hint">Ketuk folder untuk melihat isinya.</string>
     <string name="junk_clean_short">Bersihkan</string>
@@ -621,14 +575,11 @@
     <string name="dup_none_hint">Semua file di penyimpanan ini unik. Tidak ada yang perlu dibersihkan.</string>
     <string name="dup_auto_select">Pilih salinan otomatis</string>
     <string name="dup_keep">Simpan</string>
-    <string name="dup_copy_label">Salinan</string>
-    <string name="dup_selected_summary">%1$d file dipilih · %2$s</string>
     <string name="dup_delete">Hapus yang dipilih</string>
     <string name="dup_keep_best_note">Menyimpan file paling lama di tiap grup, sisanya dipilih.</string>
 
     <!-- File besar -->
     <string name="large_title">File besar</string>
-    <string name="large_threshold">Tampilkan file lebih besar dari</string>
     <string name="large_scanning">Mencari file besar…</string>
     <string name="large_none">Tidak ada di atas %1$s</string>
     <string name="large_none_hint">Tidak ada file jumbo di penyimpananmu. Bagus.</string>
@@ -646,7 +597,6 @@
     <string name="junk_thumbnails">Cache thumbnail</string>
     <string name="junk_none">Tidak ada sampah</string>
     <string name="junk_none_hint">Penyimpananmu rapi. Tidak ada yang perlu dibersihkan.</string>
-    <string name="junk_clean">Bersihkan %1$d item</string>
     <string name="junk_safe_note">Semua yang dipilih masuk ke Sampah dulu, bukan langsung hilang.</string>
 
     <!-- Ganti nama pintar -->
@@ -665,11 +615,7 @@
     <string name="rename_none">Nama file sudah bagus</string>
     <string name="rename_none_hint">Tidak ada nama sampah, nama aneh, atau duplikat yang perlu dibereskan.</string>
     <string name="rename_old">Sekarang</string>
-    <string name="rename_new">Menjadi</string>
     <string name="rename_apply">Ganti nama %1$d file</string>
-    <string name="rename_confidence_high">Yakin</string>
-    <string name="rename_confidence_medium">Kemungkinan</string>
-    <string name="rename_confidence_low">Belum pasti</string>
     <string name="rename_reason_junk">Menghapus kata pengisi</string>
     <string name="rename_reason_duplicate_suffix">Membereskan duplikat gaya (1)</string>
     <string name="rename_reason_spacing">Merapikan spasi dan simbol</string>
@@ -677,17 +623,14 @@
     <string name="rename_reason_extension">Memperbaiki ekstensi file</string>
     <string name="rename_reason_hash">Nama acak diganti lebih jelas</string>
     <string name="rename_reason_case">Gaya penamaan diterapkan</string>
-    <string name="rename_reason_folder">Menambah nama folder asal</string>
     <string name="rename_reason_uniqueness">Membuat nama jadi unik</string>
 
     <!-- Aturan -->
     <string name="rules_title">Aturan Otomatis</string>
-    <string name="rules_intro">Aturan memantau folder pilihanmu dan memindahkan file ke tempat yang benar — sesuai jadwal, atau saat kamu tekan jalan.</string>
     <string name="rules_empty">Belum ada aturan</string>
     <string name="rules_empty_hint">Mulai dari template di bawah, atau buat sendiri dari nol.</string>
     <string name="rules_new">Aturan baru</string>
     <string name="rules_templates">Template</string>
-    <string name="rules_use_template">Pakai template</string>
     <string name="template_whatsapp_title">PDF WhatsApp → Kerja</string>
     <string name="template_whatsapp_desc">Tiap malam, PDF dari WhatsApp pindah ke Documents/Work.</string>
     <string name="template_screenshot_title">Screenshot lebih dari 90 hari → Arsip</string>
@@ -703,13 +646,8 @@
     <string name="rules_run_now">Jalankan</string>
     <string name="rules_preview">Pratinjau</string>
     <string name="rules_history">Riwayat</string>
-    <string name="rules_matched_hint">Terakhir cocok %1$d file</string>
     <string name="rules_delete_title">Hapus aturan ini?</string>
     <string name="rules_delete_body">File yang sudah dipindahkan tetap di tempatnya. Hanya aturannya yang dihapus.</string>
-    <string name="rules_schedule_summary_off">Hanya manual</string>
-    <string name="rules_schedule_summary_daily">Setiap hari %1$s</string>
-    <string name="rules_schedule_summary_weekly">%1$s pukul %2$s</string>
-    <string name="rules_schedule_summary_interval">Setiap %1$d jam</string>
     <string name="rules_enable_notifications">Beri tahu saat aturan jalan</string>
 
     <!-- Editor aturan -->
@@ -720,11 +658,9 @@
     <string name="rule_when">Saat file</string>
     <string name="rule_then">Maka</string>
     <string name="rule_scope">Di mana dicari</string>
-    <string name="rule_scope_hint">Pilih folder yang dipantau</string>
     <string name="rule_scope_all">Seluruh penyimpanan</string>
     <string name="rule_add_folder">Tambah folder</string>
     <string name="rule_add_condition">Tambah kondisi</string>
-    <string name="rule_match_mode">Cocok</string>
     <string name="rule_match_all">Semua kondisi</string>
     <string name="rule_match_any">Salah satu kondisi</string>
     <string name="rule_recursive">Termasuk subfolder</string>
@@ -735,7 +671,6 @@
     <string name="rule_schedule_daily">Harian</string>
     <string name="rule_schedule_weekly">Mingguan</string>
     <string name="rule_time">Jam</string>
-    <string name="rule_days">Hari</string>
     <string name="rule_wifi_only">Hanya saat Wi-Fi</string>
     <string name="rule_charging_only">Hanya saat mengisi daya</string>
     <string name="rule_action">Aksi</string>
@@ -765,9 +700,7 @@
     <string name="cond_age">Umur</string>
     <string name="cond_age_older">Lebih lama dari</string>
     <string name="cond_age_newer">Lebih baru dari</string>
-    <string name="cond_age_days">hari</string>
     <string name="cond_negate">Balik kondisi ini</string>
-    <string name="cond_remove">Hapus kondisi</string>
     <string name="cond_value_hint">Nilai</string>
 
     <!-- Aksi -->
@@ -791,7 +724,6 @@
     <string name="preview_running">Bekerja… %1$d dari %2$d</string>
     <string name="preview_result">%1$d berhasil, %2$d gagal</string>
     <string name="preview_result_ok">Selesai — %1$d file diperbarui</string>
-    <string name="preview_by_folder">%1$d file dari %2$s</string>
 
     <!-- Riwayat -->
     <string name="history_title">Riwayat aturan</string>
@@ -803,8 +735,6 @@
     <string name="history_status_undone">Dibatalkan</string>
     <string name="history_status_cancelled">Dihentikan</string>
     <string name="history_detail">%1$d file · %2$s · %3$s</string>
-    <string name="history_undo_run">Batalkan proses ini</string>
-    <string name="history_undo_confirm">Kembalikan semua file dari proses ini ke tempat asalnya?</string>
     <string name="history_undo_partial">%1$d file dikembalikan, %2$d gagal</string>
     <string name="history_manual">Manual</string>
     <string name="history_scheduled">Terjadwal</string>
@@ -815,14 +745,9 @@
     <string name="trash_title">Sampah</string>
     <string name="trash_empty">Sampah kosong</string>
     <string name="trash_empty_hint">File yang dihapus menunggu di sini sebelum benar-benar hilang.</string>
-    <string name="trash_size">%1$d item · %2$s</string>
-    <string name="trash_restore">Kembalikan</string>
     <string name="trash_delete_forever">Hapus permanen</string>
     <string name="trash_empty_now">Kosongkan sampah</string>
     <string name="trash_empty_confirm">Hapus permanen %1$d item? Ini tidak bisa dibatalkan.</string>
-    <string name="trash_restored">%1$d item dikembalikan</string>
-    <string name="trash_restore_failed">%1$d item gagal dikembalikan</string>
-    <string name="trash_expires">Terhapus %1$s</string>
 
     <!-- Setelan -->
     <string name="settings_title">Setelan</string>
@@ -843,7 +768,6 @@
     <string name="settings_show_hidden">Tampilkan file tersembunyi</string>
     <string name="settings_show_hidden_desc">File yang diawali titik</string>
     <string name="settings_thumbnails">Thumbnail gambar</string>
-    <string name="settings_sort_default">Urutan bawaan</string>
     <string name="settings_safety">Keamanan</string>
     <string name="settings_confirm_delete">Tanya dulu sebelum menghapus</string>
     <string name="settings_preview_required">Selalu pratinjau aturan sebelum jalan</string>
@@ -885,24 +809,10 @@
     <!-- Lain-lain -->
     <string name="common_loading">Memuat…</string>
     <string name="common_error">Ada yang salah</string>
-    <string name="common_unknown">Tidak diketahui</string>
     <string name="common_none">Tidak ada</string>
     <string name="common_files">file</string>
     <string name="common_folder">Folder</string>
-    <string name="common_folders">folder</string>
     <string name="common_items">item</string>
-    <string name="common_today">Hari ini</string>
-    <string name="common_yesterday">Kemarin</string>
-    <string name="common_just_now">baru saja</string>
-    <string name="common_minutes_ago">%1$d menit lalu</string>
-    <string name="common_hours_ago">%1$d jam lalu</string>
-    <string name="common_days_ago">%1$d hari lalu</string>
-    <string name="common_modified">Diubah %1$s</string>
-    <string name="common_modified_label">Diubah</string>
-    <string name="common_size">Ukuran</string>
-    <string name="common_path">Lokasi</string>
-    <string name="common_type">Jenis</string>
-    <string name="common_contains">Berisi</string>
     <string name="common_forbidden">Folder ini dilindungi Android</string>
     <string name="common_empty_folder">Folder kosong</string>
     <string name="message_file_missing">File-nya sudah tidak ada</string>
@@ -914,10 +824,6 @@
         <item quantity="other">%1$d file</item>
     </plurals>
 
-    <plurals name="folder_count">
-        <item quantity="one">%1$d folder</item>
-        <item quantity="other">%1$d folder</item>
-    </plurals>
 
     <plurals name="item_count">
         <item quantity="one">%1$d item</item>
@@ -934,10 +840,6 @@
         <item quantity="other">%1$d dari %2$d item sudah ada di folder tujuan.</item>
     </plurals>
 
-    <plurals name="junk_clean">
-        <item quantity="one">Bersihkan %1$d item</item>
-        <item quantity="other">Bersihkan %1$d item</item>
-    </plurals>
 
     <plurals name="items_and_size">
         <item quantity="one">%1$d item · %2$s</item>
@@ -949,32 +851,18 @@
         <item quantity="other">%1$d hasil</item>
     </plurals>
 
-    <plurals name="bytes_found">
-        <item quantity="one">%1$d ditemukan</item>
-        <item quantity="other">%1$d ditemukan</item>
-    </plurals>
 
     <!-- Yang belum sempat diterjemahkan -->
-    <string name="cd_collapse">Tampilkan lebih sedikit</string>
-    <string name="cd_expand">Tampilkan lebih banyak</string>
-    <string name="cd_deselect_all">Kosongkan pilihan</string>
     <string name="cd_history">Riwayat jalannya aturan</string>
     <string name="cd_next_month">Bulan berikutnya</string>
     <string name="cd_previous_month">Bulan sebelumnya</string>
     <string name="cd_open_with">Buka dengan aplikasi lain</string>
-    <string name="cd_view_calendar">Lihat file per tanggal</string>
-    <string name="cd_view_list">Ganti ke tampilan daftar</string>
-    <string name="error_delete_failed">Sebagian item tidak bisa dihapus</string>
     <string name="error_index_failed">Gagal membangun indeks</string>
-    <string name="error_index_failed_title">Indeks gagal dibuat</string>
-    <string name="error_load_failed">Layar ini gagal dimuat</string>
     <string name="outcome_all_reversed">Semua perubahan dibatalkan</string>
     <string name="outcome_nothing_changed">Tidak ada yang berubah</string>
-    <string name="outcome_undo">Batalkan</string>
     <string name="outcome_with_failures">%1$s · %2$s</string>
     <string name="rules_unreadable">Tidak dijalankan: pengaturan aturan ini tidak bisa dibaca. Buka, periksa, lalu simpan ulang.</string>
     <string name="state_loading">Sebentar…</string>
-    <string name="state_scanning">Menelusuri file-file kamu…</string>
     <string name="trash_emptied">Sampah dikosongkan</string>
     <string name="trash_nothing_to_empty">Tidak ada yang perlu dikosongkan</string>
 
@@ -1023,9 +911,5 @@
         <item quantity="other">%1$d dari %2$d dibatalkan</item>
     </plurals>
 
-    <plurals name="outcome_skipped">
-        <item quantity="one">%1$d dilewati</item>
-        <item quantity="other">%1$d dilewati</item>
-    </plurals>
 
 </resources>

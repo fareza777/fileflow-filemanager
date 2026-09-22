@@ -24,8 +24,9 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.URLDecoder
 import java.net.URLEncoder
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.Semaphore
 import javax.inject.Inject
@@ -326,6 +327,12 @@ class HttpFileServer @Inject constructor(
             .sortedWith(compareByDescending<File> { it.isDirectory }.thenBy { it.name.lowercase() })
 
         val html = buildString {
+            // Built per listing rather than kept in a field: SimpleDateFormat is
+            // neither thread-safe nor locale-current, and this runs on the
+            // server's request threads.
+            val dateFormat = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.getDefault())
+                .withZone(ZoneId.systemDefault())
+
             append(pageHead(current))
             append("<main><section class=\"card\">")
             append("<form id=\"drop\" class=\"drop\">")
@@ -348,7 +355,7 @@ class HttpFileServer @Inject constructor(
             entries.forEach { entry ->
                 val encoded = urlEncode(entry.absolutePath)
                 val size = if (entry.isDirectory) "" else Formatters.bytes(entry.length())
-                val date = DATE_FORMAT.format(Date(entry.lastModified()))
+                val date = dateFormat.format(Instant.ofEpochMilli(entry.lastModified()))
                 val pick = "<input type=\"checkbox\" class=\"pick\" value=\"$encoded\">"
                 if (entry.isDirectory) {
                     append(
@@ -1138,8 +1145,6 @@ class HttpFileServer @Inject constructor(
         private const val COOKIE_NAME = "ff_link"
 
         private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic", "heif")
-
-        private val DATE_FORMAT = SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault())
 
         /**
          * The page the browser gets. Written by hand and inlined: a transferred

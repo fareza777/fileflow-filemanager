@@ -49,8 +49,12 @@ class FileIndexScheduler @Inject constructor(
 ) {
 
     fun ensureScheduled() {
+        // Charging, but not idle: WorkManager can starve a job that needs both
+        // for a long time on a phone that is rarely left alone while plugged in,
+        // and an index that never rebuilds is a search that misses files. Being
+        // plugged in is the part worth keeping — a full walk of storage should
+        // not run on battery.
         val constraints = Constraints.Builder()
-            .setRequiresDeviceIdle(true)
             .setRequiresCharging(true)
             .build()
         val request = PeriodicWorkRequestBuilder<FileIndexWorker>(1, TimeUnit.DAYS)

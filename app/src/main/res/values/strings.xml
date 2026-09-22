@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">FileFlow</string>
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
@@ -14,8 +13,6 @@
     <string name="perm_title">Allow full file access</string>
     <string name="perm_body">FileFlow needs the \'All files access\' permission to browse, organise and clean up your storage. Everything stays on this device — nothing is uploaded.</string>
     <string name="perm_btn_grant">Grant access</string>
-    <string name="perm_btn_settings">Open app settings</string>
-    <string name="perm_denied">Access is still blocked. Without it FileFlow can only see its own folder.</string>
     <string name="perm_why_title">What FileFlow uses it for</string>
     <string name="perm_why_1">Browse and search every folder on your device and SD card</string>
     <string name="perm_why_2">Move, copy, rename and delete files you pick</string>
@@ -36,9 +33,6 @@
     <string name="home_used_of">%1$s used of %2$s</string>
     <string name="home_free">%1$s free</string>
     <string name="home_insights">Insights</string>
-    <string name="home_insight_dupes">%1$d duplicate groups · %2$s recoverable</string>
-    <string name="home_insight_large">%1$d files over %2$s</string>
-    <string name="home_insight_junk">%1$s of junk and leftovers</string>
     <string name="home_insight_clean">Storage looks clean. Nice.</string>
     <string name="home_recent">Recent files</string>
     <string name="home_view_all">View all</string>
@@ -59,26 +53,18 @@
     <string name="browser_new_folder">New folder</string>
     <string name="browser_new_folder_hint">Folder name</string>
     <string name="browser_name_hint">Name</string>
-    <string name="browser_sort">Sort</string>
     <string name="browser_sort_name">Name</string>
     <string name="browser_sort_size">Size</string>
     <string name="browser_sort_date">Modified</string>
     <string name="browser_sort_type">Type</string>
-    <string name="browser_sort_ascending">Ascending</string>
-    <string name="browser_sort_descending">Descending</string>
     <string name="browser_show_hidden">Show hidden files</string>
-    <string name="browser_item_count">%1$d items</string>
     <string name="browser_selected_count">%1$d selected</string>
-    <string name="browser_folder_info">%1$d folders · %2$d files · %3$s</string>
-    <string name="browser_search_folder">Search this folder</string>
-    <string name="browser_storage_details">Storage details</string>
     <string name="browser_add_to_places">Add to places</string>
     <string name="browser_filter_empty">Nothing of that type here</string>
     <string name="browser_in_archive">In %1$s</string>
     <string name="restricted_folder_body">Android blocks every app from reading this folder, so FileFlow cannot show it. It is not a permission problem.</string>
     <string name="clipboard_to_move">%1$d to move</string>
     <string name="clipboard_to_copy">%1$d to copy</string>
-    <string name="browser_permission_lost">File access was revoked. Grant it again to continue.</string>
 
     <!-- Calendar -->
     <string name="calendar_title">Calendar</string>
@@ -110,7 +96,6 @@
     <string name="settings_index_empty">Not built yet</string>
     <string name="settings_index_rebuild">Rebuild now</string>
     <string name="settings_index_running">Indexing… %1$d files</string>
-    <string name="settings_index_done">Indexed %1$d files</string>
 
     <!-- Recent changes -->
     <string name="changes_title">Recent changes</string>
@@ -142,16 +127,10 @@
     <string name="cd_undo">Undo</string>
     <string name="cd_open_folder">Show in folder</string>
     <string name="cd_unstar">Remove star</string>
-    <string name="cd_play">Run this rule now</string>
-    <string name="cd_deselect_all">Clear selection</string>
     <string name="cd_previous_month">Previous month</string>
     <string name="cd_next_month">Next month</string>
     <string name="cd_open_with">Open with another app</string>
     <string name="cd_history">Run history</string>
-    <string name="cd_view_calendar">Show files by date</string>
-    <string name="cd_view_list">Switch to list</string>
-    <string name="cd_expand">Show more</string>
-    <string name="cd_collapse">Show less</string>
 
     <!-- Viewers -->
     <string name="viewer_loading">Loading…</string>
@@ -184,8 +163,6 @@
     <string name="action_select_all">Select all</string>
     <string name="action_deselect_all">Clear selection</string>
     <string name="action_cancel">Cancel</string>
-    <string name="action_close">Close</string>
-    <string name="action_ok">OK</string>
     <string name="action_apply">Apply</string>
     <string name="action_save">Save</string>
     <string name="action_add">Add</string>
@@ -193,7 +170,6 @@
     <string name="action_undo">Undo</string>
     <string name="action_retry">Retry</string>
     <string name="action_done">Done</string>
-    <string name="action_continue">Continue</string>
     <string name="action_paste">Paste</string>
     <string name="action_show_less">Show less</string>
     <string name="action_show_more">Show more</string>
@@ -205,28 +181,14 @@
     <string name="op_renaming">Renaming…</string>
     <string name="op_archiving">Working on the archive…</string>
     <string name="op_restoring">Restoring…</string>
-    <string name="op_progress">%1$d of %2$d</string>
-    <string name="op_done_copied">Copied %1$d items</string>
-    <string name="op_done_moved">Moved %1$d items</string>
-    <string name="op_done_deleted">Moved %1$d items to trash</string>
-    <string name="op_done_renamed">Renamed %1$d items</string>
-    <string name="op_partial">%1$d done, %2$d failed</string>
-    <string name="op_failed">Operation failed: %1$s</string>
-    <string name="op_cancelled">Cancelled</string>
-    <string name="op_undo_action">Undo</string>
-    <string name="op_undone">Changes reverted</string>
-    <string name="op_undo_failed">Could not fully undo: %1$s</string>
     <string name="op_cancel">Stop</string>
 
     <!-- Delete / conflict dialogs -->
-    <string name="delete_title">Delete %1$d items?</string>
     <string name="delete_body">They go to FileFlow Trash first, so you can restore them. Trash is emptied after %1$d days.</string>
     <string name="delete_body_permanent">This cannot be undone.</string>
     <string name="delete_move_to_trash">Move to trash</string>
     <string name="delete_forever">Delete permanently</string>
-    <string name="delete_ask_permanent">Always delete permanently (skip trash)</string>
     <string name="conflict_title">Already exists</string>
-    <string name="conflict_body">%1$s already exists in the destination.</string>
     <string name="conflict_rename">Keep both</string>
     <string name="conflict_overwrite">Overwrite</string>
     <string name="conflict_skip">Skip</string>
@@ -235,25 +197,16 @@
     <!-- Search -->
     <string name="search_title">Search</string>
     <string name="search_hint">Search files and folders</string>
-    <string name="search_scope">Search in</string>
-    <string name="search_filters">Filters</string>
-    <string name="search_type">Type</string>
-    <string name="search_size">Size</string>
     <string name="search_date">Modified</string>
-    <string name="search_min">Min</string>
-    <string name="search_max">Max</string>
     <string name="search_any">Any</string>
-    <string name="search_results">%1$d results</string>
     <string name="search_scanning">Scanning… %1$d found</string>
     <string name="search_empty">No matches</string>
     <string name="search_empty_hint">Try a shorter word, or clear your filters.</string>
     <string name="search_save_as_rule">Create rule from this search</string>
-    <string name="search_stopped">Search stopped</string>
     <string name="search_sort_relevance">Best match</string>
     <string name="search_deep">Include subfolders</string>
     <!-- Tells the user which folder the results are limited to, so an empty
          result set reads as "nothing here" instead of "nothing anywhere". -->
-    <string name="search_in_folder">In %1$s</string>
     <string name="search_whole_device">Whole device</string>
     <string name="search_scope_all">Search everywhere</string>
     <!-- The index is a snapshot, and answering from a stale one with no warning
@@ -534,8 +487,6 @@
     <string name="metadata_none">No metadata found in this file.</string>
     <string name="metadata_location">This file records where it was taken.</string>
     <string name="metadata_clean">Remove and save a copy</string>
-    <string name="metadata_removed">Removed %1$s of metadata · copy saved as %2$s</string>
-    <string name="metadata_unchanged">Nothing to remove</string>
 
     <!-- Sync -->
     <string name="sync_title">Sync folders</string>
@@ -609,7 +560,6 @@
     <string name="analyzer_total">Total scanned</string>
     <string name="analyzer_files">%1$d files</string>
     <string name="analyzer_none">Nothing to show yet</string>
-    <string name="analyzer_scan_root">Scanning %1$s</string>
 
     <!-- Categories -->
     <string name="cat_images">Images</string>
@@ -629,14 +579,11 @@
     <string name="dup_none_hint">Every file on this storage is unique. Nothing to clean.</string>
     <string name="dup_auto_select">Auto-select copies</string>
     <string name="dup_keep">Keep</string>
-    <string name="dup_copy_label">Copy</string>
-    <string name="dup_selected_summary">%1$d files selected · %2$s</string>
     <string name="dup_delete">Delete selected</string>
     <string name="dup_keep_best_note">Keeps the oldest file in each group and selects the rest.</string>
 
     <!-- Large files -->
     <string name="large_title">Large files</string>
-    <string name="large_threshold">Show files larger than</string>
     <string name="large_scanning">Looking for big files…</string>
     <string name="large_none">Nothing above %1$s</string>
     <string name="large_none_hint">Your storage has no oversized files. Nice.</string>
@@ -654,7 +601,6 @@
     <string name="junk_thumbnails">Thumbnail caches</string>
     <string name="junk_none">Nothing junk-like found</string>
     <string name="junk_none_hint">Your storage is tidy. Nothing to clean right now.</string>
-    <string name="junk_clean">Clean %1$d items</string>
     <string name="junk_safe_note">Everything selected goes to Trash, never straight to gone.</string>
 
     <!-- Smart rename -->
@@ -673,11 +619,7 @@
     <string name="rename_none">Names look fine</string>
     <string name="rename_none_hint">No junk, no cryptic names, no duplicates to resolve.</string>
     <string name="rename_old">Now</string>
-    <string name="rename_new">Becomes</string>
     <string name="rename_apply">Rename %1$d files</string>
-    <string name="rename_confidence_high">Confident</string>
-    <string name="rename_confidence_medium">Likely</string>
-    <string name="rename_confidence_low">Unsure</string>
     <string name="rename_reason_junk">Removed filler words</string>
     <string name="rename_reason_duplicate_suffix">Resolved a (1) style duplicate</string>
     <string name="rename_reason_spacing">Cleaned up spacing and symbols</string>
@@ -685,17 +627,14 @@
     <string name="rename_reason_extension">Fixed the file extension</string>
     <string name="rename_reason_hash">Random name replaced with something readable</string>
     <string name="rename_reason_case">Applied your naming style</string>
-    <string name="rename_reason_folder">Added the source folder for context</string>
     <string name="rename_reason_uniqueness">Made the name unique</string>
 
     <!-- Rules -->
     <string name="rules_title">Auto Rules</string>
-    <string name="rules_intro">Rules watch the folders you choose and put files where they belong — on a schedule, or whenever you tap run.</string>
     <string name="rules_empty">No rules yet</string>
     <string name="rules_empty_hint">Start from a template below, or build your own from scratch.</string>
     <string name="rules_new">New rule</string>
     <string name="rules_templates">Templates</string>
-    <string name="rules_use_template">Use template</string>
     <string name="template_whatsapp_title">WhatsApp PDFs → Work</string>
     <string name="template_whatsapp_desc">Every night, PDFs arriving from WhatsApp move into Documents/Work.</string>
     <string name="template_screenshot_title">Screenshots older than 90 days → Archive</string>
@@ -711,13 +650,8 @@
     <string name="rules_run_now">Run now</string>
     <string name="rules_preview">Preview</string>
     <string name="rules_history">History</string>
-    <string name="rules_matched_hint">Matched %1$d files last time</string>
     <string name="rules_delete_title">Delete this rule?</string>
     <string name="rules_delete_body">Files it already moved stay where they are. Only the rule is removed.</string>
-    <string name="rules_schedule_summary_off">Manual only</string>
-    <string name="rules_schedule_summary_daily">Daily at %1$s</string>
-    <string name="rules_schedule_summary_weekly">%1$s at %2$s</string>
-    <string name="rules_schedule_summary_interval">Every %1$d hours</string>
     <string name="rules_enable_notifications">Notify when a rule runs</string>
 
     <!-- Rule editor -->
@@ -728,11 +662,9 @@
     <string name="rule_when">When a file</string>
     <string name="rule_then">Then</string>
     <string name="rule_scope">Where to look</string>
-    <string name="rule_scope_hint">Choose folders to watch</string>
     <string name="rule_scope_all">Entire storage</string>
     <string name="rule_add_folder">Add folder</string>
     <string name="rule_add_condition">Add condition</string>
-    <string name="rule_match_mode">Match</string>
     <string name="rule_match_all">All conditions</string>
     <string name="rule_match_any">Any condition</string>
     <string name="rule_recursive">Include subfolders</string>
@@ -743,7 +675,6 @@
     <string name="rule_schedule_daily">Daily</string>
     <string name="rule_schedule_weekly">Weekly</string>
     <string name="rule_time">Time</string>
-    <string name="rule_days">Days</string>
     <string name="rule_wifi_only">Only on Wi-Fi</string>
     <string name="rule_charging_only">Only while charging</string>
     <string name="rule_action">Action</string>
@@ -773,9 +704,7 @@
     <string name="cond_age">Age</string>
     <string name="cond_age_older">Older than</string>
     <string name="cond_age_newer">Newer than</string>
-    <string name="cond_age_days">days</string>
     <string name="cond_negate">Invert this condition</string>
-    <string name="cond_remove">Remove condition</string>
     <string name="cond_value_hint">Value</string>
 
     <!-- Actions -->
@@ -799,7 +728,6 @@
     <string name="preview_running">Working… %1$d of %2$d</string>
     <string name="preview_result">%1$d done, %2$d failed</string>
     <string name="preview_result_ok">Done — %1$d files updated</string>
-    <string name="preview_by_folder">%1$d files from %2$s</string>
 
     <!-- History -->
     <string name="history_title">Rule history</string>
@@ -811,8 +739,6 @@
     <string name="history_status_undone">Undone</string>
     <string name="history_status_cancelled">Stopped</string>
     <string name="history_detail">%1$d files · %2$s · %3$s</string>
-    <string name="history_undo_run">Undo this run</string>
-    <string name="history_undo_confirm">Put every file from this run back where it was?</string>
     <string name="history_undo_partial">%1$d files restored, %2$d could not be</string>
     <string name="history_manual">Manual</string>
     <string name="history_scheduled">Scheduled</string>
@@ -823,14 +749,9 @@
     <string name="trash_title">Trash</string>
     <string name="trash_empty">Trash is empty</string>
     <string name="trash_empty_hint">Deleted files wait here before they are gone for good.</string>
-    <string name="trash_size">%1$d items · %2$s</string>
-    <string name="trash_restore">Restore</string>
     <string name="trash_delete_forever">Delete permanently</string>
     <string name="trash_empty_now">Empty trash</string>
     <string name="trash_empty_confirm">Permanently delete %1$d items? This cannot be undone.</string>
-    <string name="trash_restored">Restored %1$d items</string>
-    <string name="trash_restore_failed">Could not restore %1$d items</string>
-    <string name="trash_expires">Removed %1$s</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -851,7 +772,6 @@
     <string name="settings_show_hidden">Show hidden files</string>
     <string name="settings_show_hidden_desc">Files starting with a dot</string>
     <string name="settings_thumbnails">Image thumbnails</string>
-    <string name="settings_sort_default">Default sort</string>
     <string name="settings_safety">Safety</string>
     <string name="settings_confirm_delete">Ask before deleting</string>
     <string name="settings_preview_required">Always preview rules before running</string>
@@ -896,24 +816,10 @@
     <!-- Misc -->
     <string name="common_loading">Loading…</string>
     <string name="common_error">Something went wrong</string>
-    <string name="common_unknown">Unknown</string>
     <string name="common_none">None</string>
     <string name="common_files">files</string>
     <string name="common_folder">Folder</string>
-    <string name="common_folders">folders</string>
     <string name="common_items">items</string>
-    <string name="common_today">Today</string>
-    <string name="common_yesterday">Yesterday</string>
-    <string name="common_just_now">just now</string>
-    <string name="common_minutes_ago">%1$d min ago</string>
-    <string name="common_hours_ago">%1$d h ago</string>
-    <string name="common_days_ago">%1$d d ago</string>
-    <string name="common_modified">Modified %1$s</string>
-    <string name="common_modified_label">Modified</string>
-    <string name="common_size">Size</string>
-    <string name="common_path">Path</string>
-    <string name="common_type">Type</string>
-    <string name="common_contains">Contains</string>
     <string name="common_forbidden">This folder is protected by Android</string>
     <string name="common_empty_folder">Empty folder</string>
     <string name="message_file_missing">That file is no longer there</string>
@@ -925,10 +831,6 @@
         <item quantity="other">%1$d files</item>
     </plurals>
 
-    <plurals name="folder_count">
-        <item quantity="one">%1$d folder</item>
-        <item quantity="other">%1$d folders</item>
-    </plurals>
 
     <plurals name="item_count">
         <item quantity="one">%1$d item</item>
@@ -945,10 +847,6 @@
         <item quantity="other">%1$d of %2$d items already exist in the destination.</item>
     </plurals>
 
-    <plurals name="junk_clean">
-        <item quantity="one">Clean %1$d item</item>
-        <item quantity="other">Clean %1$d items</item>
-    </plurals>
 
     <plurals name="items_and_size">
         <item quantity="one">%1$d item · %2$s</item>
@@ -960,10 +858,6 @@
         <item quantity="other">%1$d results</item>
     </plurals>
 
-    <plurals name="bytes_found">
-        <item quantity="one">%1$d found</item>
-        <item quantity="other">%1$d found</item>
-    </plurals>
 
     <plurals name="outcome_moved_to_trash">
         <item quantity="one">%1$d item moved to trash</item>
@@ -1005,16 +899,11 @@
         <item quantity="other">%1$d failed</item>
     </plurals>
 
-    <plurals name="outcome_skipped">
-        <item quantity="one">%1$d skipped</item>
-        <item quantity="other">%1$d skipped</item>
-    </plurals>
 
     <!-- A result and its failure count, joined. Kept separate so each half
          pluralises on its own number. -->
     <string name="outcome_with_failures">%1$s · %2$s</string>
 
-    <string name="outcome_undo">Undo</string>
     <string name="outcome_nothing_changed">Nothing changed</string>
     <string name="outcome_all_reversed">Changes reversed</string>
     <plurals name="outcome_reversed_partial">
@@ -1026,21 +915,16 @@
     <string name="trash_nothing_to_empty">Nothing to empty</string>
 
     <string name="error_index_failed">Could not build the index</string>
-    <string name="error_load_failed">Could not load this screen</string>
-    <string name="error_delete_failed">Some items could not be deleted</string>
 
     <string name="rules_unreadable">Not running: this rule\'s settings could not be read. Open it, check it, and save it again.</string>
 
     <string name="state_loading">One moment…</string>
-    <string name="state_scanning">Looking through your files…</string>
-    <string name="error_index_failed_title">Indexing failed</string>
 
     <string name="analyzer_empty_hint">See what is using your space, folder by folder.</string>
     <string name="analyzer_scan">Analyse storage</string>
     <string name="analyzer_root">Internal storage</string>
     <string name="analyzer_largest">Largest files</string>
     <string name="analyzer_browse">Open in Files</string>
-    <string name="analyzer_showing">Showing %1$s of %2$s</string>
     <string name="analyzer_unknown_size">Size unknown until the next scan</string>
     <string name="analyzer_tap_hint">Tap a folder to see what is inside it.</string>
     <string name="junk_clean_short">Clean now</string>

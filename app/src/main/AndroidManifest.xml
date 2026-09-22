@@ -31,12 +31,29 @@
          the user in the Shizuku app, and everything here works without it. -->
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
 
+    <!-- This is a phone app, and it says so: it needs a touchscreen, and it does
+         not claim Android TV support — the interface is built for a finger, and
+         a device without either should not be offered it. -->
     <uses-feature
         android:name="android.hardware.storage"
         android:required="false" />
     <uses-feature
-        android:name="android.software.leanback"
-        android:required="false" />
+        android:name="android.hardware.touchscreen"
+        android:required="true" />
+
+    <!-- Android 11 and later hide other packages from an app unless the app says
+         which ones it deals with. Without these two entries Shizuku looks
+         "not installed" on every modern phone no matter what the user has
+         installed, and the APK backup screen lists nothing but this app. Asking
+         for launcher apps is what the backup needs; QUERY_ALL_PACKAGES is not
+         needed for it and would be a harder question to answer. -->
+    <queries>
+        <package android:name="moe.shizuku.manager" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <application
         android:name=".FileFlowApp"

@@ -9,7 +9,6 @@ import com.fileflow.app.BuildConfig
 import com.fileflow.app.core.util.Paths
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CompletableDeferred
@@ -154,11 +153,8 @@ class PrivilegedShell @Inject constructor(
 
     /** Root is probed by asking it to print something; a missing su answers nothing. */
     private fun rootAvailable(): Boolean = runCatching {
-        val process = ProcessBuilder("su", "-c", "echo fileflow").start()
-        val finished = process.waitFor(ROOT_PROBE_SECONDS, TimeUnit.SECONDS)
-        val output = process.inputStream.bufferedReader().readText().trim()
-        if (!finished) process.destroy()
-        finished && output.contains("fileflow")
+        val result = ShellProcess.run(listOf("su", "-c", "echo fileflow"), ROOT_PROBE_SECONDS)
+        result.ok && result.stdout.contains("fileflow")
     }.getOrDefault(false)
 
     /** Asks Shizuku for the permission; the answer arrives on the listener. */
@@ -181,7 +177,9 @@ class PrivilegedShell @Inject constructor(
                     }.getOrNull()
                 }
 
-                PrivilegedEngine.ROOT -> runProcess(ProcessBuilder("su", "-c", command).start())
+                PrivilegedEngine.ROOT ->
+                    ShellProcess.run(listOf("su", "-c", command), COMMAND_TIMEOUT_SECONDS)
+
                 PrivilegedEngine.NONE -> null
             }
         }
@@ -301,17 +299,6 @@ class PrivilegedShell @Inject constructor(
         override fun onServiceDisconnected(name: ComponentName?) {
             boundService = null
         }
-    }
-
-    private fun runProcess(process: Process): ShellResult {
-        val finished = process.waitFor(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        if (!finished) {
-            process.destroy()
-            return ShellResult(code = -1, stdout = "", stderr = "The command timed out")
-        }
-        val stdout = runCatching { process.inputStream.bufferedReader().readText() }.getOrDefault("")
-        val stderr = runCatching { process.errorStream.bufferedReader().readText() }.getOrDefault("")
-        return ShellResult(process.exitValue(), stdout, stderr)
     }
 
     /** A hint for the UI, so a path can be shortened the way the app does it. */
