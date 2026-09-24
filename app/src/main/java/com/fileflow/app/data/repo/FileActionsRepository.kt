@@ -329,10 +329,13 @@ class FileActionsRepository @Inject constructor(
      */
     suspend fun toggleStar(item: FileItem): Boolean = withContext(Dispatchers.IO) {
         val already = starredDao.isStarred(item.path)
-        if (already) {
-            starredDao.remove(item.path)
-            false
-        } else {
+        setStar(item, starred = !already)
+        !already
+    }
+
+    /** Setting rather than toggling, for a batch whose members must agree. */
+    suspend fun setStar(item: FileItem, starred: Boolean) = withContext(Dispatchers.IO) {
+        if (starred) {
             starredDao.upsert(
                 StarredFileEntity(
                     path = item.path,
@@ -342,7 +345,8 @@ class FileActionsRepository @Inject constructor(
                     modified = item.lastModified,
                 )
             )
-            true
+        } else {
+            starredDao.remove(item.path)
         }
     }
 

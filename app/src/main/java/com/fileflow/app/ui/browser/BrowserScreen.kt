@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ViewList
@@ -118,6 +119,7 @@ fun BrowserScreen(
     onOpenSearch: (String) -> Unit,
     onViewImage: (folder: String, path: String) -> Unit,
     onViewText: (path: String) -> Unit,
+    onConvert: (List<String>) -> Unit,
     viewModel: BrowserViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -224,6 +226,7 @@ fun BrowserScreen(
                     onCopy = { viewModel.copyToClipboard(cut = false) },
                     onMove = { viewModel.copyToClipboard(cut = true) },
                     onCompress = viewModel::compressSelection,
+                    onConvert = { onConvert(state.selection.toList()) },
                     onShare = {
                         FileIntents.share(context, state.selectedItems)
                         viewModel.clearSelection()
@@ -865,6 +868,7 @@ private fun SelectionTopBar(
     onDelete: () -> Unit,
     onShare: () -> Unit,
     onCompress: () -> Unit,
+    onConvert: () -> Unit,
     onMoveToTransfer: (() -> Unit)? = null,
 ) {
     var showMore by remember { mutableStateOf(false) }
@@ -888,33 +892,40 @@ private fun SelectionTopBar(
             IconButton(onClick = onSelectAll) {
                 Icon(Icons.Filled.SelectAll, contentDescription = stringResource(R.string.cd_select_all))
             }
+            // Convert, compress and the PC folder all need a second question,
+            // so they share the overflow instead of squeezing five more glyphs
+            // into a bar a thumb has to hit.
             IconButton(onClick = onCopy) {
                 Icon(Icons.Filled.ContentCopy, contentDescription = stringResource(R.string.cd_copy))
             }
             IconButton(onClick = onMove) {
                 Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(R.string.cd_move))
             }
-            IconButton(onClick = onCompress) {
-                Icon(
-                    imageVector = Icons.Filled.FolderZip,
-                    contentDescription = stringResource(R.string.action_compress),
-                )
-            }
-            IconButton(onClick = onShare) {
-                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.cd_share))
-            }
-            // Six verbs already fill this bar on a phone; the one that needs a
-            // destination waits behind the overflow instead of squeezing the
-            // rest into unreadable glyphs.
-            if (onMoveToTransfer != null) {
-                Box {
-                    IconButton(onClick = { showMore = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            contentDescription = stringResource(R.string.cd_more),
-                        )
-                    }
-                    DropdownMenu(expanded = showMore, onDismissRequest = { showMore = false }) {
+            Box {
+                IconButton(onClick = { showMore = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = stringResource(R.string.cd_more),
+                    )
+                }
+                DropdownMenu(expanded = showMore, onDismissRequest = { showMore = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_convert)) },
+                        leadingIcon = { Icon(Icons.Filled.SwapHoriz, contentDescription = null) },
+                        onClick = {
+                            showMore = false
+                            onConvert()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_compress)) },
+                        leadingIcon = { Icon(Icons.Filled.FolderZip, contentDescription = null) },
+                        onClick = {
+                            showMore = false
+                            onCompress()
+                        },
+                    )
+                    if (onMoveToTransfer != null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.action_move_to_transfer)) },
                             leadingIcon = { Icon(Icons.Filled.Devices, contentDescription = null) },
@@ -925,6 +936,9 @@ private fun SelectionTopBar(
                         )
                     }
                 }
+            }
+            IconButton(onClick = onShare) {
+                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.cd_share))
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.cd_delete))

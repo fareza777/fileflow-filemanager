@@ -161,6 +161,7 @@ private object Routes {
 fun AppRoot(openTransferOnStart: Boolean = false) {
     val navController = rememberNavController()
     val rootViewModel: AppRootViewModel = hiltViewModel()
+    val handoff = rootViewModel.handoff
     val hasAccess = rememberStorageAccess()
     // `remember`, not `rememberSaveable`: skipping the gate is a decision for
     // this session. Persisting it meant that after one "continue without
@@ -305,6 +306,14 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                         onBack = { navController.popBackStack() },
                         onPreview = previewFile,
                         onOpenFolder = openFolder,
+                        onConvert = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.CONVERT)
+                        },
+                        onCompress = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.COMPRESS)
+                        },
                     )
                 }
 
@@ -324,6 +333,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                         },
                         onViewText = { path ->
                             navController.navigate("${Routes.TEXT_VIEWER}?path=${Uri.encode(path)}")
+                        },
+                        onConvert = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.CONVERT)
                         },
                     )
                 }

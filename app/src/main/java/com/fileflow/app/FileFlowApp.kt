@@ -29,6 +29,7 @@ class FileFlowApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject lateinit var partialSweeper: PartialSweeper
     @Inject lateinit var indexScheduler: FileIndexScheduler
     @Inject lateinit var indexRepository: FileIndexRepository
+    @Inject lateinit var syncScheduler: com.fileflow.app.domain.sync.SyncScheduler
     @Inject lateinit var fileActions: com.fileflow.app.data.repo.FileActionsRepository
 
     @Inject @ApplicationScope lateinit var applicationScope: CoroutineScope
@@ -102,6 +103,11 @@ class FileFlowApp : Application(), Configuration.Provider, ImageLoaderFactory {
             }
             // Undone journal entries pile up forever otherwise.
             runCatching { fileActions.pruneJournal() }
+            // Saved folder pairs are re-armed here for the same reason the rules
+            // are: a periodic request does not survive an update or a long
+            // powered-off stretch, and a sync that quietly stopped is worse than
+            // one that was never set up.
+            runCatching { syncScheduler.syncAll() }
         }
     }
 

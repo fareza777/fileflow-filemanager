@@ -72,11 +72,14 @@ import com.fileflow.app.ui.components.FolderPickerSheet
 import com.fileflow.app.ui.components.LoadingState
 import com.fileflow.app.ui.components.SectionHeader
 import com.fileflow.app.ui.components.folderSubtitle
+import com.fileflow.app.domain.toFileItem
+import com.fileflow.app.ui.util.SelectionHandoff
 import com.fileflow.app.ui.util.UiMessage
 import com.fileflow.app.ui.util.showMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -84,6 +87,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @androidx.compose.runtime.Immutable
 data class CompressState(
@@ -105,6 +109,7 @@ class CompressViewModel @Inject constructor(
     private val browseRepository: BrowseRepository,
     private val actions: FileActionsRepository,
     private val operationRunner: OperationRunner,
+    private val handoff: SelectionHandoff,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CompressState())
@@ -115,7 +120,24 @@ class CompressViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            openFolder(browseRepository.primaryRoot())
+            // A selection handed over from another screen arrives already made:
+            // opening a folder and asking the user to pick it all again would be
+            // a step backwards in the middle of a bulk action.
+            val handed = withContext(Dispatchers.IO) {
+                handoff.take().mapNotNull { browseRepository.toCandidate(it)?.toFileItem() }
+            }
+            if (handed.isNotEmpty()) {
+                _state.update {
+                    it.copy(
+                        folder = handed.first().path.substringBeforeLast('/'),
+                        items = handed,
+                        selection = handed.map { item -> item.path }.toSet(),
+                        loading = false,
+                    )
+                }
+            } else {
+                openFolder(browseRepository.primaryRoot())
+            }
         }
     }
 

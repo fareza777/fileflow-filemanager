@@ -23,6 +23,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -32,6 +34,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -40,6 +43,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,19 +63,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.fileflow.app.R
-import com.fileflow.app.core.storage.ConflictPolicy
-import com.fileflow.app.core.storage.OperationKind
 import com.fileflow.app.core.util.Formatters
 import com.fileflow.app.core.util.Paths
 import com.fileflow.app.data.repo.BrowseRepository
-import com.fileflow.app.data.repo.FileActionsRepository
-import com.fileflow.app.data.repo.OperationRunner
 import com.fileflow.app.domain.compare.DiffRow
-import com.fileflow.app.domain.compare.DirectoryComparer
 import com.fileflow.app.domain.sync.SyncDirection
+import com.fileflow.app.domain.sync.SyncInterval
+import com.fileflow.app.domain.sync.SyncJob
+import com.fileflow.app.domain.sync.SyncJobStore
 import com.fileflow.app.domain.sync.SyncMode
 import com.fileflow.app.domain.sync.SyncPlan
-import com.fileflow.app.domain.sync.SyncPlanner
+import com.fileflow.app.domain.sync.SyncRunOutcome
+import com.fileflow.app.domain.sync.SyncRunner
+import com.fileflow.app.domain.sync.SyncScheduler
 import com.fileflow.app.ui.components.EmptyState
 import com.fileflow.app.ui.components.FolderPickerSheet
 import com.fileflow.app.ui.components.SectionHeader
@@ -79,7 +83,6 @@ import com.fileflow.app.ui.util.UiMessage
 import com.fileflow.app.ui.util.showMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -95,20 +98,26 @@ data class SyncState(
     val direction: SyncDirection = SyncDirection.LEFT_TO_RIGHT,
     val mode: SyncMode = SyncMode.INCREMENTAL,
     val compareContent: Boolean = false,
+    val interval: SyncInterval = SyncInterval.DAILY,
+    val jobs: List<SyncJob> = emptyList(),
     val plan: SyncPlan? = null,
     val working: Boolean = false,
+    val jobRunning: String? = null,
     val progress: String? = null,
     val scanned: Int = 0,
 ) {
     val canPreview: Boolean get() = left.isNotBlank() && right.isNotBlank() && left != right
+
+    /** True when the folder pair on screen is already saved and enabled. */
+    val savedJob: SyncJob? get() = jobs.firstOrNull { it.left == left && it.right == right }
 }
 
 @HiltViewModel
 class SyncViewModel @Inject constructor(
-    private val comparer: DirectoryComparer,
     private val browseRepository: BrowseRepository,
-    private val actions: FileActionsRepository,
-    private val operationRunner: OperationRunner,
+    private val runner: SyncRunner,
+    private val store: SyncJobStore,
+    private val scheduler: SyncScheduler,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SyncState())
@@ -121,6 +130,9 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             val root = browseRepository.primaryRoot()
             _state.update { it.copy(left = root, right = root) }
+        }
+        viewModelScope.launch {
+            store.jobs.collect { jobs -> _state.update { it.copy(jobs = jobs) } }
         }
     }
 
@@ -139,6 +151,8 @@ class SyncViewModel @Inject constructor(
         _state.update { it.copy(compareContent = enabled, plan = null) }
     }
 
+    fun setInterval(interval: SyncInterval) = _state.update { it.copy(interval = interval) }
+
     /** Compares and builds the plan, without touching anything. */
     fun preview() {
         val current = _state.value
@@ -146,19 +160,18 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(working = true, plan = null, progress = null) }
             val result = runCatching {
-                comparer.compare(current.left, current.right, current.compareContent) { scanned ->
-                    _state.update { it.copy(scanned = scanned) }
-                }
+                runner.plan(
+                    left = current.left,
+                    right = current.right,
+                    direction = current.direction,
+                    mode = current.mode,
+                    compareContent = current.compareContent,
+                    onScanned = { scanned -> _state.update { it.copy(scanned = scanned) } },
+                )
             }
             result.fold(
-                onSuccess = { comparison ->
-                    _state.update {
-                        it.copy(
-                            working = false,
-                            scanned = comparison.scanned,
-                            plan = SyncPlanner.plan(comparison.rows, current.direction, current.mode),
-                        )
-                    }
+                onSuccess = { plan ->
+                    _state.update { it.copy(working = false, plan = plan) }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(working = false) }
@@ -169,75 +182,127 @@ class SyncViewModel @Inject constructor(
     }
 
     /**
-     * Runs the plan: copies first, deletions last.
-     *
-     * In that order on purpose. A sync that stops half-way — the phone is
-     * locked, the process is killed — should leave the target with extra files
-     * rather than missing ones, and the copy is the part the user asked for.
+     * Runs the plan the user is looking at. The same runner the schedule uses,
+     * so what happens here and what happens at 3 a.m. cannot diverge.
      */
     fun run() {
-        val plan = _state.value.plan ?: return
         val current = _state.value
-        if (current.working || plan.isEmpty) return
-
+        if (current.working) return
         viewModelScope.launch {
             _state.update { it.copy(working = true) }
-            var copied = 0
-            var deleted = 0
-            var failed = 0
-            try {
-                val copies = buildList {
-                    if (plan.copyToRight.isNotEmpty()) {
-                        add(plan.copyToRight.mapNotNull { it.leftPath } to current.right)
-                    }
-                    if (plan.copyToLeft.isNotEmpty()) {
-                        add(plan.copyToLeft.mapNotNull { it.rightPath } to current.left)
-                    }
-                }
-                copies.forEach { (paths, destination) ->
-                    if (paths.isEmpty()) return@forEach
-                    operationRunner.run(OperationKind.COPY) { progress ->
-                        val report = actions.copy(paths, destination, ConflictPolicy.RENAME, progress)
-                        copied += report.succeeded
-                        failed += report.failed
-                    }
-                }
-
-                val deletions = buildList {
-                    if (plan.deleteOnRight.isNotEmpty()) {
-                        add(plan.deleteOnRight.mapNotNull { it.rightPath })
-                    }
-                    if (plan.deleteOnLeft.isNotEmpty()) {
-                        add(plan.deleteOnLeft.mapNotNull { it.leftPath })
-                    }
-                }
-                deletions.forEach { paths ->
-                    if (paths.isEmpty()) return@forEach
-                    operationRunner.run(OperationKind.TRASH) { progress ->
-                        val report = actions.delete(paths, permanent = false, progress)
-                        deleted += report.succeeded
-                        failed += report.failed
-                    }
-                }
-
-                browseRepository.invalidateListing(current.left)
-                browseRepository.invalidateListing(current.right)
-                _state.update { it.copy(working = false) }
-                _messages.send(
-                    UiMessage.Info(
-                        buildString {
-                            append("$copied copied")
-                            if (deleted > 0) append(", $deleted moved to trash")
-                            if (failed > 0) append(", $failed failed")
-                            if (plan.conflictsCount > 0) append(" · ${plan.conflictsCount} kept as conflicts")
-                        }
-                    )
-                )
-                preview()
-            } catch (_: CancellationException) {
-                _state.update { it.copy(working = false) }
-            }
+            val outcome = runner.run(
+                left = current.left,
+                right = current.right,
+                direction = current.direction,
+                mode = current.mode,
+                compareContent = current.compareContent,
+                onProgress = { line -> _state.update { it.copy(progress = line) } },
+            )
+            browseRepository.invalidateListing(current.left)
+            browseRepository.invalidateListing(current.right)
+            _state.update { it.copy(working = false, progress = null) }
+            _messages.send(UiMessage.Info(describe(outcome)))
+            preview()
         }
+    }
+
+    // ------------------------------------------------------------- schedules
+
+    /** Saves the pair on screen so it can run without anyone watching. */
+    fun saveJob() {
+        val current = _state.value
+        if (!current.canPreview) return
+        viewModelScope.launch {
+            val existing = current.savedJob
+            val job = SyncJob(
+                id = existing?.id ?: "sync-${System.currentTimeMillis()}",
+                left = current.left,
+                right = current.right,
+                direction = current.direction,
+                mode = current.mode,
+                interval = current.interval,
+                compareContent = current.compareContent,
+                enabled = true,
+                lastRunAt = existing?.lastRunAt ?: 0L,
+                lastCopied = existing?.lastCopied ?: 0,
+                lastDeleted = existing?.lastDeleted ?: 0,
+                lastConflicts = existing?.lastConflicts ?: 0,
+                lastFailed = existing?.lastFailed ?: 0,
+                lastError = existing?.lastError,
+            )
+            store.save(job)
+            scheduler.sync(job)
+            _messages.send(
+                UiMessage.Info(
+                    if (existing != null) "Schedule updated" else "Schedule saved"
+                )
+            )
+        }
+    }
+
+    fun setJobEnabled(job: SyncJob, enabled: Boolean) {
+        viewModelScope.launch {
+            val next = job.copy(enabled = enabled)
+            store.save(next)
+            scheduler.sync(next)
+        }
+    }
+
+    fun deleteJob(job: SyncJob) {
+        viewModelScope.launch {
+            store.remove(job.id)
+            scheduler.cancel(job.id)
+        }
+    }
+
+    /** Pulls a saved job into the editor, so it can be changed and re-saved. */
+    fun editJob(job: SyncJob) {
+        _state.update {
+            it.copy(
+                left = job.left,
+                right = job.right,
+                direction = job.direction,
+                mode = job.mode,
+                compareContent = job.compareContent,
+                interval = job.interval,
+                plan = null,
+            )
+        }
+        preview()
+    }
+
+    fun runJobNow(job: SyncJob) {
+        if (_state.value.jobRunning != null) return
+        viewModelScope.launch {
+            _state.update { it.copy(jobRunning = job.id) }
+            val outcome = runCatching {
+                runner.run(
+                    left = job.left,
+                    right = job.right,
+                    direction = job.direction,
+                    mode = job.mode,
+                    compareContent = job.compareContent,
+                )
+            }.getOrElse { error ->
+                SyncRunOutcome(error = error.message ?: "the sync failed")
+            }
+            store.recordResult(job.id, outcome)
+            browseRepository.invalidateListing(job.left)
+            browseRepository.invalidateListing(job.right)
+            _state.update { it.copy(jobRunning = null) }
+            _messages.send(UiMessage.Info("${job.pair}: ${describe(outcome)}"))
+        }
+    }
+
+    private fun describe(outcome: SyncRunOutcome): String = buildString {
+        if (outcome.error != null) {
+            append(outcome.error)
+        } else {
+            append("${outcome.copied} copied")
+            if (outcome.trashed > 0) append(", ${outcome.trashed} moved to trash")
+            if (outcome.failed > 0) append(", ${outcome.failed} failed")
+        }
+        if (outcome.conflicts > 0) append(" · ${outcome.conflicts} kept as conflicts")
     }
 
     fun clearPlan() {
@@ -266,6 +331,7 @@ fun SyncScreen(
     val snackbar = remember { SnackbarHostState() }
     var picking by remember { mutableStateOf<Boolean?>(null) }
     var confirmMirror by remember { mutableStateOf(false) }
+    var showSchedule by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { message -> snackbar.showMessage(context, message) { } }
@@ -291,6 +357,17 @@ fun SyncScreen(
                         CircularProgressIndicator(
                             modifier = Modifier.padding(end = 16.dp).size(20.dp),
                             strokeWidth = 2.dp,
+                        )
+                    }
+                    IconButton(onClick = { showSchedule = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.Schedule,
+                            contentDescription = stringResource(R.string.sync_schedule),
+                            tint = if (state.jobs.isNotEmpty()) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                         )
                     }
                 },
@@ -466,6 +543,235 @@ fun SyncScreen(
             },
         )
     }
+
+    if (showSchedule) {
+        SyncScheduleSheet(
+            state = state,
+            onDismiss = { showSchedule = false },
+            onInterval = viewModel::setInterval,
+            onSave = viewModel::saveJob,
+            onToggle = viewModel::setJobEnabled,
+            onRunNow = viewModel::runJobNow,
+            onEdit = { job ->
+                viewModel.editJob(job)
+                showSchedule = false
+            },
+            onDelete = viewModel::deleteJob,
+        )
+    }
+}
+
+/**
+ * The saved pairs, and the schedule for the pair currently on screen.
+ *
+ * Kept out of the main column on purpose: the sync screen is a preview the user
+ * reads before approving, and a list of schedules wedged underneath it would
+ * compete with the plan for the same attention. As a sheet it is one tap away
+ * and does not push the confirmation off the screen.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SyncScheduleSheet(
+    state: SyncState,
+    onDismiss: () -> Unit,
+    onInterval: (SyncInterval) -> Unit,
+    onSave: () -> Unit,
+    onToggle: (SyncJob, Boolean) -> Unit,
+    onRunNow: (SyncJob) -> Unit,
+    onEdit: (SyncJob) -> Unit,
+    onDelete: (SyncJob) -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var deleteTarget by remember { mutableStateOf<SyncJob?>(null) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.sync_schedule),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+
+            if (state.canPreview) {
+                Text(
+                    text = stringResource(
+                        R.string.sync_schedule_pair,
+                        Paths.nameOf(state.left),
+                        Paths.nameOf(state.right),
+                        labelFor(state.direction),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    SyncInterval.entries.forEach { interval ->
+                        FilterChip(
+                            selected = state.interval == interval,
+                            onClick = { onInterval(interval) },
+                            label = { Text(labelFor(interval)) },
+                        )
+                    }
+                }
+                Button(
+                    onClick = onSave,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        stringResource(
+                            if (state.savedJob != null) {
+                                R.string.sync_schedule_update
+                            } else {
+                                R.string.sync_schedule_save
+                            }
+                        )
+                    )
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.sync_schedule_pick_two),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (state.jobs.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.sync_schedule_none),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            } else {
+                state.jobs.forEach { job ->
+                    SyncJobRow(
+                        job = job,
+                        running = state.jobRunning == job.id,
+                        onToggle = { enabled -> onToggle(job, enabled) },
+                        onRunNow = { onRunNow(job) },
+                        onEdit = { onEdit(job) },
+                        onDelete = { deleteTarget = job },
+                    )
+                }
+            }
+        }
+    }
+
+    deleteTarget?.let { job ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text(stringResource(R.string.sync_schedule_delete)) },
+            text = { Text(job.pair) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete(job)
+                    deleteTarget = null
+                }) {
+                    Text(
+                        text = stringResource(R.string.action_delete),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun SyncJobRow(
+    job: SyncJob,
+    running: Boolean,
+    onToggle: (Boolean) -> Unit,
+    onRunNow: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = job.pair,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = buildString {
+                        append(labelFor(job.interval))
+                        append(" · ")
+                        append(labelFor(job.direction))
+                        if (job.mode == SyncMode.MIRROR) append(" · mirror")
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (running) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Switch(checked = job.enabled, onCheckedChange = onToggle)
+            }
+        }
+        Text(
+            text = if (job.lastRunAt == 0L) {
+                stringResource(R.string.sync_job_never)
+            } else {
+                "${Formatters.relative(job.lastRunAt)} · ${job.lastSummary}"
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = if (job.lastError != null) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = onRunNow, enabled = !running) {
+                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.sync_run_now))
+            }
+            TextButton(onClick = onEdit) {
+                Text(stringResource(R.string.sync_edit))
+            }
+            TextButton(onClick = onDelete) {
+                Text(
+                    text = stringResource(R.string.action_delete),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -579,5 +885,14 @@ private fun labelFor(direction: SyncDirection): String = stringResource(
         SyncDirection.LEFT_TO_RIGHT -> R.string.sync_dir_right
         SyncDirection.RIGHT_TO_LEFT -> R.string.sync_dir_left
         SyncDirection.TWO_WAY -> R.string.sync_dir_both
+    }
+)
+
+@Composable
+private fun labelFor(interval: SyncInterval): String = stringResource(
+    when (interval) {
+        SyncInterval.SIX_HOURS -> R.string.sync_every_six_hours
+        SyncInterval.DAILY -> R.string.sync_every_day
+        SyncInterval.WEEKLY -> R.string.sync_every_week
     }
 )

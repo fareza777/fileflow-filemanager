@@ -2,8 +2,10 @@ package com.fileflow.app.domain.sync
 
 import com.fileflow.app.domain.compare.DiffRow
 import com.fileflow.app.domain.compare.DiffState
+import kotlinx.serialization.Serializable
 
 /** Which way the sync runs. Chosen explicitly, never inferred from selection. */
+@Serializable
 enum class SyncDirection {
     LEFT_TO_RIGHT,
     RIGHT_TO_LEFT,
@@ -26,6 +28,7 @@ enum class SyncDirection {
  * files that exist only there — the one operation in this screen that can lose
  * something, so it is a separate choice with its own confirmation.
  */
+@Serializable
 enum class SyncMode { INCREMENTAL, MIRROR }
 
 /** What the sync will do, before it does any of it. */
