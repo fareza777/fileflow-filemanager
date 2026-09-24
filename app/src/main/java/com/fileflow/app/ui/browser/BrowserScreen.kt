@@ -537,6 +537,8 @@ fun BrowserScreen(
                                 stringResource(R.string.op_archiving)
                             OperationKind.RESTORE ->
                                 stringResource(R.string.op_restoring)
+                            OperationKind.CLEAN ->
+                                stringResource(R.string.op_cleaning)
                         },
                         detail = operation.progress?.let { progress ->
                             if (progress.total > 1) {

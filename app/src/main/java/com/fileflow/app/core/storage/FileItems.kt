@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class ConflictPolicy { RENAME, OVERWRITE, SKIP }
 
-enum class OperationKind { COPY, MOVE, TRASH, DELETE, RENAME, CREATE_FOLDER, ARCHIVE, RESTORE }
+enum class OperationKind { COPY, MOVE, TRASH, DELETE, RENAME, CREATE_FOLDER, ARCHIVE, RESTORE, CLEAN }
 
 data class OperationProgress(
     val current: Int,

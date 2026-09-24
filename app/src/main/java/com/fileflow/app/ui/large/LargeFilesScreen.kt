@@ -58,17 +58,21 @@ import com.fileflow.app.core.storage.OperationReport
 import com.fileflow.app.core.util.Formatters
 import com.fileflow.app.data.prefs.SettingsRepository
 import com.fileflow.app.data.repo.FileActionsRepository
+import com.fileflow.app.data.repo.MetadataCleanup
 import com.fileflow.app.data.repo.OperationRunner
 import com.fileflow.app.domain.Candidate
 import com.fileflow.app.domain.scan.InsightsScanner
 import com.fileflow.app.domain.toFileItem
+import com.fileflow.app.ui.components.BulkHandlers
+import com.fileflow.app.ui.components.BulkMoreSheet
 import com.fileflow.app.ui.components.ConfirmDialog
 import com.fileflow.app.ui.components.EmptyState
 import com.fileflow.app.ui.components.FileRow
 import com.fileflow.app.ui.components.FolderPickerSheet
 import com.fileflow.app.ui.components.ProgressPanel
-import com.fileflow.app.ui.components.SelectionAction
 import com.fileflow.app.ui.components.SelectionActionBar
+import com.fileflow.app.ui.components.bulkBarActions
+import com.fileflow.app.ui.util.FileIntents
 import com.fileflow.app.ui.util.UiMessage
 import com.fileflow.app.ui.util.showMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -234,6 +238,67 @@ class LargeFilesViewModel @Inject constructor(
         }
     }
 
+    fun copySelectedTo(destination: String) {
+        val paths = _state.value.selection.toList()
+        if (paths.isEmpty()) return
+        viewModelScope.launch {
+            _state.update { it.copy(working = true) }
+            var report: OperationReport? = null
+            try {
+                operationRunner.run(OperationKind.COPY) { progress ->
+                    report = actions.copy(paths, destination, ConflictPolicy.RENAME, progress)
+                }
+            } catch (_: CancellationException) {
+                // Stopped from the root bar.
+            }
+            _state.update { it.copy(working = false, selection = emptySet()) }
+            report?.let { done ->
+                _messages.send(UiMessage.Info("${done.succeeded} files copied"))
+            }
+        }
+    }
+
+    /** The same cleanup every other list offers, from the same place. */
+    fun cleanMetadata() {
+        val paths = _state.value.selection.toList()
+        if (paths.isEmpty()) return
+        viewModelScope.launch {
+            _state.update { it.copy(working = true) }
+            var cleanup: MetadataCleanup? = null
+            try {
+                operationRunner.run(OperationKind.CLEAN) { progress ->
+                    cleanup = actions.cleanMetadata(paths, progress)
+                }
+            } catch (_: CancellationException) {
+                _state.update { it.copy(working = false) }
+                return@launch
+            }
+            _state.update { it.copy(working = false, selection = emptySet()) }
+            cleanup?.let { result ->
+                _messages.send(
+                    UiMessage.Info(
+                        if (result.cleaned == 0 && result.failed == 0) {
+                            "Nothing to remove"
+                        } else {
+                            "Cleaned ${result.cleaned} files · ${Formatters.bytes(result.savedBytes)} removed"
+                        }
+                    )
+                )
+            }
+        }
+    }
+
+    fun starSelection() {
+        val items = _state.value.files.filter { it.path in _state.value.selection }
+        if (items.isEmpty()) return
+        viewModelScope.launch {
+            val allStarred = items.all { actions.isStarred(it.path) }
+            items.forEach { actions.setStar(it.toFileItem(), starred = !allStarred) }
+            _state.update { it.copy(selection = emptySet()) }
+            _messages.send(UiMessage.Info(if (allStarred) "Star removed" else "Starred ${items.size}"))
+        }
+    }
+
     fun selectedBytes(): Long =
         _state.value.files.filter { it.path in _state.value.selection }.sumOf { it.sizeBytes }
 }
@@ -242,6 +307,8 @@ class LargeFilesViewModel @Inject constructor(
 @Composable
 fun LargeFilesScreen(
     onBack: () -> Unit,
+    onConvert: (List<String>) -> Unit,
+    onCompress: (List<String>) -> Unit,
     viewModel: LargeFilesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -250,7 +317,8 @@ fun LargeFilesScreen(
     val trashDays = settings.trashRetentionDays
     val context = LocalContext.current
     var showDelete by remember { mutableStateOf(false) }
-    var showPicker by remember { mutableStateOf(false) }
+    var picker by remember { mutableStateOf<Picker?>(null) }
+    var showMore by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { message ->
@@ -277,6 +345,43 @@ fun LargeFilesScreen(
         },
         bottomBar = {
             if (state.selection.isNotEmpty()) {
+                val handlers = BulkHandlers(
+                    onShare = {
+                        FileIntents.share(
+                            context,
+                            state.files.filter { it.path in state.selection }.map { it.toFileItem() },
+                        )
+                        viewModel.clearSelection()
+                    },
+                    onMove = { picker = Picker.MOVE },
+                    onCopy = {
+                        showMore = false
+                        picker = Picker.COPY
+                    },
+                    onConvert = { onConvert(state.selection.toList()) },
+                    onCompress = { onCompress(state.selection.toList()) },
+                    onCleanMetadata = {
+                        showMore = false
+                        viewModel.cleanMetadata()
+                    },
+                    onStar = {
+                        showMore = false
+                        viewModel.starSelection()
+                    },
+                    onDelete = {
+                        if (settings.confirmDelete) showDelete = true
+                        else viewModel.deleteSelected(permanent = !settings.useTrash)
+                    },
+                    onMore = { showMore = true },
+                    transferFolder = settings.transferFolder,
+                    onMoveToTransfer = if (settings.transferFolder.isNotBlank()) {
+                        { viewModel.moveSelectedTo(settings.transferFolder) }
+                    } else {
+                        null
+                    },
+                    onSelectAll = viewModel::selectAll,
+                    onDeselectAll = viewModel::clearSelection,
+                )
                 SelectionActionBar(
                     title = pluralStringResource(
                         R.plurals.item_count,
@@ -284,27 +389,7 @@ fun LargeFilesScreen(
                         state.selection.size,
                     ),
                     subtitle = Formatters.bytes(viewModel.selectedBytes()),
-                    actions = listOf(
-                        SelectionAction(
-                            icon = Icons.Filled.Deselect,
-                            label = stringResource(R.string.action_deselect_all),
-                            onClick = viewModel::clearSelection,
-                        ),
-                        SelectionAction(
-                            icon = Icons.AutoMirrored.Filled.DriveFileMove,
-                            label = stringResource(R.string.action_move),
-                            onClick = { showPicker = true },
-                        ),
-                        SelectionAction(
-                            icon = Icons.Filled.Delete,
-                            label = stringResource(R.string.action_delete),
-                            onClick = {
-                                if (settings.confirmDelete) showDelete = true
-                                else viewModel.deleteSelected(permanent = !settings.useTrash)
-                            },
-                            destructive = true,
-                        ),
-                    ),
+                    actions = bulkBarActions(handlers),
                 )
             }
         },
@@ -380,19 +465,83 @@ fun LargeFilesScreen(
         )
     }
 
-    if (showPicker) {
+    if (picker != null) {
+        val mode = picker
         FolderPickerSheet(
             startPath = state.files.firstOrNull()?.path?.substringBeforeLast('/')
                 ?: "/storage/emulated/0",
-            title = stringResource(R.string.action_move_here),
-            onDismiss = { showPicker = false },
+            title = stringResource(
+                if (mode == Picker.COPY) R.string.action_copy_here else R.string.action_move_here
+            ),
+            onDismiss = { picker = null },
             onPick = { destination ->
-                viewModel.moveSelectedTo(destination)
-                showPicker = false
+                if (mode == Picker.COPY) viewModel.copySelectedTo(destination)
+                else viewModel.moveSelectedTo(destination)
+                picker = null
             },
         )
     }
+
+    if (showMore) {
+        val selected = state.files.filter { it.path in state.selection }.map { it.toFileItem() }
+        BulkMoreSheet(
+            items = selected,
+            bytes = selected.sumOf { it.sizeBytes },
+            handlers = BulkHandlers(
+                onShare = {
+                    FileIntents.share(context, selected)
+                    showMore = false
+                    viewModel.clearSelection()
+                },
+                onMove = {
+                    showMore = false
+                    picker = Picker.MOVE
+                },
+                onCopy = {
+                    showMore = false
+                    picker = Picker.COPY
+                },
+                onConvert = {
+                    showMore = false
+                    onConvert(state.selection.toList())
+                },
+                onCompress = {
+                    showMore = false
+                    onCompress(state.selection.toList())
+                },
+                onCleanMetadata = {
+                    showMore = false
+                    viewModel.cleanMetadata()
+                },
+                onStar = {
+                    showMore = false
+                    viewModel.starSelection()
+                },
+                onDelete = {
+                    showMore = false
+                    if (settings.confirmDelete) showDelete = true
+                    else viewModel.deleteSelected(permanent = !settings.useTrash)
+                },
+                onMore = { showMore = false },
+                transferFolder = settings.transferFolder,
+                onMoveToTransfer = if (settings.transferFolder.isNotBlank()) {
+                    {
+                        showMore = false
+                        viewModel.moveSelectedTo(settings.transferFolder)
+                    }
+                } else {
+                    null
+                },
+                onSelectAll = viewModel::selectAll,
+                onDeselectAll = viewModel::clearSelection,
+            ),
+            onDismiss = { showMore = false },
+        )
+    }
 }
+
+/** Which folder picker is open. Null means none. */
+private enum class Picker { MOVE, COPY }
 
 @Composable
 private fun ThresholdChips(current: Long, onSelect: (Long) -> Unit) {

@@ -18,6 +18,7 @@ import kotlinx.coroutines.sync.withLock
 @Singleton
 class RemoteFileSystems @Inject constructor(
     private val store: RemoteConnectionStore,
+    private val hostKeys: SftpHostKeys,
 ) {
 
     private val lock = Mutex()
@@ -46,7 +47,7 @@ class RemoteFileSystems @Inject constructor(
     private fun create(connection: RemoteConnection): RemoteFileSystem = when (connection.kind) {
         RemoteKind.WEBDAV -> WebDavFileSystem(connection.id, connection.label, connection)
         RemoteKind.S3 -> S3FileSystem(connection.id, connection.label, connection)
-        RemoteKind.SFTP -> SftpFileSystem(connection.id, connection.label, connection)
+        RemoteKind.SFTP -> SftpFileSystem(connection.id, connection.label, connection, hostKeys)
         RemoteKind.SMB -> SmbFileSystem(connection.id, connection.label, connection)
     }
 

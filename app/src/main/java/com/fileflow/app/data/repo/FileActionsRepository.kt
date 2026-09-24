@@ -23,6 +23,7 @@ import com.fileflow.app.data.db.StarredFileEntity
 import com.fileflow.app.data.db.TrashDao
 import com.fileflow.app.data.db.TrashEntity
 import com.fileflow.app.data.db.TrashJournalDao
+import com.fileflow.app.domain.privacy.MetadataStripper
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
@@ -46,6 +47,16 @@ data class RenameSummary(
     val errors: List<String>,
 )
 
+/** What a batch metadata cleanup did. */
+data class MetadataCleanup(
+    val cleaned: Int,
+    val savedBytes: Long,
+    val skipped: Int,
+    val failed: Int,
+) {
+    val hasWork: Boolean get() = cleaned > 0
+}
+
 /**
  * Every user-initiated change goes through here. Keeping the journal and the
  * trash index in one place is what makes "undo" honest: if a change happened,
@@ -63,6 +74,7 @@ class FileActionsRepository @Inject constructor(
     private val contentIndex: ContentIndexRepository,
     private val starredDao: StarredFileDao,
     private val archiveEngine: ArchiveEngine,
+    private val metadataStripper: MetadataStripper,
 ) {
 
     /** Distinguishes two operations that begin within the same millisecond. */
@@ -351,6 +363,68 @@ class FileActionsRepository @Inject constructor(
     }
 
     suspend fun lastGroupId(): String? = journalDao.latestRenameGroup()
+
+    /**
+     * Strips metadata from each file to a cleaned copy beside it.
+     *
+     * A batch operation rather than a per-screen one, because "clean the
+     * metadata" has to mean the same thing whether it was asked for from the
+     * browser, the recent list or the starred list — and because a version per
+     * screen is a version that gets fixed on one screen and forgotten on the
+     * others.
+     *
+     * The original is never touched: the cleaned copy is a new file, and a copy
+     * that turned out to have nothing to remove is deleted rather than left
+     * behind as a duplicate.
+     */
+    suspend fun cleanMetadata(
+        paths: List<String>,
+        onProgress: (OperationProgress) -> Unit = {},
+    ): MetadataCleanup = withContext(Dispatchers.IO) {
+        var cleaned = 0
+        var saved = 0L
+        var skipped = 0
+        var failed = 0
+
+        paths.forEachIndexed { index, path ->
+            val source = File(path)
+            val parent = source.parentFile
+            onProgress(
+                OperationProgress(
+                    current = index,
+                    total = paths.size,
+                    currentName = source.name,
+                    bytesDone = saved,
+                    bytesTotal = 0,
+                )
+            )
+            if (parent == null || !MetadataStripper.canStrip(source)) {
+                failed++
+                return@forEachIndexed
+            }
+            runCatching {
+                val name = CollisionResolver.unique(
+                    parent,
+                    source.name.substringBeforeLast('.') + ".clean." +
+                        source.name.substringAfterLast('.', "jpg"),
+                )
+                val target = File(parent, name)
+                target to metadataStripper.strip(source, target)
+            }.onSuccess { (target, report) ->
+                if (report.removedBytes <= 0) {
+                    target.delete()
+                    skipped++
+                } else {
+                    cleaned++
+                    saved += report.removedBytes
+                    indexRepository.upsertPaths(listOf(target.absolutePath))
+                    mediaScanner.announce(listOf(target.absolutePath))
+                }
+            }.onFailure { failed++ }
+        }
+
+        MetadataCleanup(cleaned = cleaned, savedBytes = saved, skipped = skipped, failed = failed)
+    }
 
     // ------------------------------------------------------------- archives
 

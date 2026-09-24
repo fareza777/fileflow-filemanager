@@ -82,6 +82,10 @@ import com.fileflow.app.core.util.Formatters
 import com.fileflow.app.data.repo.FileActionsRepository
 import com.fileflow.app.domain.timeline.MonthData
 import com.fileflow.app.domain.timeline.TimelineRepository
+import com.fileflow.app.data.repo.MetadataCleanup
+import com.fileflow.app.ui.components.BulkHandlers
+import com.fileflow.app.ui.components.BulkMoreSheet
+import com.fileflow.app.ui.components.bulkBarActions
 import com.fileflow.app.ui.components.ConfirmDialog
 import com.fileflow.app.ui.components.EmptyState
 import com.fileflow.app.ui.components.FileRow
@@ -284,6 +288,64 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
+    fun copySelectedTo(destination: String) {
+        val paths = _state.value.selectedItems.map { it.path }
+        if (paths.isEmpty()) return
+        viewModelScope.launch {
+            var report: OperationReport? = null
+            try {
+                operationRunner.run(OperationKind.COPY) { progress ->
+                    report = actions.copy(paths, destination, ConflictPolicy.RENAME, progress)
+                }
+            } catch (_: CancellationException) {
+                // Stopped from the root bar.
+            }
+            _state.update { it.withSelection(emptySet()) }
+            report?.let { done -> _messages.send(UiMessage.Info("${done.succeeded} copied")) }
+        }
+    }
+
+    /** The same cleanup every other list offers, from the same place. */
+    fun cleanMetadata() {
+        val paths = _state.value.selectedItems.map { it.path }
+        if (paths.isEmpty()) return
+        viewModelScope.launch {
+            var cleanup: MetadataCleanup? = null
+            try {
+                operationRunner.run(OperationKind.CLEAN) { progress ->
+                    cleanup = actions.cleanMetadata(paths, progress)
+                }
+            } catch (_: CancellationException) {
+                return@launch
+            }
+            _state.update { it.withSelection(emptySet()) }
+            cleanup?.let { result ->
+                _messages.send(
+                    UiMessage.Info(
+                        if (result.cleaned == 0 && result.failed == 0) {
+                            "Nothing to remove"
+                        } else {
+                            "Cleaned ${result.cleaned} files · " +
+                                "${Formatters.bytes(result.savedBytes)} removed"
+                        }
+                    )
+                )
+            }
+            load()
+        }
+    }
+
+    fun starSelection() {
+        val items = _state.value.selectedItems
+        if (items.isEmpty()) return
+        viewModelScope.launch {
+            val allStarred = items.all { actions.isStarred(it.path) }
+            items.forEach { actions.setStar(it, starred = !allStarred) }
+            _state.update { it.withSelection(emptySet()) }
+            _messages.send(UiMessage.Info(if (allStarred) "Star removed" else "Starred ${items.size}"))
+        }
+    }
+
     fun moveSelectedTo(destination: String) {
         val paths = _state.value.selectedItems.map { it.path }
         if (paths.isEmpty()) return
@@ -341,6 +403,8 @@ class CalendarViewModel @Inject constructor(
 fun CalendarScreen(
     onBack: () -> Unit,
     onOpenFolder: (String) -> Unit,
+    onConvert: (List<String>) -> Unit,
+    onCompress: (List<String>) -> Unit,
     viewModel: CalendarViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -350,7 +414,8 @@ fun CalendarScreen(
     val trashDays = settings.trashRetentionDays
     val haptics = LocalHapticFeedback.current
     var confirmDelete by remember { mutableStateOf(false) }
-    var showPicker by remember { mutableStateOf(false) }
+    var picker by remember { mutableStateOf<Picker?>(null) }
+    var showMore by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { message ->
@@ -380,6 +445,40 @@ fun CalendarScreen(
         },
         bottomBar = {
             if (state.selection.isNotEmpty()) {
+                val handlers = BulkHandlers(
+                    onShare = {
+                        FileIntents.share(context, state.selectedItems)
+                        viewModel.clearSelection()
+                    },
+                    onMove = { picker = Picker.MOVE },
+                    onCopy = {
+                        showMore = false
+                        picker = Picker.COPY
+                    },
+                    onConvert = { onConvert(state.selection.toList()) },
+                    onCompress = { onCompress(state.selection.toList()) },
+                    onCleanMetadata = {
+                        showMore = false
+                        viewModel.cleanMetadata()
+                    },
+                    onStar = {
+                        showMore = false
+                        viewModel.starSelection()
+                    },
+                    onDelete = {
+                        if (settings.confirmDelete) confirmDelete = true
+                        else viewModel.deleteSelected()
+                    },
+                    onMore = { showMore = true },
+                    transferFolder = settings.transferFolder,
+                    onMoveToTransfer = if (settings.transferFolder.isNotBlank()) {
+                        { viewModel.moveSelectedTo(settings.transferFolder) }
+                    } else {
+                        null
+                    },
+                    onSelectAll = viewModel::selectAllOnDay,
+                    onDeselectAll = viewModel::clearSelection,
+                )
                 SelectionActionBar(
                     title = pluralStringResource(
                         R.plurals.item_count,
@@ -387,27 +486,7 @@ fun CalendarScreen(
                         state.selection.size,
                     ),
                     subtitle = Formatters.bytes(state.selectedItems.sumOf { it.sizeBytes }),
-                    actions = listOf(
-                        SelectionAction(
-                            icon = Icons.Filled.SelectAll,
-                            label = stringResource(R.string.action_select_all),
-                            onClick = viewModel::selectAllOnDay,
-                        ),
-                        SelectionAction(
-                            icon = Icons.AutoMirrored.Filled.DriveFileMove,
-                            label = stringResource(R.string.action_move),
-                            onClick = { showPicker = true },
-                        ),
-                        SelectionAction(
-                            icon = Icons.Filled.Delete,
-                            label = stringResource(R.string.action_delete),
-                            onClick = {
-                                if (settings.confirmDelete) confirmDelete = true
-                                else viewModel.deleteSelected()
-                            },
-                            destructive = true,
-                        ),
-                    ),
+                    actions = bulkBarActions(handlers),
                 )
             }
         },
@@ -580,19 +659,82 @@ fun CalendarScreen(
         )
     }
 
-    if (showPicker) {
+    if (picker != null) {
+        val mode = picker
         FolderPickerSheet(
             startPath = dayFiles.firstOrNull()?.path?.substringBeforeLast('/')
                 ?: viewModel.defaultRoot(),
-            title = stringResource(R.string.action_move_here),
-            onDismiss = { showPicker = false },
+            title = stringResource(
+                if (mode == Picker.COPY) R.string.action_copy_here else R.string.action_move_here
+            ),
+            onDismiss = { picker = null },
             onPick = { destination ->
-                viewModel.moveSelectedTo(destination)
-                showPicker = false
+                if (mode == Picker.COPY) viewModel.copySelectedTo(destination)
+                else viewModel.moveSelectedTo(destination)
+                picker = null
             },
         )
     }
+
+    if (showMore) {
+        BulkMoreSheet(
+            items = state.selectedItems,
+            bytes = state.selectedItems.sumOf { it.sizeBytes },
+            handlers = BulkHandlers(
+                onShare = {
+                    FileIntents.share(context, state.selectedItems)
+                    showMore = false
+                    viewModel.clearSelection()
+                },
+                onMove = {
+                    showMore = false
+                    picker = Picker.MOVE
+                },
+                onCopy = {
+                    showMore = false
+                    picker = Picker.COPY
+                },
+                onConvert = {
+                    showMore = false
+                    onConvert(state.selection.toList())
+                },
+                onCompress = {
+                    showMore = false
+                    onCompress(state.selection.toList())
+                },
+                onCleanMetadata = {
+                    showMore = false
+                    viewModel.cleanMetadata()
+                },
+                onStar = {
+                    showMore = false
+                    viewModel.starSelection()
+                },
+                onDelete = {
+                    showMore = false
+                    if (settings.confirmDelete) confirmDelete = true
+                    else viewModel.deleteSelected()
+                },
+                onMore = { showMore = false },
+                transferFolder = settings.transferFolder,
+                onMoveToTransfer = if (settings.transferFolder.isNotBlank()) {
+                    {
+                        showMore = false
+                        viewModel.moveSelectedTo(settings.transferFolder)
+                    }
+                } else {
+                    null
+                },
+                onSelectAll = viewModel::selectAllOnDay,
+                onDeselectAll = viewModel::clearSelection,
+            ),
+            onDismiss = { showMore = false },
+        )
+    }
 }
+
+/** Which folder picker is open. Null means none. */
+private enum class Picker { MOVE, COPY }
 
 @Composable
 private fun MonthHeader(

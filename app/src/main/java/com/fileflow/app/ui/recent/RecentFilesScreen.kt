@@ -75,16 +75,19 @@ import com.fileflow.app.data.prefs.SettingsRepository
 import com.fileflow.app.data.repo.BrowseRepository
 import com.fileflow.app.data.repo.FileActionsRepository
 import com.fileflow.app.data.repo.FileIndexRepository
+import com.fileflow.app.data.repo.MetadataCleanup
 import com.fileflow.app.data.repo.OperationRunner
 import com.fileflow.app.domain.privacy.MetadataStripper
+import com.fileflow.app.ui.components.BulkHandlers
+import com.fileflow.app.ui.components.BulkMoreSheet
 import com.fileflow.app.ui.components.ConfirmDialog
 import com.fileflow.app.ui.components.EmptyState
 import com.fileflow.app.ui.components.FileActionSheet
 import com.fileflow.app.ui.components.FileRow
 import com.fileflow.app.ui.components.FolderPickerSheet
 import com.fileflow.app.ui.components.LoadingState
-import com.fileflow.app.ui.components.SelectionAction
 import com.fileflow.app.ui.components.SelectionActionBar
+import com.fileflow.app.ui.components.bulkBarActions
 import com.fileflow.app.ui.util.FileIntents
 import com.fileflow.app.ui.util.LocalUserSettings
 import com.fileflow.app.ui.util.UiMessage
@@ -109,10 +112,13 @@ data class RecentState(
     val working: Boolean = false,
     /** Where "the PC folder" is; empty until the user picks one. */
     val transferFolder: String = "",
+    /** Paths with a star, so the batch verb can say add or remove. */
+    val starredPaths: Set<String> = emptySet(),
 ) {
     val selectionMode: Boolean get() = selection.isNotEmpty()
     val selectedItems: List<FileItem> get() = items.filter { it.path in selection }
     val selectedBytes: Long get() = selectedItems.sumOf { it.sizeBytes }
+    val allStarred: Boolean get() = selection.isNotEmpty() && selection.all { it in starredPaths }
 }
 
 @HiltViewModel
@@ -137,6 +143,13 @@ class RecentFilesViewModel @Inject constructor(
         viewModelScope.launch {
             settings.settings.collect { prefs ->
                 _state.update { it.copy(transferFolder = prefs.transferFolder) }
+            }
+        }
+        // The batch star verb reads "add" or "remove" depending on the files
+        // already starred, so the stars are observed rather than queried once.
+        viewModelScope.launch {
+            actions.observeStarredPaths().collect { paths ->
+                _state.update { it.copy(starredPaths = paths.toSet()) }
             }
         }
     }
@@ -194,53 +207,38 @@ class RecentFilesViewModel @Inject constructor(
 
     /**
      * Strips metadata from every selected image, each one to a copy beside
-     * itself. Nothing is overwritten: a cleaned photo is a new file, and the
-     * original is still the user's.
+     * itself. The work lives in the repository so the starred list and the
+     * browser do exactly the same thing with the same words.
      */
     fun cleanMetadata() {
         val items = _state.value.selectedItems.filter { !it.isDirectory }
         if (items.isEmpty()) return
         viewModelScope.launch {
             _state.update { it.copy(working = true) }
-            var cleaned = 0
-            var saved = 0L
-            var skipped = 0
-            items.forEach { item ->
-                val source = File(item.path)
-                val parent = source.parentFile
-                if (parent == null || !MetadataStripper.canStrip(source)) return@forEach
-                runCatching {
-                    val name = CollisionResolver.unique(
-                        parent,
-                        source.name.substringBeforeLast('.') + ".clean." +
-                            source.name.substringAfterLast('.', "jpg"),
-                    )
-                    val target = File(parent, name)
-                    target to stripper.strip(source, target)
-                }.onSuccess { (target, report) ->
-                    if (report.removedBytes <= 0) {
-                        // A file with nothing in it is not a copy worth keeping.
-                        target.delete()
-                        skipped++
-                    } else {
-                        cleaned++
-                        saved += report.removedBytes
-                        browseRepository.invalidateListing(parent.absolutePath)
-                        indexRepository.upsertPaths(listOf(target.absolutePath))
-                        mediaScanner.announce(listOf(target.absolutePath))
-                    }
+            var cleanup: MetadataCleanup? = null
+            try {
+                operationRunner.run(OperationKind.CLEAN) { progress ->
+                    cleanup = actions.cleanMetadata(items.map { it.path }, progress)
                 }
+            } catch (_: CancellationException) {
+                // Stopped from the root bar; whatever finished stays finished.
             }
             _state.update { it.copy(working = false, selection = emptySet()) }
-            _messages.send(
-                UiMessage.Info(
-                    when {
-                        cleaned == 0 -> "Nothing to remove"
-                        else -> "Cleaned $cleaned files · ${Formatters.bytes(saved)} removed" +
-                            if (skipped > 0) ", $skipped had nothing" else ""
-                    }
+            val result = cleanup
+            if (result != null) {
+                browseRepository.invalidateListing(null)
+                _messages.send(
+                    UiMessage.Info(
+                        when {
+                            result.cleaned == 0 && result.failed == 0 -> "Nothing to remove"
+                            else -> "Cleaned ${result.cleaned} files · " +
+                                "${Formatters.bytes(result.savedBytes)} removed" +
+                                if (result.skipped > 0) ", ${result.skipped} had nothing" else "" +
+                                if (result.failed > 0) ", ${result.failed} skipped" else ""
+                        }
+                    )
                 )
-            )
+            }
             load()
         }
     }
@@ -395,6 +393,33 @@ fun RecentFilesScreen(
         },
         bottomBar = {
             if (state.selectionMode) {
+                val handlers = BulkHandlers(
+                    onShare = {
+                        FileIntents.share(context, state.selectedItems)
+                        viewModel.clearSelection()
+                    },
+                    onMove = { picker = Picker.MOVE },
+                    onCopy = {
+                        showMore = false
+                        picker = Picker.COPY
+                    },
+                    onConvert = { onConvert(state.selection.toList()) },
+                    onCompress = { onCompress(state.selection.toList()) },
+                    onCleanMetadata = viewModel::cleanMetadata,
+                    onStar = viewModel::toggleStarOnSelection,
+                    onDelete = {
+                        if (settings.confirmDelete) showDelete = true
+                        else viewModel.deleteSelected(permanent = !settings.useTrash)
+                    },
+                    onMore = { showMore = true },
+                    allStarred = state.allStarred,
+                    transferFolder = state.transferFolder,
+                    onMoveToTransfer = if (state.transferFolder.isNotBlank()) {
+                        { viewModel.moveToTransferFolder() }
+                    } else {
+                        null
+                    },
+                )
                 SelectionActionBar(
                     title = pluralStringResource(
                         R.plurals.item_count,
@@ -402,43 +427,7 @@ fun RecentFilesScreen(
                         state.selection.size,
                     ),
                     subtitle = Formatters.bytes(state.selectedBytes),
-                    actions = listOfNotNull(
-                        SelectionAction(
-                            icon = Icons.Filled.Share,
-                            label = stringResource(R.string.action_share),
-                            onClick = {
-                                FileIntents.share(context, state.selectedItems)
-                                viewModel.clearSelection()
-                            },
-                        ),
-                        SelectionAction(
-                            icon = Icons.AutoMirrored.Filled.DriveFileMove,
-                            label = stringResource(R.string.action_move),
-                            onClick = { picker = Picker.MOVE },
-                        ),
-                        SelectionAction(
-                            icon = Icons.Filled.SwapHoriz,
-                            label = stringResource(R.string.action_convert),
-                            onClick = { onConvert(state.selection.toList()) },
-                        ),
-                        // Everything that needs a destination or a second
-                        // question waits here, so the bar stays five verbs the
-                        // thumb can reach instead of a row of glyphs.
-                        SelectionAction(
-                            icon = Icons.Filled.MoreVert,
-                            label = stringResource(R.string.action_more),
-                            onClick = { showMore = true },
-                        ),
-                        SelectionAction(
-                            icon = Icons.Filled.Delete,
-                            label = stringResource(R.string.action_delete),
-                            onClick = {
-                                if (settings.confirmDelete) showDelete = true
-                                else viewModel.deleteSelected(permanent = !settings.useTrash)
-                            },
-                            destructive = true,
-                        ),
-                    ),
+                    actions = bulkBarActions(handlers),
                 )
             }
         },
@@ -592,133 +581,61 @@ fun RecentFilesScreen(
 
     if (showMore) {
         BulkMoreSheet(
-            state = state,
+            items = state.selectedItems,
+            bytes = state.selectedBytes,
+            handlers = BulkHandlers(
+                onShare = {
+                    FileIntents.share(context, state.selectedItems)
+                    showMore = false
+                    viewModel.clearSelection()
+                },
+                onMove = {
+                    showMore = false
+                    picker = Picker.MOVE
+                },
+                onCopy = {
+                    showMore = false
+                    picker = Picker.COPY
+                },
+                onConvert = {
+                    showMore = false
+                    onConvert(state.selection.toList())
+                },
+                onCompress = {
+                    showMore = false
+                    onCompress(state.selection.toList())
+                },
+                onCleanMetadata = {
+                    showMore = false
+                    viewModel.cleanMetadata()
+                },
+                onStar = {
+                    showMore = false
+                    viewModel.toggleStarOnSelection()
+                },
+                onDelete = {
+                    showMore = false
+                    if (settings.confirmDelete) showDelete = true
+                    else viewModel.deleteSelected(permanent = !settings.useTrash)
+                },
+                onMore = { showMore = false },
+                allStarred = state.allStarred,
+                transferFolder = state.transferFolder,
+                onMoveToTransfer = if (state.transferFolder.isNotBlank()) {
+                    {
+                        showMore = false
+                        viewModel.moveToTransferFolder()
+                    }
+                } else {
+                    null
+                },
+                onSelectAll = viewModel::selectAll,
+                onDeselectAll = viewModel::clearSelection,
+            ),
             onDismiss = { showMore = false },
-            onCopy = {
-                showMore = false
-                picker = Picker.COPY
-            },
-            onMoveToTransfer = {
-                showMore = false
-                viewModel.moveToTransferFolder()
-            },
-            onCompress = {
-                showMore = false
-                onCompress(state.selection.toList())
-            },
-            onCleanMetadata = {
-                showMore = false
-                viewModel.cleanMetadata()
-            },
-            onStar = {
-                showMore = false
-                viewModel.toggleStarOnSelection()
-            },
-            onSelectAll = viewModel::selectAll,
-            onDeselectAll = viewModel::clearSelection,
         )
     }
 }
 
 /** Which folder picker is open. Null means none. */
 private enum class Picker { MOVE, COPY }
-
-/**
- * The verbs that need a second question — where to copy, what to compress —
- * or that apply to the whole batch at once. Keeping them behind one sheet means
- * the bar above stays short enough to hit accurately with a thumb.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun BulkMoreSheet(
-    state: RecentState,
-    onDismiss: () -> Unit,
-    onCopy: () -> Unit,
-    onMoveToTransfer: () -> Unit,
-    onCompress: () -> Unit,
-    onCleanMetadata: () -> Unit,
-    onStar: () -> Unit,
-    onSelectAll: () -> Unit,
-    onDeselectAll: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val strippable = state.selectedItems.count { item ->
-        !item.isDirectory && MetadataStripper.canStrip(File(item.path))
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                text = pluralStringResource(
-                    R.plurals.item_count,
-                    state.selection.size,
-                    state.selection.size,
-                ) + " · " + Formatters.bytes(state.selectedBytes),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            )
-
-            MoreRow(Icons.Filled.ContentCopy, R.string.action_copy) { onCopy() }
-            if (state.transferFolder.isNotBlank()) {
-                MoreRow(Icons.Filled.Devices, R.string.action_to_pc) { onMoveToTransfer() }
-            }
-            MoreRow(Icons.Filled.FolderZip, R.string.action_compress) { onCompress() }
-            if (strippable > 0) {
-                MoreRow(Icons.Filled.PrivacyTip, R.string.action_clean_metadata) { onCleanMetadata() }
-            }
-            MoreRow(Icons.Outlined.StarBorder, R.string.action_star) { onStar() }
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 6.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-            )
-            MoreRow(Icons.Filled.SelectAll, R.string.action_select_all) { onSelectAll() }
-            MoreRow(Icons.Filled.Deselect, R.string.action_deselect_all) { onDeselectAll() }
-        }
-    }
-}
-
-@Composable
-private fun MoreRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: Int,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(19.dp),
-            )
-        }
-        Spacer(Modifier.width(14.dp))
-        Text(
-            text = stringResource(label),
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-}

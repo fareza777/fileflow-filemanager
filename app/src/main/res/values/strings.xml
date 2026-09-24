@@ -126,7 +126,6 @@
     <string name="cd_refresh">Refresh</string>
     <string name="cd_undo">Undo</string>
     <string name="cd_open_folder">Show in folder</string>
-    <string name="cd_unstar">Remove star</string>
     <string name="cd_previous_month">Previous month</string>
     <string name="cd_next_month">Next month</string>
     <string name="cd_open_with">Open with another app</string>
@@ -183,6 +182,7 @@
     <string name="op_renaming">Renaming…</string>
     <string name="op_archiving">Working on the archive…</string>
     <string name="op_restoring">Restoring…</string>
+    <string name="op_cleaning">Cleaning metadata…</string>
     <string name="op_cancel">Stop</string>
 
     <!-- Delete / conflict dialogs -->

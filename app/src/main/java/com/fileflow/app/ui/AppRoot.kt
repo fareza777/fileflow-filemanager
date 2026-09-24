@@ -384,6 +384,14 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                     CalendarScreen(
                         onBack = { navController.popBackStack() },
                         onOpenFolder = openFolder,
+                        onConvert = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.CONVERT)
+                        },
+                        onCompress = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.COMPRESS)
+                        },
                     )
                 }
 
@@ -427,7 +435,17 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                 }
 
                 composable(Routes.LARGE) {
-                    LargeFilesScreen(onBack = { navController.popBackStack() })
+                    LargeFilesScreen(
+                        onBack = { navController.popBackStack() },
+                        onConvert = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.CONVERT)
+                        },
+                        onCompress = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.COMPRESS)
+                        },
+                    )
                 }
 
                 composable(Routes.JUNK) {
@@ -450,6 +468,15 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                     StarredScreen(
                         onBack = { navController.popBackStack() },
                         onOpenFolder = openFolder,
+                        onPreview = previewFile,
+                        onConvert = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.CONVERT)
+                        },
+                        onCompress = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.COMPRESS)
+                        },
                     )
                 }
 
@@ -729,6 +756,7 @@ private fun GlobalOperationBar(
                 OperationKind.CREATE_FOLDER -> stringResource(R.string.browser_new_folder)
                 OperationKind.ARCHIVE -> stringResource(R.string.op_archiving)
                 OperationKind.RESTORE -> stringResource(R.string.op_restoring)
+                OperationKind.CLEAN -> stringResource(R.string.op_cleaning)
             },
             detail = operation.progress?.let { progress ->
                 if (progress.total > 1) {

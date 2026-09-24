@@ -122,7 +122,6 @@
     <string name="cd_refresh">Muat ulang</string>
     <string name="cd_undo">Batalkan</string>
     <string name="cd_open_folder">Lihat di folder</string>
-    <string name="cd_unstar">Hapus bintang</string>
 
     <!-- Penampil -->
     <string name="viewer_loading">Memuat…</string>
@@ -175,6 +174,7 @@
     <string name="op_renaming">Mengganti nama…</string>
     <string name="op_archiving">Memproses arsip…</string>
     <string name="op_restoring">Memulihkan…</string>
+    <string name="op_cleaning">Membersihkan metadata…</string>
     <string name="op_cancel">Stop</string>
 
     <!-- Dialog hapus / konflik -->

@@ -128,6 +128,12 @@ class UndoManager @Inject constructor(
             com.fileflow.app.core.storage.OperationKind.DELETE ->
                 ReverseOutcome.Skip("Permanently deleted")
 
+            // Cleaning metadata writes a new file and leaves the original alone,
+            // so there is nothing to put back — and the copy it made is the
+            // answer, not a mistake to undo.
+            com.fileflow.app.core.storage.OperationKind.CLEAN ->
+                ReverseOutcome.Skip("Nothing was changed")
+
             com.fileflow.app.core.storage.OperationKind.CREATE_FOLDER -> {
                 val folder = File(entry.sourcePath)
                 if (folder.exists() && folder.listFiles()?.isEmpty() == true) {

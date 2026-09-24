@@ -28,6 +28,7 @@ class SftpFileSystem(
     override val connectionId: String,
     override val label: String,
     private val connection: RemoteConnection,
+    private val hostKeys: SftpHostKeys,
 ) : RemoteFileSystem {
 
     private val lock = Mutex()
@@ -173,8 +174,26 @@ class SftpFileSystem(
             }
     }
 
-    private fun connect(): Session {
+    /**
+     * Opens the SSH session, refusing a server whose key has changed.
+     *
+     * First use is trusted and remembered, which is what "trust on first use"
+     * means and is the only thing that can be done without asking the user a
+     * question in the middle of a background connection. Every use after that is
+     * checked: a key that differs from the remembered one stops the connection
+     * with an explanation, because that difference is exactly what a machine in
+     * the middle looks like, and a file manager that silently accepts it would
+     * be handing over the password and the files.
+     *
+     * The fingerprint stored is the same shape OpenSSH prints, so it can be
+     * compared with `ssh-keyscan` on a computer rather than taken on faith.
+     */
+    private suspend fun connect(): Session {
         if (connection.host.isBlank()) throw RemoteException("No host set for this connection")
+        val hostId = HostKeyPolicy.hostId(connection.host, connection.portOr)
+        val remembered = hostKeys.all()
+        val trustedNow = mutableListOf<KnownHostKey>()
+
         return runCatching {
             val jsch = JSch()
             val keyPath = connection.extra.trim()
@@ -184,16 +203,33 @@ class SftpFileSystem(
             }
             val created = jsch.getSession(connection.user, connection.host, connection.portOr)
             if (!usingKey && connection.secret.isNotBlank()) created.setPassword(connection.secret)
-            // Host keys are not verified, which is a deliberate hole and the
-            // honest default for a file manager without a known-hosts store:
-            // the alternative is refusing to connect to a server the user just
-            // typed in. The connection list tells the user what it does.
-            created.setConfig("StrictHostKeyChecking", "no")
+            created.hostKeyRepository = StoredHostKeys(
+                remembered = remembered,
+                hostId = hostId,
+                onTrust = { entry -> trustedNow += entry },
+            )
+            // "ask" is the only setting that gives both halves: JSch only asks
+            // when the repository has nothing for this host, so a changed key is
+            // never prompted for — it is refused before any password is sent.
+            created.setConfig("StrictHostKeyChecking", "ask")
+            created.userInfo = TrustFirstUse
             created.timeout = CONNECT_TIMEOUT_MS
             created.connect(CONNECT_TIMEOUT_MS)
             created
         }.getOrElse { error ->
-            throw RemoteException("Could not connect: ${error.message ?: "unknown error"}", error)
+            val raw = error.message.orEmpty()
+            val message = if (raw.contains("changed", ignoreCase = true) || raw.contains("reject", ignoreCase = true)) {
+                "The key this server presented is not the one this app was told to trust. " +
+                    "That is what an intercepted connection looks like. If the server was " +
+                    "rebuilt or its keys were regenerated, forget the saved key for this " +
+                    "host in Remote storage and connect again."
+            } else {
+                "Could not connect: ${raw.ifBlank { "unknown error" }}"
+            }
+            throw RemoteException(message, error)
+        }.also { session ->
+            trustedNow.forEach { entry -> hostKeys.remember(entry) }
+            session
         }
     }
 
