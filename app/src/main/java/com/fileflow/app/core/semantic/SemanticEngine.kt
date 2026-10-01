@@ -10,6 +10,7 @@ import java.nio.ByteOrder
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -187,31 +188,56 @@ class SemanticEngine @Inject constructor(
         done
     }
 
-    /** Photos whose *meaning* is closest to [query]. */
-    suspend fun search(query: String, limit: Int = 60, minimum: Float = 0.2f): List<SemanticHit> =
+    /**
+     * Photos whose *meaning* is closest to [query].
+     *
+     * The query is not embedded as typed. It is turned into several English
+     * prompts, each is embedded, and the vectors are averaged — because the
+     * model was trained on English captions and sentence-shaped text, and a
+     * bare Indonesian phrase is neither. Averaging several phrasings of the same
+     * question lands the query vector nearer the middle of the region those
+     * photos occupy, which is the standard prompt-ensembling result and costs a
+     * few milliseconds of text-tower time per search.
+     */
+    suspend fun search(query: String, limit: Int = 60, minimum: Float = MINIMUM_SCORE): List<SemanticHit> =
         withContext(Dispatchers.IO) {
             val needle = query.trim()
             if (needle.isEmpty()) return@withContext emptyList()
 
             val (_, text, tokens) = load() ?: return@withContext emptyList()
-            val queryVector = text.embedText(tokens.encode(needle)) ?: return@withContext emptyList()
+            val prompts = ClipPrompts.promptsFor(needle)
+            if (prompts.isEmpty()) return@withContext emptyList()
 
-            vectors.all()
-                .asSequence()
-                .filter { it.model == modelId && it.dimension == queryVector.size }
-                .map { row ->
-                    SemanticHit(
-                        path = row.path,
-                        name = row.name,
-                        modified = row.modified,
-                        score = dot(queryVector, unpack(row.vector, row.dimension)),
-                    )
-                }
-                .filter { it.score >= minimum }
-                .sortedByDescending { it.score }
-                .take(limit)
-                .toList()
+            val vectors = prompts.mapNotNull { prompt ->
+                text.embedText(tokens.encode(prompt))
+            }
+            val queryVector = averageNormalised(vectors) ?: return@withContext emptyList()
+
+            vectorsIndex(queryVector, limit, minimum)
         }
+
+    private suspend fun vectorsIndex(
+        queryVector: FloatArray,
+        limit: Int,
+        minimum: Float,
+    ): List<SemanticHit> = vectors.all()
+        .asSequence()
+        .filter { it.model == modelId && it.dimension == queryVector.size }
+        .map { row ->
+            SemanticHit(
+                path = row.path,
+                name = row.name,
+                modified = row.modified,
+                score = dot(queryVector, unpack(row.vector, row.dimension)),
+            )
+        }
+        .filter { it.score >= minimum }
+        .sortedByDescending { it.score }
+        .take(limit)
+        .toList()
+
+    /** True when the query has a hand-written prompt rather than a raw passthrough. */
+    fun isCurated(query: String): Boolean = ClipPrompts.isCurated(query)
 
     suspend fun clear() = withContext(Dispatchers.IO) { vectors.clear() }
 
@@ -254,14 +280,51 @@ class SemanticEngine @Inject constructor(
         return vocab
     }
 
-    private companion object {
+    /**
+     * The mean of several unit vectors, re-normalised.
+     *
+     * In the companion object so it can be tested without an engine, a device or
+     * a model — and because it has one edge that matters: prompts whose vectors
+     * cancel out average to nothing, and dividing by that length would put a NaN
+     * into every comparison. Every photo would then score NaN, and NaN
+     * comparisons are false, so the search would return an empty list rather
+     * than an error. Returning null instead makes that case the caller's.
+     */
+    internal companion object {
         const val BATCH = 8
+
+        /**
+         * The floor under a result, and an honest guess rather than a
+         * measurement: CLIP similarities for a good match sit in a fairly narrow
+         * band that depends on the model and the library, and this number wants
+         * tuning against real photos on a real phone. It is deliberately low —
+         * a wrong-but-labelled result the user can dismiss is better than a
+         * correct one hidden by an arbitrary line.
+         */
+        const val MINIMUM_SCORE = 0.15f
 
         /**
          * Matches `"token": 1234` in CLIP's `vocab.json`, including the escaped
          * characters some tokens contain.
          */
-        val ENTRIES = Regex("\"((?:[^\"\\\\]|\\\\.)*)\"\\s*:\\s*(\\d+)")
+        private val ENTRIES = Regex("\"((?:[^\"\\\\]|\\\\.)*)\"\\s*:\\s*(\\d+)")
+
+        fun averageNormalised(vectors: List<FloatArray>): FloatArray? {
+            if (vectors.isEmpty()) return null
+            val size = vectors.first().size
+            if (size == 0 || vectors.any { it.size != size }) return null
+
+            val mean = FloatArray(size)
+            vectors.forEach { vector ->
+                for (index in 0 until size) mean[index] += vector[index]
+            }
+            var sum = 0f
+            mean.forEach { sum += it * it }
+            val length = sqrt(sum)
+            if (length <= 1e-6f) return null
+            for (index in mean.indices) mean[index] /= length
+            return mean
+        }
     }
 }
 

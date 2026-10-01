@@ -593,6 +593,7 @@
     <string name="photo_section_meaning">By meaning</string>
     <string name="photo_section_exact">Exact matches</string>
     <string name="photo_match_meaning">match</string>
+    <string name="photo_prompt_translated">Translated into English prompts, which is the language the model reads</string>
     <string name="photo_model_title">Search by meaning (optional model)</string>
     <string name="photo_model_offer">The text search finds what is printed in a photo. To find a photo by what it shows â€” a work party, a market, a view â€” this app can run a MobileCLIP model on the device. It is a %1$d MB download and it never leaves the phone.</string>
     <string name="photo_model_download">Download the model (%1$d MB)</string>

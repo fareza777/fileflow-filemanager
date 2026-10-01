@@ -108,6 +108,8 @@ data class PhotoSearchState(
     val embedding: Boolean = false,
     /** Photos found by meaning rather than by text or label. */
     val semantic: List<SemanticHit> = emptyList(),
+    /** True when the query was recognised and translated into English prompts. */
+    val queryCurated: Boolean = false,
 ) {
     val showingRecent: Boolean get() = query.isBlank()
     val modelTotalMb: Long get() = SemanticAsset.entries.sumOf { it.megabytes }
@@ -262,7 +264,14 @@ class PhotoSearchViewModel @Inject constructor(
             } else {
                 emptyList()
             }
-            _state.update { it.copy(searching = false, results = hits, semantic = byMeaning) }
+            _state.update {
+                it.copy(
+                    searching = false,
+                    results = hits,
+                    semantic = byMeaning,
+                    queryCurated = byMeaning.isNotEmpty() && semantic.isCurated(needle),
+                )
+            }
         }
     }
 
@@ -463,7 +472,22 @@ fun PhotoSearchScreen(
                             // that can answer a phrase nothing is printed on.
                             if (state.semantic.isNotEmpty()) {
                                 item(span = { GridItemSpan(maxLineSpan) }) {
-                                    SectionHeader(stringResource(R.string.photo_section_meaning))
+                                    Column {
+                                        SectionHeader(stringResource(R.string.photo_section_meaning))
+                                        // Why an Indonesian phrase works at all:
+                                        // the model reads English, so the query is
+                                        // translated into prompts before it is
+                                        // embedded. Saying so turns a mystery into
+                                        // a mechanism.
+                                        if (state.queryCurated) {
+                                            Text(
+                                                text = stringResource(R.string.photo_prompt_translated),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(horizontal = 4.dp),
+                                            )
+                                        }
+                                    }
                                 }
                                 items(state.semantic, key = { "s-${it.path}" }) { hit ->
                                     PhotoCard(

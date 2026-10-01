@@ -581,6 +581,7 @@
     <string name="photo_section_meaning">Menurut makna</string>
     <string name="photo_section_exact">Cocok persis</string>
     <string name="photo_match_meaning">kemiripan</string>
+    <string name="photo_prompt_translated">Diterjemahkan ke prompt Inggris, bahasa yang dibaca modelnya</string>
     <string name="photo_model_title">Cari menurut makna (model opsional)</string>
     <string name="photo_model_offer">Pencarian teks menemukan yang tercetak di foto. Untuk menemukan foto dari isinya â€” kerja bakti, pasar, pemandangan â€” app ini bisa menjalankan model MobileCLIP di HP. Unduhannya %1$d MB dan tidak pernah keluar dari HP.</string>
     <string name="photo_model_download">Unduh modelnya (%1$d MB)</string>
