@@ -20,8 +20,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ContentIndexEntity::class,
         ContentVectorEntity::class,
         PhotoIndexEntity::class,
+        PhotoVectorEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class FileFlowDatabase : RoomDatabase() {
@@ -36,6 +37,7 @@ abstract class FileFlowDatabase : RoomDatabase() {
     abstract fun trashJournalDao(): TrashJournalDao
     abstract fun contentIndexDao(): ContentIndexDao
     abstract fun photoIndexDao(): PhotoIndexDao
+    abstract fun photoVectorDao(): PhotoVectorDao
 
     companion object {
         const val NAME = "fileflow.db"
@@ -159,9 +161,35 @@ abstract class FileFlowDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Adding the semantic vectors.
+         *
+         * A table that can be dropped at any time by deleting the model, which
+         * is why it is separate from the text index: the cheap tier stays when
+         * the expensive one goes.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `photo_vectors` (
+                        `path` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `modified` INTEGER NOT NULL,
+                        `dimension` INTEGER NOT NULL,
+                        `vector` BLOB NOT NULL,
+                        `model` TEXT NOT NULL,
+                        `indexedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`path`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         fun build(context: Context): FileFlowDatabase =
             Room.databaseBuilder(context, FileFlowDatabase::class.java, NAME)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
     }
 }

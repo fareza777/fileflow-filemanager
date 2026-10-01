@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.material3.LinearProgressIndicator
+import com.fileflow.app.ui.components.SectionHeader
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -58,6 +61,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
 import com.fileflow.app.R
+import com.fileflow.app.core.semantic.SemanticAsset
+import com.fileflow.app.core.semantic.SemanticDownloader
+import com.fileflow.app.core.semantic.SemanticEngine
+import com.fileflow.app.core.semantic.SemanticHit
+import com.fileflow.app.core.semantic.SemanticModels
+import com.fileflow.app.core.semantic.SemanticStatus
 import com.fileflow.app.core.util.Formatters
 import com.fileflow.app.core.vision.PhotoHit
 import com.fileflow.app.core.vision.PhotoIndexer
@@ -90,13 +99,26 @@ data class PhotoSearchState(
     val searching: Boolean = false,
     /** True before the first index run, when there is nothing to search yet. */
     val neverIndexed: Boolean = true,
+    /** The downloaded model tier: not installed, being fetched, or working. */
+    val modelInstalled: Boolean = false,
+    val modelReady: Boolean = false,
+    val modelBytes: Long = 0L,
+    val modelDownload: SemanticStatus? = null,
+    val embedded: Int = 0,
+    val embedding: Boolean = false,
+    /** Photos found by meaning rather than by text or label. */
+    val semantic: List<SemanticHit> = emptyList(),
 ) {
     val showingRecent: Boolean get() = query.isBlank()
+    val modelTotalMb: Long get() = SemanticAsset.entries.sumOf { it.megabytes }
 }
 
 @HiltViewModel
 class PhotoSearchViewModel @Inject constructor(
     private val indexer: PhotoIndexer,
+    private val semantic: SemanticEngine,
+    private val downloader: SemanticDownloader,
+    private val models: SemanticModels,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PhotoSearchState())
@@ -107,6 +129,7 @@ class PhotoSearchViewModel @Inject constructor(
 
     private var searchJob: Job? = null
     private var indexJob: Job? = null
+    private var embedJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -114,7 +137,107 @@ class PhotoSearchViewModel @Inject constructor(
                 _state.update { it.copy(indexed = count, neverIndexed = count == 0) }
             }
         }
+        viewModelScope.launch {
+            semantic.observeCount().collect { count -> _state.update { it.copy(embedded = count) } }
+        }
+        viewModelScope.launch {
+            val installed = models.ready()
+            val ready = if (installed) semantic.ready() else false
+            _state.update {
+                it.copy(
+                    modelInstalled = installed,
+                    modelReady = ready,
+                    modelBytes = semantic.sizeOnDisk(),
+                )
+            }
+        }
         showRecent()
+    }
+
+    /**
+     * Fetches the model, one file at a time, saying which one.
+     *
+     * Half a gigabyte over a phone connection is a long wait, so the progress
+     * is reported per file and in bytes rather than as one opaque spinner.
+     */
+    fun downloadModel() {
+        if (_state.value.modelDownload is SemanticStatus.Downloading) return
+        viewModelScope.launch {
+            for (asset in SemanticAsset.entries) {
+                if (models.present(asset)) continue
+                _state.update {
+                    it.copy(modelDownload = SemanticStatus.Downloading(asset.label, 0, asset.bytes))
+                }
+                val result = downloader.download(asset) { done, total ->
+                    _state.update {
+                        it.copy(modelDownload = SemanticStatus.Downloading(asset.label, done, total))
+                    }
+                }
+                if (result.isFailure) {
+                    val reason = result.exceptionOrNull()?.message ?: "download failed"
+                    _state.update { it.copy(modelDownload = SemanticStatus.Failed(reason)) }
+                    return@launch
+                }
+            }
+            _state.update { it.copy(modelDownload = SemanticStatus.Loading) }
+            val ready = semantic.ready()
+            _state.update {
+                it.copy(
+                    modelInstalled = models.ready(),
+                    modelReady = ready,
+                    modelBytes = semantic.sizeOnDisk(),
+                    modelDownload = if (ready) null else SemanticStatus.Failed("the model did not load"),
+                )
+            }
+            if (ready) {
+                _messages.send(UiMessage.Info("Model ready. Reading the photos it can search."))
+                embedPhotos()
+            }
+        }
+    }
+
+    fun deleteModel() {
+        viewModelScope.launch {
+            semantic.close()
+            runCatching { semantic.clear() }
+            models.delete()
+            _state.update {
+                it.copy(
+                    modelInstalled = false,
+                    modelReady = false,
+                    modelBytes = 0L,
+                    modelDownload = null,
+                    embedded = 0,
+                    semantic = emptyList(),
+                )
+            }
+            _messages.send(UiMessage.Info("Model removed"))
+        }
+    }
+
+    /** Reads the photos the model can then search by meaning. */
+    fun embedPhotos(limit: Int = 500) {
+        if (_state.value.embedding) return
+        embedJob = viewModelScope.launch {
+            _state.update { it.copy(embedding = true, progressDone = 0, progressTotal = 0) }
+            val done = runCatching {
+                semantic.embed(limit = limit) { count, total, name ->
+                    _state.update {
+                        it.copy(progressDone = count, progressTotal = total, progressName = name)
+                    }
+                }
+            }.getOrNull() ?: 0
+            _state.update { it.copy(embedding = false, progressName = "") }
+            _messages.send(
+                UiMessage.Info(if (done == 0) "No photo left to read" else "Read $done photos by meaning")
+            )
+            if (_state.value.query.isNotBlank()) setQuery(_state.value.query)
+        }
+    }
+
+    fun stopEmbedding() {
+        embedJob?.cancel()
+        _state.update { it.copy(embedding = false, progressName = "") }
     }
 
     fun setQuery(query: String) {
@@ -124,12 +247,22 @@ class PhotoSearchViewModel @Inject constructor(
             kotlinx.coroutines.delay(200)
             val needle = _state.value.query.trim()
             if (needle.isEmpty()) {
+                _state.update { it.copy(semantic = emptyList()) }
                 showRecent()
                 return@launch
             }
             _state.update { it.copy(searching = true) }
             val hits = runCatching { indexer.search(needle) }.getOrDefault(emptyList())
-            _state.update { it.copy(searching = false, results = hits) }
+            // The third mechanism, and the only one that can answer a phrase
+            // which is not written anywhere in the photo and is not one of the
+            // model's categories. It costs a model download, so it only runs
+            // when that download is present.
+            val byMeaning = if (_state.value.modelReady) {
+                runCatching { semantic.search(needle) }.getOrDefault(emptyList())
+            } else {
+                emptyList()
+            }
+            _state.update { it.copy(searching = false, results = hits, semantic = byMeaning) }
         }
     }
 
@@ -270,7 +403,12 @@ fun PhotoSearchScreen(
             }
 
             when {
-                state.indexing -> ProgressCard(state, onStop = viewModel::stopIndexing)
+                state.indexing || state.embedding -> ProgressCard(
+                    state = state,
+                    onStop = {
+                        if (state.embedding) viewModel.stopEmbedding() else viewModel.stopIndexing()
+                    },
+                )
 
                 state.indexed == 0 -> EmptyState(
                     icon = Icons.Filled.Image,
@@ -294,34 +432,164 @@ fun PhotoSearchScreen(
                     },
                 )
 
-                state.results.isEmpty() && !state.searching -> EmptyState(
-                    icon = Icons.Filled.Search,
-                    title = stringResource(R.string.photo_search_empty),
-                    body = stringResource(R.string.photo_search_empty_hint),
-                )
-
                 else -> {
-                    Text(
-                        text = if (state.showingRecent) {
-                            stringResource(R.string.photo_search_indexed, state.indexed)
-                        } else {
-                            stringResource(R.string.photo_search_found, state.results.size)
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 150.dp),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(state.results, key = { it.path }) { hit ->
-                            PhotoCard(hit = hit, onClick = { onOpenPhoto(hit.path) })
+                    ModelCard(state = state, onDownload = viewModel::downloadModel, onDelete = viewModel::deleteModel)
+
+                    if (state.results.isEmpty() && state.semantic.isEmpty() && !state.searching) {
+                        EmptyState(
+                            icon = Icons.Filled.Search,
+                            title = stringResource(R.string.photo_search_empty),
+                            body = stringResource(R.string.photo_search_empty_hint),
+                        )
+                    } else {
+                        Text(
+                            text = if (state.showingRecent) {
+                                stringResource(R.string.photo_search_indexed, state.indexed)
+                            } else {
+                                stringResource(R.string.photo_search_found, state.results.size)
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 150.dp),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            // Meaning first when there is any: it is the tier the
+                            // user paid hundreds of megabytes for, and the one
+                            // that can answer a phrase nothing is printed on.
+                            if (state.semantic.isNotEmpty()) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    SectionHeader(stringResource(R.string.photo_section_meaning))
+                                }
+                                items(state.semantic, key = { "s-${it.path}" }) { hit ->
+                                    PhotoCard(
+                                        name = hit.name,
+                                        path = hit.path,
+                                        modified = hit.modified,
+                                        note = "≈ ${(hit.score * 100).toInt()}% " +
+                                            stringResource(R.string.photo_match_meaning),
+                                        noteColor = MaterialTheme.colorScheme.tertiary,
+                                        onClick = { onOpenPhoto(hit.path) },
+                                    )
+                                }
+                            }
+                            if (state.results.isNotEmpty()) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    SectionHeader(stringResource(R.string.photo_section_exact))
+                                }
+                                items(state.results, key = { it.path }) { hit ->
+                                    PhotoCard(
+                                        name = hit.name,
+                                        path = hit.path,
+                                        modified = hit.modified,
+                                        note = hit.snippet
+                                            ?: hit.themes.take(3).joinToString(" · ")
+                                            .takeIf { it.isNotBlank() }
+                                            ?: hit.labels.joinToString(" · "),
+                                        noteColor = if (hit.snippet != null) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                        onClick = { onOpenPhoto(hit.path) },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * The model, and what it costs.
+ *
+ * It is a deliberate half gigabyte, so it is offered rather than taken: the
+ * card names the size before anything starts, says which file is arriving while
+ * it arrives, and can be deleted afterwards — deleting it also drops the
+ * vectors, because vectors from a model that is no longer here mean nothing.
+ */
+@Composable
+private fun ModelCard(
+    state: PhotoSearchState,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val downloading = state.modelDownload as? SemanticStatus.Downloading
+    val failed = state.modelDownload as? SemanticStatus.Failed
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.photo_model_title),
+            style = MaterialTheme.typography.titleSmall,
+        )
+
+        if (state.modelReady) {
+            Text(
+                text = stringResource(
+                    R.string.photo_model_ready,
+                    state.embedded,
+                    Formatters.bytes(state.modelBytes),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onDelete() }, shape = RoundedCornerShape(12.dp)) {
+                    Text(stringResource(R.string.photo_model_delete))
+                }
+            }
+        } else if (downloading != null) {
+            Text(
+                text = stringResource(
+                    R.string.photo_model_downloading,
+                    downloading.asset,
+                    Formatters.bytes(downloading.done),
+                    Formatters.bytes(downloading.total),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            LinearProgressIndicator(
+                progress = {
+                    if (downloading.total > 0) {
+                        (downloading.done.toFloat() / downloading.total.toFloat()).coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.photo_model_offer, state.modelTotalMb),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (failed != null) {
+                Text(
+                    text = failed.reason,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            Button(onClick = onDownload, shape = RoundedCornerShape(14.dp)) {
+                Text(stringResource(R.string.photo_model_download, state.modelTotalMb))
             }
         }
     }
@@ -369,7 +637,14 @@ private fun ProgressCard(state: PhotoSearchState, onStop: () -> Unit) {
 }
 
 @Composable
-private fun PhotoCard(hit: PhotoHit, onClick: () -> Unit) {
+private fun PhotoCard(
+    name: String,
+    path: String,
+    modified: Long,
+    note: String,
+    noteColor: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -377,7 +652,7 @@ private fun PhotoCard(hit: PhotoHit, onClick: () -> Unit) {
             .background(MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         AsyncImage(
-            model = File(hit.path),
+            model = File(path),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -393,41 +668,25 @@ private fun PhotoCard(hit: PhotoHit, onClick: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = hit.name,
+                text = name,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            // Why this photo is here. A result that cannot say why is a result
-            // the user has to open to believe.
-            hit.snippet?.let { snippet ->
+            // Why this photo is here: the line of text that matched, the themes
+            // it matched, or how close it is in meaning. A result that cannot
+            // say why is a result the user has to open to believe.
+            if (note.isNotBlank()) {
                 Text(
-                    text = snippet,
+                    text = note,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = noteColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (hit.themes.isNotEmpty()) {
-                Text(
-                    text = hit.themes.take(3).joinToString(" · "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            } else if (hit.labels.isNotEmpty()) {
-                Text(
-                    text = hit.labels.joinToString(" · "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
             Text(
-                text = Formatters.relative(hit.modified),
+                text = Formatters.relative(modified),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

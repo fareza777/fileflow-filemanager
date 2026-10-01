@@ -578,6 +578,15 @@
     <string name="photo_search_empty_hint">Coba kata yang tercetak di fotonya, atau tema: struk, tim, makanan, gunung, kendaraan.</string>
     <string name="photo_search_indexed">%1$d foto sudah dibaca · terbaru dulu</string>
     <string name="photo_search_found">%1$d foto ditemukan</string>
+    <string name="photo_section_meaning">Menurut makna</string>
+    <string name="photo_section_exact">Cocok persis</string>
+    <string name="photo_match_meaning">kemiripan</string>
+    <string name="photo_model_title">Cari menurut makna (model opsional)</string>
+    <string name="photo_model_offer">Pencarian teks menemukan yang tercetak di foto. Untuk menemukan foto dari isinya â€” kerja bakti, pasar, pemandangan â€” app ini bisa menjalankan model MobileCLIP di HP. Unduhannya %1$d MB dan tidak pernah keluar dari HP.</string>
+    <string name="photo_model_download">Unduh modelnya (%1$d MB)</string>
+    <string name="photo_model_downloading">%1$s Â· %2$s dari %3$s</string>
+    <string name="photo_model_ready">Siap Â· %1$d foto sudah dibaca Â· %2$s di penyimpanan</string>
+    <string name="photo_model_delete">Hapus modelnya</string>
     <string name="tool_photo_search">Cari foto</string>
     <string name="tool_photo_search_desc">Temukan foto dari tulisan atau isinya</string>
     <!-- Analisis -->

@@ -199,6 +199,12 @@ dependencies {
     implementation(libs.mlkit.text.recognition)
     implementation(libs.mlkit.image.labeling)
 
+    // The semantic tier: two TFLite towers that turn a photo and a phrase into
+    // vectors that can be compared. Nothing is bundled — these run a model the
+    // user downloads on purpose, because the smallest useful pair is hundreds of
+    // megabytes and that is not a decision to make on someone's behalf.
+    implementation(libs.tflite)
+
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
 

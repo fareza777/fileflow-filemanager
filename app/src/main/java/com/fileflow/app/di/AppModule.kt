@@ -7,6 +7,7 @@ import com.fileflow.app.data.db.FileFlowDatabase
 import com.fileflow.app.data.db.FileIndexDao
 import com.fileflow.app.data.db.JournalDao
 import com.fileflow.app.data.db.PhotoIndexDao
+import com.fileflow.app.data.db.PhotoVectorDao
 import com.fileflow.app.data.db.RecentFolderDao
 import com.fileflow.app.data.db.RuleDao
 import com.fileflow.app.data.db.RuleLogDao
@@ -85,4 +86,8 @@ object AppModule {
     @Provides
     fun providePhotoIndexDao(database: FileFlowDatabase): PhotoIndexDao =
         database.photoIndexDao()
+
+    @Provides
+    fun providePhotoVectorDao(database: FileFlowDatabase): PhotoVectorDao =
+        database.photoVectorDao()
 }

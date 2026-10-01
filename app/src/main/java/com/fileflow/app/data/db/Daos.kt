@@ -568,3 +568,31 @@ interface PhotoIndexDao {
     @Query("SELECT * FROM photo_index ORDER BY modified DESC LIMIT :limit")
     suspend fun recent(limit: Int): List<PhotoIndexEntity>
 }
+
+@Dao
+interface PhotoVectorDao {
+
+    @Query("SELECT COUNT(*) FROM photo_vectors")
+    suspend fun count(): Int
+
+    @Query("SELECT COUNT(*) FROM photo_vectors")
+    fun observeCount(): Flow<Int>
+
+    @Query("SELECT path, modified, sizeBytes FROM photo_index")
+    suspend fun indexedPhotos(): List<PhotoFingerprint>
+
+    @Query("SELECT path FROM photo_vectors")
+    suspend fun embeddedPaths(): List<String>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entries: List<PhotoVectorEntity>)
+
+    @Query("SELECT * FROM photo_vectors")
+    suspend fun all(): List<PhotoVectorEntity>
+
+    @Query("DELETE FROM photo_vectors")
+    suspend fun clear()
+
+    @Query("DELETE FROM photo_vectors WHERE path = :path")
+    suspend fun remove(path: String)
+}

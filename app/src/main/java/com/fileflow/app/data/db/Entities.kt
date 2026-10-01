@@ -208,6 +208,27 @@ data class PhotoFingerprint(
 )
 
 /**
+ * A photo's position in the model's space.
+ *
+ * Its own table because it is the tier that can be deleted: the vectors are
+ * hundreds of floats per photo and they only mean anything while the model that
+ * produced them is installed. Dropping the model drops the table and the text
+ * and label index above is untouched.
+ */
+@Entity(tableName = "photo_vectors")
+data class PhotoVectorEntity(
+    @PrimaryKey val path: String,
+    val name: String,
+    val modified: Long,
+    val dimension: Int,
+    /** Floats, little-endian, unit length — so cosine is a dot product. */
+    val vector: ByteArray,
+    /** Which model produced it; a different one makes the vector meaningless. */
+    val model: String,
+    val indexedAt: Long,
+)
+
+/**
  * One reversible batch of changes, as summarised for the "recent changes" list.
  */
 data class JournalGroupSummary(
