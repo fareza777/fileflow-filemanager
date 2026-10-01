@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,9 +50,46 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+
+/**
+ * A small action that sits inside a row of text — "View all", "Rescan",
+ * "Clear missing".
+ *
+ * These were plain `Text` widgets with a click modifier, which gave them a touch
+ * height of about twenty-four pixels: legible, and reliably missed by a thumb.
+ * The rule is that anything tappable is at least 48dp, and a link among
+ * metadata does not need to *look* that big — [minimumInteractiveComponentSize]
+ * expands the touch target without changing the layout, so the row keeps its
+ * rhythm and the finger still lands.
+ *
+ * One component rather than five: the values used to be eight, six and four dp
+ * of padding with two different corner radii, which is what happens when the
+ * same idea is rewritten in each file that needs it.
+ */
+@Composable
+fun InlineAction(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    color: Color = MaterialTheme.colorScheme.primary,
+    style: TextStyle = MaterialTheme.typography.labelLarge,
+) {
+    Text(
+        text = text,
+        style = style,
+        color = if (enabled) color else MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+            .minimumInteractiveComponentSize()
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 10.dp),
+    )
+}
 
 @Composable
 fun SectionHeader(
@@ -430,7 +468,7 @@ fun ProgressPanel(
                 Box(
                     modifier = Modifier
                         .size(34.dp)
-                        .clip(RoundedCornerShape(11.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(tint.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center,
                 ) {

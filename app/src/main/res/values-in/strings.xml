@@ -345,7 +345,8 @@
     <string name="compare_only_right">Hanya kanan %1$d</string>
     <string name="compare_to_left">Ke kiri</string>
     <string name="compare_to_right">Ke kanan</string>
-    <string name="compare_pick_left">Folder kiri</string>
+        <string name="picker_up_one_level">Naik satu tingkat</string>
+<string name="compare_pick_left">Folder kiri</string>
     <string name="compare_pick_right">Folder kanan</string>
     <string name="compare_state_same">Sama</string>
     <string name="compare_state_left">Hanya kiri</string>
@@ -462,7 +463,11 @@
     <string name="apps_title">Backup aplikasi</string>
     <string name="apps_system_toggle">Tampilkan aplikasi sistem</string>
     <string name="apps_selected">%1$d dipilih</string>
-    <string name="apps_export">Ekspor</string>
+        <string name="apps_summary">%1$d aplikasi · %2$s APK</string>
+    <string name="apps_uninstall">Copot pemasangan</string>
+    <string name="apps_sort_size">Urut menurut ukuran</string>
+    <string name="apps_sort_name">Urut menurut nama</string>
+<string name="apps_export">Ekspor</string>
     <string name="apps_export_hint">APK, termasuk split-nya</string>
     <string name="apps_none">Tidak ada aplikasi</string>
     <string name="apps_none_hint">Tidak ada yang cocok. Aplikasi sistem disembunyikan kecuali kamu menampilkannya.</string>
@@ -558,7 +563,9 @@
     <!-- Analisis -->
     <string name="analyzer_title">Analisis penyimpanan</string>
     <string name="analyzer_computing">Menghitung folder…</string>
-    <string name="analyzer_by_category">Per kategori</string>
+        <string name="analyzer_apps">Aplikasi terpasang</string>
+    <string name="analyzer_apps_detail">%1$d aplikasi · %2$s APK · ketuk untuk buka, cadangkan, atau copot</string>
+<string name="analyzer_by_category">Per kategori</string>
     <string name="analyzer_by_folder">Folder terbesar</string>
     <string name="analyzer_total">Total dipindai</string>
     <string name="analyzer_files">%1$d file</string>

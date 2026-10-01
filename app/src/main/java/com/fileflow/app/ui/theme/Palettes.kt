@@ -85,11 +85,18 @@ private fun blend(from: Color, to: Color, amount: Float): Color = Color(
 )
 
 /**
- * What sits on top of a filled accent. Computed rather than declared so a
- * palette with a light primary cannot end up with white-on-white text.
+ * What sits on top of a filled accent: dark ink or white, whichever actually
+ * reads.
+ *
+ * The line is at luminance 0.179 rather than the visually appealing 0.5,
+ * because 0.179 is where the two become equally legible. A rule of "dark text
+ * only above mid-grey" leaves the whole band below it with white text — a
+ * colour at luminance 0.3 gets white at about 3:1 contrast, where dark ink
+ * would be 7:1 — which is exactly the band a palette's secondary and tertiary
+ * accents tend to land in.
  */
 private fun contentOn(color: Color): Color =
-    if (color.luminance() > 0.5f) InkLight else Color.White
+    if (color.luminance() > 0.179f) InkLight else Color.White
 
 private fun lightScheme(seed: PaletteSeed): ColorScheme {
     val surface = blend(Color.White, seed.primary, 0.035f)

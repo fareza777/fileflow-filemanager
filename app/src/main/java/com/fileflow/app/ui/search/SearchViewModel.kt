@@ -6,10 +6,12 @@ import com.fileflow.app.core.model.FileCategory
 import com.fileflow.app.core.model.FileItem
 import com.fileflow.app.core.storage.OperationKind
 import com.fileflow.app.core.storage.OperationReport
+import com.fileflow.app.core.util.Formatters
 import com.fileflow.app.data.repo.BrowseRepository
 import com.fileflow.app.data.repo.ContentHit
 import com.fileflow.app.data.repo.ContentIndexRepository
 import com.fileflow.app.data.repo.FileActionsRepository
+import com.fileflow.app.data.repo.MetadataCleanup
 import com.fileflow.app.data.repo.FileIndexRepository
 import com.fileflow.app.data.repo.OperationRunner
 import com.fileflow.app.domain.Candidate
@@ -486,6 +488,75 @@ class SearchViewModel @Inject constructor(
             val result = actions.undoGroup(groupId)
             _messages.send(UiMessage.Info("${result.restored} changes reverted"))
             runSearch()
+        }
+    }
+
+    /** The same batch, left where it is. */
+    fun copySelectedTo(destination: String) {
+        val paths = _state.value.selected.map { it.path }
+        if (paths.isEmpty()) return
+        operationJob?.cancel()
+        operationJob = viewModelScope.launch {
+            var report: OperationReport? = null
+            try {
+                operationRunner.run(OperationKind.COPY) { progress ->
+                    report = actions.copy(
+                        paths,
+                        destination,
+                        com.fileflow.app.core.storage.ConflictPolicy.RENAME,
+                        progress,
+                    )
+                }
+            } catch (_: CancellationException) {
+                // The runner owns the indicator; nothing to undo here.
+            }
+            _state.update { it.copy(selection = emptySet(), selectionMode = false) }
+            report?.let { done ->
+                _messages.send(UiMessage.Info("${done.succeeded} copied"))
+            }
+        }
+    }
+
+    /** Strips metadata from each selected image, to a copy beside it. */
+    fun cleanMetadata() {
+        val paths = _state.value.selected.map { it.path }
+        if (paths.isEmpty()) return
+        operationJob?.cancel()
+        operationJob = viewModelScope.launch {
+            var cleanup: MetadataCleanup? = null
+            try {
+                operationRunner.run(OperationKind.CLEAN) { progress ->
+                    cleanup = actions.cleanMetadata(paths, progress)
+                }
+            } catch (_: CancellationException) {
+                return@launch
+            }
+            _state.update { it.copy(selection = emptySet(), selectionMode = false) }
+            cleanup?.let { result ->
+                _messages.send(
+                    UiMessage.Info(
+                        if (result.cleaned == 0 && result.failed == 0) {
+                            "Nothing to remove"
+                        } else {
+                            "Cleaned ${result.cleaned} files · " +
+                                "${Formatters.bytes(result.savedBytes)} removed"
+                        }
+                    )
+                )
+            }
+        }
+    }
+
+    fun starSelection() {
+        val items = _state.value.selected
+        if (items.isEmpty()) return
+        viewModelScope.launch {
+            val allStarred = items.all { actions.isStarred(it.path) }
+            items.forEach { candidate ->
+                actions.setStar(candidate.toFileItem(), starred = !allStarred)
+            }
+            _state.update { it.copy(selection = emptySet(), selectionMode = false) }
+            _messages.send(UiMessage.Info(if (allStarred) "Star removed" else "Starred ${items.size}"))
         }
     }
 

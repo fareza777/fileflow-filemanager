@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.filled.WrapText
@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -131,6 +132,22 @@ class TextViewerViewModel @Inject constructor(
 }
 
 /**
+ * The style file contents are read in.
+ *
+ * Named rather than inlined because it is the one place in the app that
+ * deliberately steps off the type scale: monospace glyphs have a wider advance
+ * and a larger optical size than the prose font, so the body size looks bigger
+ * here than it does in a list, and a slightly smaller setting with a tighter
+ * leading keeps a code file legible without turning three lines into a screen.
+ */
+private val ViewerText = TextStyle(
+    fontFamily = FontFamily.Monospace,
+    fontSize = 13.sp,
+    lineHeight = 19.sp,
+    letterSpacing = 0.sp,
+)
+
+/**
  * Reading a .txt, .json or .log used to mean handing the file to another app.
  * Seeing it in place is a small screen that removes a whole category of
  * round-trips.
@@ -170,7 +187,7 @@ fun TextFileScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
@@ -237,10 +254,7 @@ fun TextFileScreen(
                 ) {
                     Text(
                         text = state.content,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 13.sp,
-                        ),
+                        style = ViewerText,
                         softWrap = wrap,
                         modifier = if (wrap) {
                             Modifier.fillMaxWidth()

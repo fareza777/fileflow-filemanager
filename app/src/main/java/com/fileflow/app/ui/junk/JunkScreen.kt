@@ -17,7 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -59,6 +59,7 @@ import com.fileflow.app.data.repo.OperationRunner
 import com.fileflow.app.domain.scan.JunkFinder
 import com.fileflow.app.domain.scan.JunkKind
 import com.fileflow.app.domain.scan.JunkReport
+import com.fileflow.app.ui.components.InlineAction
 import com.fileflow.app.ui.components.ConfirmDialog
 import com.fileflow.app.ui.components.EmptyState
 import com.fileflow.app.ui.components.ProgressPanel
@@ -231,7 +232,7 @@ fun JunkScreen(
                 title = { Text(stringResource(R.string.junk_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
@@ -319,18 +320,14 @@ fun JunkScreen(
                                         onCheckedChange = { viewModel.toggle(bucket.kind) },
                                     )
                                 }
-                                Text(
+                                InlineAction(
                                     text = if (state.expanded == bucket.kind) {
                                         stringResource(R.string.action_show_less)
                                     } else {
                                         stringResource(R.string.action_show_more)
                                     },
+                                    onClick = { viewModel.expand(bucket.kind) },
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable { viewModel.expand(bucket.kind) }
-                                        .padding(vertical = 4.dp, horizontal = 2.dp),
                                 )
                                 if (state.expanded == bucket.kind) {
                                     Column(modifier = Modifier.heightIn(max = 220.dp)) {

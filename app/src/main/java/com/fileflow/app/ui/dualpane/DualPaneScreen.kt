@@ -73,6 +73,7 @@ import com.fileflow.app.core.util.Paths
 import com.fileflow.app.data.repo.BrowseRepository
 import com.fileflow.app.data.repo.FileActionsRepository
 import com.fileflow.app.data.repo.OperationRunner
+import com.fileflow.app.ui.components.EmptyState
 import com.fileflow.app.ui.components.FolderPickerSheet
 import com.fileflow.app.ui.util.UiMessage
 import com.fileflow.app.ui.util.showMessage
@@ -534,6 +535,16 @@ private fun Pane(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 12.dp),
+                )
+            }
+
+            if (pane.items.isEmpty() && !pane.loading) {
+                // Half a screen of nothing looks like a bug; a folder that is
+                // genuinely empty should say so.
+                EmptyState(
+                    icon = Icons.Filled.Folder,
+                    title = stringResource(R.string.browser_empty),
+                    body = stringResource(R.string.browser_empty_hint),
                 )
             }
 

@@ -30,7 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
@@ -312,7 +312,7 @@ fun BrowserScreen(
                     navigationIcon = {
                         if (state.canNavigateUp) {
                             IconButton(onClick = viewModel::navigateUp) {
-                                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                             }
                         }
                     },
@@ -887,7 +887,7 @@ private fun SelectionTopBar(
         },
         navigationIcon = {
             IconButton(onClick = onClose) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
             }
         },
         actions = {

@@ -20,7 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -70,12 +70,17 @@ import com.fileflow.app.core.util.MimeTypes
 import com.fileflow.app.core.util.Paths
 import com.fileflow.app.data.repo.ContentHit
 import com.fileflow.app.domain.toFileItem
+import com.fileflow.app.ui.components.InlineAction
+import com.fileflow.app.ui.components.BulkHandlers
+import com.fileflow.app.ui.components.BulkMoreSheet
 import com.fileflow.app.ui.components.ConfirmDialog
 import com.fileflow.app.ui.components.EmptyState
 import com.fileflow.app.ui.components.FileActionSheet
 import com.fileflow.app.ui.components.FileRow
 import com.fileflow.app.ui.components.FolderPickerSheet
 import com.fileflow.app.ui.components.SearchField
+import com.fileflow.app.ui.components.SelectionActionBar
+import com.fileflow.app.ui.components.bulkBarActions
 import com.fileflow.app.ui.util.FileIntents
 import com.fileflow.app.ui.util.showMessage
 import com.fileflow.app.core.model.FileItem
@@ -85,6 +90,8 @@ import com.fileflow.app.core.model.FileItem
 fun SearchScreen(
     initialPath: String?,
     onCreateRule: (String) -> Unit,
+    onConvert: (List<String>) -> Unit,
+    onCompress: (List<String>) -> Unit,
     onOpenFolder: (String) -> Unit,
     onBack: () -> Unit,
     viewModel: SearchViewModel = hiltViewModel(),
@@ -99,6 +106,8 @@ fun SearchScreen(
 
     var showDelete by remember { mutableStateOf(false) }
     var showPicker by remember { mutableStateOf(false) }
+    var copyToFolder by remember { mutableStateOf(false) }
+    var showMore by remember { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
     var actionTarget by remember { mutableStateOf<FileItem?>(null) }
 
@@ -118,12 +127,59 @@ fun SearchScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
+        bottomBar = {
+            if (state.selectionMode) {
+                val handlers = BulkHandlers(
+                    onShare = {
+                        FileIntents.share(context, viewModel.toFileItems(state.selected))
+                        viewModel.clearSelection()
+                    },
+                    onMove = { showPicker = true },
+                    onCopy = {
+                        showMore = false
+                        copyToFolder = true
+                    },
+                    onConvert = { onConvert(state.selection.toList()) },
+                    onCompress = { onCompress(state.selection.toList()) },
+                    onCleanMetadata = {
+                        showMore = false
+                        viewModel.cleanMetadata()
+                    },
+                    onStar = {
+                        showMore = false
+                        viewModel.starSelection()
+                    },
+                    onDelete = {
+                        if (settings.confirmDelete) showDelete = true
+                        else viewModel.deleteSelected(permanent = !settings.useTrash)
+                    },
+                    onMore = { showMore = true },
+                    transferFolder = settings.transferFolder,
+                    onMoveToTransfer = if (settings.transferFolder.isNotBlank()) {
+                        { viewModel.moveSelectedTo(settings.transferFolder) }
+                    } else {
+                        null
+                    },
+                    onSelectAll = viewModel::selectAll,
+                    onDeselectAll = viewModel::clearSelection,
+                )
+                SelectionActionBar(
+                    title = pluralStringResource(
+                        R.plurals.item_count,
+                        state.selection.size,
+                        state.selection.size,
+                    ),
+                    subtitle = Formatters.bytes(state.selectedBytes),
+                    actions = bulkBarActions(handlers),
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.search_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
@@ -322,15 +378,11 @@ fun SearchScreen(
                                     color = MaterialTheme.colorScheme.tertiary,
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text(
+                                InlineAction(
                                     text = stringResource(R.string.search_rescan),
+                                    onClick = viewModel::reindex,
+                                    enabled = !state.reindexing,
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .clickable(enabled = !state.reindexing) { viewModel.reindex() }
-                                        .padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
                             }
                         }
@@ -355,20 +407,11 @@ fun SearchScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            // The verbs live in the bottom bar, like every
+                            // other list: select-all, the count and a way out
+                            // are all this row needs to hold.
                             IconButton(onClick = viewModel::selectAll) {
                                 Icon(Icons.Filled.SelectAll, contentDescription = stringResource(R.string.cd_select_all))
-                            }
-                            IconButton(onClick = { showPicker = true }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.DriveFileMove,
-                                    contentDescription = stringResource(R.string.cd_move),
-                                )
-                            }
-                            IconButton(onClick = {
-                                if (settings.confirmDelete) showDelete = true
-                                else viewModel.deleteSelected(permanent = !settings.useTrash)
-                            }) {
-                                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.cd_delete))
                             }
                             IconButton(onClick = viewModel::clearSelection) {
                                 Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.cd_close))
@@ -534,15 +577,79 @@ fun SearchScreen(
         )
     }
 
-    if (showPicker) {
+    if (showPicker || copyToFolder) {
+        val copying = copyToFolder
         FolderPickerSheet(
             startPath = state.rootPath.ifBlank { deviceRoot },
-            title = stringResource(R.string.action_move_here),
-            onDismiss = { showPicker = false },
-            onPick = { destination ->
-                viewModel.moveSelectedTo(destination)
+            title = stringResource(
+                if (copying) R.string.action_copy_here else R.string.action_move_here
+            ),
+            onDismiss = {
                 showPicker = false
+                copyToFolder = false
             },
+            onPick = { destination ->
+                if (copying) viewModel.copySelectedTo(destination)
+                else viewModel.moveSelectedTo(destination)
+                showPicker = false
+                copyToFolder = false
+            },
+        )
+    }
+
+    if (showMore) {
+        BulkMoreSheet(
+            items = viewModel.toFileItems(state.selected),
+            bytes = state.selectedBytes,
+            handlers = BulkHandlers(
+                onShare = {
+                    FileIntents.share(context, viewModel.toFileItems(state.selected))
+                    showMore = false
+                    viewModel.clearSelection()
+                },
+                onMove = {
+                    showMore = false
+                    showPicker = true
+                },
+                onCopy = {
+                    showMore = false
+                    copyToFolder = true
+                },
+                onConvert = {
+                    showMore = false
+                    onConvert(state.selection.toList())
+                },
+                onCompress = {
+                    showMore = false
+                    onCompress(state.selection.toList())
+                },
+                onCleanMetadata = {
+                    showMore = false
+                    viewModel.cleanMetadata()
+                },
+                onStar = {
+                    showMore = false
+                    viewModel.starSelection()
+                },
+                onDelete = {
+                    showMore = false
+                    if (settings.confirmDelete) showDelete = true
+                    else viewModel.deleteSelected(permanent = !settings.useTrash)
+                },
+                onMore = { showMore = false },
+                transferFolder = settings.transferFolder,
+                onMoveToTransfer = if (settings.transferFolder.isNotBlank()) {
+                    {
+                        showMore = false
+                        viewModel.moveSelectedTo(settings.transferFolder)
+                    }
+                } else {
+                    null
+                },
+                onSelectAll = viewModel::selectAll,
+                onDeselectAll = viewModel::clearSelection,
+            ),
+            onDismiss = { showMore = false },
         )
     }
 }

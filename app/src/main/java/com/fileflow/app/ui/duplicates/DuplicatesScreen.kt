@@ -15,7 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Deselect
@@ -50,6 +50,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.fileflow.app.R
+import com.fileflow.app.ui.util.FileIntents
+import androidx.compose.material.icons.filled.Share
 import com.fileflow.app.core.util.Formatters
 import com.fileflow.app.core.storage.OperationKind
 import com.fileflow.app.core.storage.OperationReport
@@ -234,7 +236,7 @@ fun DuplicatesScreen(
                 title = { Text(stringResource(R.string.dup_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
@@ -258,6 +260,20 @@ fun DuplicatesScreen(
                             icon = Icons.Filled.Deselect,
                             label = stringResource(R.string.action_deselect_all),
                             onClick = viewModel::clearSelection,
+                        ),
+                        // Sharing is the one verb that makes sense for a copy you
+                        // are keeping: the delete side of this screen is already
+                        // its own action with its own confirmation.
+                        SelectionAction(
+                            icon = Icons.Filled.Share,
+                            label = stringResource(R.string.action_share),
+                            onClick = {
+                                val chosen = state.groups
+                                    .flatMap { group -> group.files }
+                                    .filter { file -> file.path in state.selection }
+                                    .map { file -> file.toFileItem() }
+                                FileIntents.share(context, chosen)
+                            },
                         ),
                         SelectionAction(
                             icon = Icons.Filled.Delete,

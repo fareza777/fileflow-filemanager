@@ -14,7 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SelectAll
@@ -60,6 +60,7 @@ import com.fileflow.app.core.storage.OperationReport
 import com.fileflow.app.data.repo.FileActionsRepository
 import com.fileflow.app.data.repo.MetadataCleanup
 import com.fileflow.app.data.repo.OperationRunner
+import com.fileflow.app.ui.components.InlineAction
 import com.fileflow.app.ui.components.BulkHandlers
 import com.fileflow.app.ui.components.BulkMoreSheet
 import com.fileflow.app.ui.components.ConfirmDialog
@@ -382,7 +383,7 @@ fun StarredScreen(
                     IconButton(
                         onClick = { if (state.selectionMode) viewModel.clearSelection() else onBack() },
                     ) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
@@ -445,14 +446,10 @@ fun StarredScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.weight(1f),
                                 )
-                                Text(
+                                InlineAction(
                                     text = stringResource(R.string.starred_clear_missing),
+                                    onClick = viewModel::clearMissing,
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable { viewModel.clearMissing() }
-                                        .padding(8.dp),
                                 )
                             }
                         }

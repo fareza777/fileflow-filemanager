@@ -1,5 +1,7 @@
 package com.fileflow.app.ui.apps
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,16 +22,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -61,6 +71,7 @@ import com.fileflow.app.domain.apps.InstalledApp
 import com.fileflow.app.ui.components.EmptyState
 import com.fileflow.app.ui.components.FolderPickerSheet
 import com.fileflow.app.ui.components.LoadingState
+import com.fileflow.app.ui.util.AppIntents
 import com.fileflow.app.ui.util.UiMessage
 import com.fileflow.app.ui.util.showMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -82,6 +93,8 @@ data class AppsState(
     val exporting: Boolean = false,
     val progress: String? = null,
     val systemIncluded: Boolean = false,
+    /** Biggest first by default: this list exists to find what takes space. */
+    val sortBySize: Boolean = true,
 )
 
 @HiltViewModel
@@ -97,11 +110,26 @@ class AppBackupViewModel @Inject constructor(
     val messages = _messages.receiveAsFlow()
 
     init {
+        reload()
+    }
+
+    /** Re-reads the installed packages; called again after an uninstall. */
+    fun reload() {
         viewModelScope.launch {
             val apps = backup.installed()
-            _state.update { it.copy(loading = false, apps = apps) }
+            _state.update {
+                it.copy(
+                    loading = false,
+                    apps = apps,
+                    // An uninstalled package cannot stay selected.
+                    selection = it.selection.filter { name -> apps.any { a -> a.packageName == name } }
+                        .toSet(),
+                )
+            }
         }
     }
+
+    fun toggleSort() = _state.update { it.copy(sortBySize = !it.sortBySize) }
 
     fun toggle(packageName: String) {
         _state.update { current ->
@@ -119,7 +147,18 @@ class AppBackupViewModel @Inject constructor(
     }
 
     val visibleApps: List<InstalledApp>
-        get() = _state.value.apps.filter { _state.value.systemIncluded || !it.isSystem }
+        get() = _state.value.apps
+            .filter { _state.value.systemIncluded || !it.isSystem }
+            .let { apps ->
+                if (_state.value.sortBySize) {
+                    apps.sortedByDescending { it.sizeBytes }
+                } else {
+                    apps.sortedBy { it.label.lowercase() }
+                }
+            }
+
+    /** What the header line reports, so the list opens with a total. */
+    fun visibleBytes(visible: List<InstalledApp>): Long = visible.sumOf { it.sizeBytes }
 
     fun selectAll(visible: List<InstalledApp>) {
         _state.update { it.copy(selection = visible.map { app -> app.packageName }.toSet()) }
@@ -178,6 +217,30 @@ fun AppBackupScreen(
     var showPicker by remember { mutableStateOf(false) }
     val visible = viewModel.visibleApps
 
+    // Uninstalling is one system dialog per app, so a batch is a queue: the
+    // head is asked about, and its answer pulls the next one up. The list is
+    // re-read when the queue empties, because only the installer knows what
+    // actually happened.
+    var uninstallQueue by remember { mutableStateOf<List<InstalledApp>>(emptyList()) }
+    val uninstallLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        uninstallQueue = uninstallQueue.drop(1)
+        if (uninstallQueue.isEmpty()) viewModel.reload()
+    }
+
+    LaunchedEffect(uninstallQueue) {
+        val next = uninstallQueue.firstOrNull() ?: return@LaunchedEffect
+        val intent = AppIntents.uninstallIntent(next)
+        if (intent == null) {
+            // A system app: the platform would refuse, so it is skipped rather
+            // than left blocking the queue.
+            uninstallQueue = uninstallQueue.drop(1)
+        } else {
+            uninstallLauncher.launch(intent)
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.messages.collect { message -> snackbar.showMessage(context, message) { } }
     }
@@ -199,6 +262,14 @@ fun AppBackupScreen(
                 },
                 actions = {
                     if (state.selection.isEmpty()) {
+                        IconButton(onClick = viewModel::toggleSort) {
+                            Icon(
+                                imageVector = Icons.Filled.Sort,
+                                contentDescription = stringResource(
+                                    if (state.sortBySize) R.string.apps_sort_name else R.string.apps_sort_size
+                                ),
+                            )
+                        }
                         IconButton(onClick = { viewModel.setSystemIncluded(!state.systemIncluded) }) {
                             Icon(
                                 imageVector = if (state.systemIncluded) Icons.Filled.Close else Icons.Filled.Android,
@@ -246,6 +317,27 @@ fun AppBackupScreen(
                         if (state.exporting) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         } else {
+                            OutlinedButton(
+                                onClick = {
+                                    uninstallQueue = state.apps.filter {
+                                        it.packageName in state.selection && !it.isSystem
+                                    }
+                                },
+                                enabled = state.apps.any {
+                                    it.packageName in state.selection && !it.isSystem
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Delete,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.apps_uninstall))
+                            }
+                            Spacer(Modifier.width(8.dp))
                             Button(
                                 onClick = { showPicker = true },
                                 shape = RoundedCornerShape(14.dp),
@@ -274,11 +366,29 @@ fun AppBackupScreen(
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
+                    item {
+                        // What the list adds up to, and what it does not: the
+                        // package size is the APKs, not the app's data, which
+                        // only the system can measure.
+                        Text(
+                            text = stringResource(
+                                R.string.apps_summary,
+                                visible.size,
+                                Formatters.bytes(viewModel.visibleBytes(visible)),
+                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        )
+                    }
                     items(visible, key = { it.packageName }) { app ->
                         AppRow(
                             app = app,
                             selected = app.packageName in state.selection,
                             onClick = { viewModel.toggle(app.packageName) },
+                            onOpen = { AppIntents.open(context, app) },
+                            onUninstall = { uninstallQueue = listOf(app) },
+                            onDetails = { AppIntents.details(context, app) },
                         )
                     }
                 }
@@ -304,7 +414,11 @@ private fun AppRow(
     app: InstalledApp,
     selected: Boolean,
     onClick: () -> Unit,
+    onOpen: () -> Unit,
+    onUninstall: () -> Unit,
+    onDetails: () -> Unit,
 ) {
+    var menu by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -317,7 +431,7 @@ private fun AppRow(
                 }
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(start = 10.dp, end = 2.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = selected, onCheckedChange = { onClick() })
@@ -331,10 +445,10 @@ private fun AppRow(
             )
             Text(
                 text = buildString {
-                    append(app.packageName)
+                    append(Formatters.bytes(app.sizeBytes))
                     if (app.versionName.isNotBlank()) append(" · ").append(app.versionName)
                     if (app.splitCount > 0) append(" · ").append(app.splitCount).append(" split")
-                    if (app.isSystem) append(" · system")
+                    if (app.isSystem) append(" · ").append("system")
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -342,10 +456,56 @@ private fun AppRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            text = Formatters.bytes(app.sizeBytes),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Box {
+            IconButton(onClick = { menu = true }) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = stringResource(R.string.cd_more),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_open)) },
+                    leadingIcon = { Icon(Icons.Filled.OpenInNew, contentDescription = null) },
+                    onClick = {
+                        menu = false
+                        onOpen()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_info)) },
+                    leadingIcon = { Icon(Icons.Filled.Info, contentDescription = null) },
+                    onClick = {
+                        menu = false
+                        onDetails()
+                    },
+                )
+                // Offered only where it can work: a system app cannot be
+                // removed, and a button that opens a refusal is not a feature.
+                if (!app.isSystem) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = stringResource(R.string.apps_uninstall),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        onClick = {
+                            menu = false
+                            onUninstall()
+                        },
+                    )
+                }
+            }
+        }
     }
 }

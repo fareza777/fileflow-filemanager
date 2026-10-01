@@ -1,6 +1,8 @@
 package com.fileflow.app.ui.analyzer
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -37,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +49,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Android
+import com.fileflow.app.core.model.VolumeInfo
 import com.fileflow.app.R
 import com.fileflow.app.core.model.FileCategory
 import com.fileflow.app.core.util.Formatters
@@ -66,6 +76,7 @@ import com.fileflow.app.ui.util.FileIntents
 fun AnalyzerScreen(
     onBack: () -> Unit,
     onOpenFolder: (String) -> Unit,
+    onOpenApps: () -> Unit,
     viewModel: AnalyzerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -182,6 +193,24 @@ fun AnalyzerScreen(
             val result = state.result
             if (result != null) {
                 if (state.atRoot) {
+                    if (state.showVolumePicker) {
+                        item {
+                            Row(
+                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                state.volumes.forEach { volume ->
+                                    FilterChip(
+                                        selected = volume.rootPath == state.volumePath ||
+                                            (state.volumePath.isBlank() && volume.rootPath == state.root),
+                                        onClick = { viewModel.setVolume(volume.rootPath) },
+                                        label = { Text(volume.label) },
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     item {
                         SectionCard {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -213,6 +242,19 @@ fun AnalyzerScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                        }
+                    }
+
+                    // Apps are not part of the file walk — they live in /data,
+                    // which no file manager can read — so they get their own
+                    // line rather than being folded into a total that would
+                    // then be wrong in a way nobody could explain.
+                    state.apps?.let { apps ->
+                        item {
+                            AppsCard(
+                                summary = apps,
+                                onClick = onOpenApps,
+                            )
                         }
                     }
                 } else {
@@ -387,6 +429,66 @@ fun AnalyzerScreen(
     }
 }
 
+
+/**
+ * Installed apps, as a line the storage screen can open.
+ *
+ * Deliberately separate from the file breakdown above it: the walk measures
+ * what is readable on storage, and an app's package lives in /data where no
+ * file manager can look. Adding the two together would produce a total that is
+ * neither the storage used nor the apps installed.
+ */
+@Composable
+private fun AppsCard(summary: AppSummary, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Android,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(21.dp),
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.analyzer_apps),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = stringResource(
+                    R.string.analyzer_apps_detail,
+                    summary.count,
+                    Formatters.bytes(summary.bytes),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
 
 private fun categoryOfExtension(name: String): FileCategory =
     com.fileflow.app.core.util.MimeTypes.categoryOf(

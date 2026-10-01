@@ -59,6 +59,7 @@ import com.fileflow.app.data.prefs.SettingsRepository
 import com.fileflow.app.data.prefs.ThemeMode
 import com.fileflow.app.data.prefs.UserSettings
 import com.fileflow.app.data.repo.FileIndexRepository
+import com.fileflow.app.ui.components.InlineAction
 import com.fileflow.app.ui.components.AdBanner
 import com.fileflow.app.ui.components.AdsConsent
 import com.fileflow.app.ui.components.ConfirmDialog
@@ -436,14 +437,11 @@ fun SettingsScreen(
                             },
                         )
                         if (notifyBlocked) {
-                            Text(
+                            InlineAction(
                                 text = stringResource(R.string.settings_notifications_blocked),
-                                style = MaterialTheme.typography.bodySmall,
+                                onClick = { requestNotifications() },
                                 color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { requestNotifications() }
-                                    .padding(vertical = 4.dp),
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                         Text(

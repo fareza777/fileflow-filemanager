@@ -375,6 +375,14 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                             searchRoot = null
                             navController.navigate("${Routes.RULE_EDITOR}?q=${android.net.Uri.encode(query)}")
                         },
+                        onConvert = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.CONVERT)
+                        },
+                        onCompress = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.COMPRESS)
+                        },
                         onOpenFolder = openFolder,
                         onBack = { navController.popBackStack() },
                     )
@@ -427,6 +435,7 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                     AnalyzerScreen(
                         onBack = { navController.popBackStack() },
                         onOpenFolder = openFolder,
+                        onOpenApps = { navController.navigate(Routes.APPS) },
                     )
                 }
 
@@ -717,7 +726,7 @@ private fun NavBarItem(
                 imageVector = if (selected) tab.icon else tab.outlineIcon,
                 contentDescription = null,
                 tint = tint,
-                modifier = Modifier.size(21.dp),
+                modifier = Modifier.size(20.dp),
             )
         }
         Text(

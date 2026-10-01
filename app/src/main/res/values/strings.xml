@@ -357,7 +357,8 @@
     <string name="compare_only_right">Only right %1$d</string>
     <string name="compare_to_left">To left</string>
     <string name="compare_to_right">To right</string>
-    <string name="compare_pick_left">Left folder</string>
+        <string name="picker_up_one_level">Up one level</string>
+<string name="compare_pick_left">Left folder</string>
     <string name="compare_pick_right">Right folder</string>
     <string name="compare_state_same">Same</string>
     <string name="compare_state_left">Left only</string>
@@ -474,7 +475,11 @@
     <string name="apps_title">App backup</string>
     <string name="apps_system_toggle">Show system apps</string>
     <string name="apps_selected">%1$d selected</string>
-    <string name="apps_export">Export</string>
+        <string name="apps_summary">%1$d apps · %2$s of APKs</string>
+    <string name="apps_uninstall">Uninstall</string>
+    <string name="apps_sort_size">Sort by size</string>
+    <string name="apps_sort_name">Sort by name</string>
+<string name="apps_export">Export</string>
     <string name="apps_export_hint">APKs, with their splits</string>
     <string name="apps_none">No apps to show</string>
     <string name="apps_none_hint">Nothing matched. System apps are hidden unless you turn them on.</string>
@@ -570,7 +575,9 @@
     <!-- Analyzer -->
     <string name="analyzer_title">Storage analyzer</string>
     <string name="analyzer_computing">Measuring folders…</string>
-    <string name="analyzer_by_category">By category</string>
+        <string name="analyzer_apps">Installed apps</string>
+    <string name="analyzer_apps_detail">%1$d apps · %2$s of APKs · tap to open, back up or uninstall</string>
+<string name="analyzer_by_category">By category</string>
     <string name="analyzer_by_folder">Biggest folders</string>
     <string name="analyzer_total">Total scanned</string>
     <string name="analyzer_files">%1$d files</string>

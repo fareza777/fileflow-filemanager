@@ -69,6 +69,7 @@ import com.fileflow.app.R
 import com.fileflow.app.core.model.FileCategory
 import com.fileflow.app.core.model.FileItem
 import com.fileflow.app.core.util.Formatters
+import com.fileflow.app.ui.components.InlineAction
 import com.fileflow.app.ui.components.AdBanner
 import com.fileflow.app.ui.components.ConfirmDialog
 import com.fileflow.app.ui.components.DonutSegment
@@ -186,14 +187,10 @@ fun HomeScreen(
                 SectionHeader(
                     title = stringResource(R.string.home_recent),
                     trailing = {
-                        Text(
+                        InlineAction(
                             text = stringResource(R.string.home_view_all),
+                            onClick = onOpenRecent,
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable(onClick = onOpenRecent)
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     },
                 )
@@ -454,7 +451,7 @@ private fun AccessBanner() {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(13.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -684,7 +681,7 @@ private fun InsightTile(
             Box(
                 modifier = Modifier
                     .size(34.dp)
-                    .clip(RoundedCornerShape(11.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(tint.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
             ) {

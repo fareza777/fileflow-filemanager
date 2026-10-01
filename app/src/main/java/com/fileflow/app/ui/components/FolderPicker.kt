@@ -103,7 +103,12 @@ fun FolderPickerSheet(
                         Paths.parentOf(currentPath)?.let { currentPath = it }
                     },
                 ) {
-                    Icon(Icons.Filled.ArrowUpward, contentDescription = null)
+                    // The icon is the whole button, so it has to say what it
+                    // does; a screen reader gets nothing from a shape.
+                    Icon(
+                        Icons.Filled.ArrowUpward,
+                        contentDescription = stringResource(R.string.picker_up_one_level),
+                    )
                 }
                 Text(
                     text = Paths.display(currentPath),
