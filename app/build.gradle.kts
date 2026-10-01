@@ -191,6 +191,14 @@ dependencies {
     implementation(libs.play.services.ads)
     implementation(libs.user.messaging.platform)
 
+    // Reading photos and finding them by what is in them. Both are the
+    // *unbundled* ML Kit libraries: they add about 460 KB to the APK and fetch
+    // their models through Play Services the first time the user asks for
+    // them, which is what makes "download the model" a real choice here rather
+    // than 6 MB nobody agreed to.
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.image.labeling)
+
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
 

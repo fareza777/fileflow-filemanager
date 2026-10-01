@@ -6,6 +6,7 @@ import com.fileflow.app.data.db.ContentIndexDao
 import com.fileflow.app.data.db.FileFlowDatabase
 import com.fileflow.app.data.db.FileIndexDao
 import com.fileflow.app.data.db.JournalDao
+import com.fileflow.app.data.db.PhotoIndexDao
 import com.fileflow.app.data.db.RecentFolderDao
 import com.fileflow.app.data.db.RuleDao
 import com.fileflow.app.data.db.RuleLogDao
@@ -80,4 +81,8 @@ object AppModule {
     @Provides
     fun provideContentIndexDao(database: FileFlowDatabase): ContentIndexDao =
         database.contentIndexDao()
+
+    @Provides
+    fun providePhotoIndexDao(database: FileFlowDatabase): PhotoIndexDao =
+        database.photoIndexDao()
 }

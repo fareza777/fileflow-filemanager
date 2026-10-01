@@ -21,6 +21,8 @@ serialization = "1.7.3"
 okhttp = "4.12.0"
 jsch = "0.2.20"
 jcifs = "2.1.10"
+mlkitOcr = "19.0.1"
+mlkitLabeling = "16.0.8"
 shizuku = "13.1.5"
 junit = "4.13.2"
 mockk = "1.13.13"
@@ -62,6 +64,8 @@ coil-video = { group = "io.coil-kt", name = "coil-video", version.ref = "coil" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 jsch = { group = "com.github.mwiede", name = "jsch", version.ref = "jsch" }
 jcifs-ng = { group = "eu.agno3.jcifs", name = "jcifs-ng", version.ref = "jcifs" }
+mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "mlkitOcr" }
+mlkit-image-labeling = { group = "com.google.android.gms", name = "play-services-mlkit-image-labeling", version.ref = "mlkitLabeling" }
 shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuku" }
 shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref = "shizuku" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

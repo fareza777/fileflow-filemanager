@@ -19,8 +19,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         StarredFileEntity::class,
         ContentIndexEntity::class,
         ContentVectorEntity::class,
+        PhotoIndexEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class FileFlowDatabase : RoomDatabase() {
@@ -34,6 +35,7 @@ abstract class FileFlowDatabase : RoomDatabase() {
     abstract fun starredFileDao(): StarredFileDao
     abstract fun trashJournalDao(): TrashJournalDao
     abstract fun contentIndexDao(): ContentIndexDao
+    abstract fun photoIndexDao(): PhotoIndexDao
 
     companion object {
         const val NAME = "fileflow.db"
@@ -127,9 +129,39 @@ abstract class FileFlowDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Adding the photo index.
+         *
+         * One table, rebuildable from the photos themselves: dropping it would
+         * cost a re-index and nothing else, so a migration that fails to match
+         * the generated schema would be a self-inflicted wound. Written the way
+         * Room would have written it.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `photo_index` (
+                        `path` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `modified` INTEGER NOT NULL,
+                        `sizeBytes` INTEGER NOT NULL,
+                        `text` TEXT NOT NULL,
+                        `folded` TEXT NOT NULL,
+                        `labels` TEXT NOT NULL,
+                        `indexedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`path`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_photo_index_modified` ON `photo_index` (`modified`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_photo_index_name` ON `photo_index` (`name`)")
+            }
+        }
+
         fun build(context: Context): FileFlowDatabase =
             Room.databaseBuilder(context, FileFlowDatabase::class.java, NAME)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
     }
 }

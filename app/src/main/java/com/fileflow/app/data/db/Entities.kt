@@ -171,6 +171,43 @@ data class ContentVectorEntity(
 )
 
 /**
+ * A photo, read.
+ *
+ * Two columns carry the search: the text recognised inside the picture, and
+ * the model's labels for what it shows. They answer different questions and are
+ * stored together because they are produced together — a photo is opened once,
+ * read once, and then never again until it changes.
+ *
+ * `modified` and `sizeBytes` are the invalidation key: a photo whose file
+ * changed is re-read on the next pass, and one that did not is skipped, which
+ * is what keeps a re-index a matter of seconds rather than an hour.
+ */
+@Entity(
+    tableName = "photo_index",
+    indices = [Index("modified"), Index("name")],
+)
+data class PhotoIndexEntity(
+    @PrimaryKey val path: String,
+    val name: String,
+    val modified: Long,
+    val sizeBytes: Long,
+    /** The words in the photo, empty when there are none. */
+    val text: String,
+    /** Lower-cased text, so the search does not fold it on every query. */
+    val folded: String,
+    /** The model's labels, comma-separated and lower-cased. */
+    val labels: String,
+    val indexedAt: Long,
+)
+
+/** What the indexer needs to decide whether a photo has changed. */
+data class PhotoFingerprint(
+    val path: String,
+    val modified: Long,
+    val sizeBytes: Long,
+)
+
+/**
  * One reversible batch of changes, as summarised for the "recent changes" list.
  */
 data class JournalGroupSummary(

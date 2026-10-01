@@ -491,3 +491,80 @@ interface ContentIndexDao {
     @Query("SELECT * FROM content_index ORDER BY modified DESC LIMIT :limit")
     suspend fun recent(limit: Int): List<ContentIndexEntity>
 }
+
+@Dao
+interface PhotoIndexDao {
+
+    @Query("SELECT COUNT(*) FROM photo_index")
+    suspend fun count(): Int
+
+    @Query("SELECT COUNT(*) FROM photo_index")
+    fun observeCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM photo_index WHERE text != ''")
+    suspend fun countWithText(): Int
+
+    @Query("SELECT indexedAt FROM photo_index ORDER BY indexedAt DESC LIMIT 1")
+    suspend fun indexedAt(): Long?
+
+    @Query("DELETE FROM photo_index")
+    suspend fun clear()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entries: List<PhotoIndexEntity>)
+
+    @Query("SELECT path, modified, sizeBytes FROM photo_index")
+    suspend fun fingerprints(): List<PhotoFingerprint>
+
+    @Query("DELETE FROM photo_index WHERE path = :path")
+    suspend fun remove(path: String)
+
+    /** Photos whose *text* contains every term. */
+    @Query(
+        """
+        SELECT * FROM photo_index
+        WHERE (:t1 = '' OR folded LIKE :t1)
+          AND (:t2 = '' OR folded LIKE :t2)
+          AND (:t3 = '' OR folded LIKE :t3)
+        ORDER BY modified DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun searchText(
+        t1: String,
+        t2: String,
+        t3: String,
+        limit: Int,
+    ): List<PhotoIndexEntity>
+
+    /** Photos carrying any of the model labels a theme maps to. */
+    @Query(
+        """
+        SELECT * FROM photo_index
+        WHERE labels LIKE :l1 OR labels LIKE :l2 OR labels LIKE :l3
+           OR labels LIKE :l4 OR labels LIKE :l5 OR labels LIKE :l6
+           OR labels LIKE :l7 OR labels LIKE :l8 OR labels LIKE :l9
+           OR labels LIKE :l10 OR labels LIKE :l11 OR labels LIKE :l12
+        ORDER BY modified DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun searchLabels(
+        l1: String,
+        l2: String,
+        l3: String,
+        l4: String,
+        l5: String,
+        l6: String,
+        l7: String,
+        l8: String,
+        l9: String,
+        l10: String,
+        l11: String,
+        l12: String,
+        limit: Int,
+    ): List<PhotoIndexEntity>
+
+    @Query("SELECT * FROM photo_index ORDER BY modified DESC LIMIT :limit")
+    suspend fun recent(limit: Int): List<PhotoIndexEntity>
+}

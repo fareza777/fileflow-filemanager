@@ -560,6 +560,26 @@
     <string name="tool_power">Akses istimewa</string>
     <string name="tool_power_desc">Baca dan salin folder yang disembunyikan Android, lewat Shizuku atau root</string>
 
+    <!-- Pencarian foto -->
+    <string name="photo_search_title">Cari foto</string>
+    <string name="photo_search_hint">Isi fotonya apa? mis. bukti transfer</string>
+    <string name="photo_example_transfer">bukti transfer</string>
+    <string name="photo_example_kerja">kerja bakti</string>
+    <string name="photo_example_food">makanan</string>
+    <string name="photo_search_no_index">Foto belum dibaca</string>
+    <string name="photo_search_no_index_hint">Membaca foto artinya menemukan tulisan di dalamnya — struk transfer, tangkapan layar, catatan — dan hal yang terlihat di dalamnya. Semua terjadi di HP ini, dan cuma sekali jalan.</string>
+    <string name="photo_index_build">Baca foto sekarang</string>
+    <string name="photo_search_model_note">Percobaan pertama butuh internet sekali, untuk mengambil model pembacanya. Setelah itu jalan tanpa internet.</string>
+    <string name="photo_index_update">Baca foto baru</string>
+    <string name="photo_indexing">Membaca foto</string>
+    <string name="photo_indexing_scan">Mencari foto baru…</string>
+    <string name="photo_indexing_note">Tulisan dan tema dibaca di HP ini. Tidak ada yang diunggah.</string>
+    <string name="photo_search_empty">Tidak ada foto yang cocok</string>
+    <string name="photo_search_empty_hint">Coba kata yang tercetak di fotonya, atau tema: struk, tim, makanan, gunung, kendaraan.</string>
+    <string name="photo_search_indexed">%1$d foto sudah dibaca · terbaru dulu</string>
+    <string name="photo_search_found">%1$d foto ditemukan</string>
+    <string name="tool_photo_search">Cari foto</string>
+    <string name="tool_photo_search_desc">Temukan foto dari tulisan atau isinya</string>
     <!-- Analisis -->
     <string name="analyzer_title">Analisis penyimpanan</string>
     <string name="analyzer_computing">Menghitung folder…</string>

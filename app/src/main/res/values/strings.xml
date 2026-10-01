@@ -572,6 +572,26 @@
     <string name="tool_power">Power access</string>
     <string name="tool_power_desc">Read and copy the folders Android hides, via Shizuku or root</string>
 
+    <!-- Photo search -->
+    <string name="photo_search_title">Search photos</string>
+    <string name="photo_search_hint">What is in the photo? e.g. transfer proof</string>
+    <string name="photo_example_transfer">bukti transfer</string>
+    <string name="photo_example_kerja">kerja bakti</string>
+    <string name="photo_example_food">makanan</string>
+    <string name="photo_search_no_index">Photos have not been read yet</string>
+    <string name="photo_search_no_index_hint">Reading a photo means finding the text inside it â€” a transfer receipt, a screenshot, a note â€” and the things it shows. That happens on this phone, and it is a one-time pass.</string>
+    <string name="photo_index_build">Read photos now</string>
+    <string name="photo_search_model_note">The first run needs an internet connection once, to fetch the reading model. After that it works offline.</string>
+    <string name="photo_index_update">Read new photos</string>
+    <string name="photo_indexing">Reading photos</string>
+    <string name="photo_indexing_scan">Looking for new photosâ€¦</string>
+    <string name="photo_indexing_note">Text and themes are read on this phone. Nothing is uploaded.</string>
+    <string name="photo_search_empty">No photo matches that</string>
+    <string name="photo_search_empty_hint">Try the words printed in the photo, or a theme: receipt, team, food, mountain, vehicle.</string>
+    <string name="photo_search_indexed">%1$d photos read Â· newest first</string>
+    <string name="photo_search_found">%1$d photos found</string>
+    <string name="tool_photo_search">Search photos</string>
+    <string name="tool_photo_search_desc">Find a photo by the text in it or what it shows</string>
     <!-- Analyzer -->
     <string name="analyzer_title">Storage analyzer</string>
     <string name="analyzer_computing">Measuring folders…</string>

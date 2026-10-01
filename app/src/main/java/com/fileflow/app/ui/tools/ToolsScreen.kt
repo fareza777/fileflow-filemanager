@@ -264,6 +264,13 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
                             accent = scheme.tertiary,
                         )
                         ToolRow(
+                            icon = Icons.Filled.PhotoLibrary,
+                            title = stringResource(R.string.tool_photo_search),
+                            subtitle = stringResource(R.string.tool_photo_search_desc),
+                            onClick = { onOpenTool("photo_search") },
+                            accent = scheme.secondary,
+                        )
+                        ToolRow(
                             icon = Icons.Filled.AdminPanelSettings,
                             title = stringResource(R.string.tool_power),
                             subtitle = stringResource(R.string.tool_power_desc),

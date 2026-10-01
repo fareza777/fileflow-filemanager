@@ -108,6 +108,7 @@ import com.fileflow.app.ui.viewer.TextFileScreen
 import com.fileflow.app.ui.util.FileIntents
 import com.fileflow.app.ui.util.FileOpen
 import com.fileflow.app.ui.util.PreviewKind
+import com.fileflow.app.ui.photos.PhotoSearchScreen
 import com.fileflow.app.ui.versions.VersionsScreen
 
 private enum class Tab(
@@ -153,6 +154,7 @@ private object Routes {
     const val SHIELD = "shield"
     const val APPS = "apps"
     const val VERSIONS = "versions"
+    const val PHOTO_SEARCH = "photo_search"
     const val SYNC = "sync"
     const val POWER = "power"
 }
@@ -242,6 +244,7 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
             "shield" -> navController.navigate(Routes.SHIELD)
             "apps" -> navController.navigate(Routes.APPS)
             "versions" -> navController.navigate(Routes.VERSIONS)
+            "photo_search" -> navController.navigate(Routes.PHOTO_SEARCH)
             "sync" -> navController.navigate(Routes.SYNC)
             "power" -> navController.navigate(Routes.POWER)
             else -> Unit
@@ -551,6 +554,19 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
 
                 composable(Routes.VERSIONS) {
                     VersionsScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.PHOTO_SEARCH) {
+                    PhotoSearchScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenPhoto = { path ->
+                            navController.navigate(
+                                "${Routes.IMAGE_VIEWER}?folder=${
+                                    Uri.encode(path.substringBeforeLast('/'))
+                                }&path=${Uri.encode(path)}"
+                            )
+                        },
+                    )
                 }
 
                 composable(Routes.SYNC) {
