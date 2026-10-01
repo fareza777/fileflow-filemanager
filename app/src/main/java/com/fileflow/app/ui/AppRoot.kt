@@ -86,7 +86,6 @@ import com.fileflow.app.ui.inspect.InspectScreen
 import com.fileflow.app.ui.junk.JunkScreen
 import com.fileflow.app.ui.large.LargeFilesScreen
 import com.fileflow.app.ui.photos.SimilarPhotosScreen
-import com.fileflow.app.ui.power.PowerAccessScreen
 import com.fileflow.app.ui.recent.RecentFilesScreen
 import com.fileflow.app.ui.remote.RemoteBrowserScreen
 import com.fileflow.app.ui.remote.RemoteScreen
@@ -156,7 +155,6 @@ private object Routes {
     const val VERSIONS = "versions"
     const val PHOTO_SEARCH = "photo_search"
     const val SYNC = "sync"
-    const val POWER = "power"
 }
 
 @Composable
@@ -246,7 +244,6 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
             "versions" -> navController.navigate(Routes.VERSIONS)
             "photo_search" -> navController.navigate(Routes.PHOTO_SEARCH)
             "sync" -> navController.navigate(Routes.SYNC)
-            "power" -> navController.navigate(Routes.POWER)
             else -> Unit
         }
     }
@@ -573,9 +570,6 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                     SyncScreen(onBack = { navController.popBackStack() })
                 }
 
-                composable(Routes.POWER) {
-                    PowerAccessScreen(onBack = { navController.popBackStack() })
-                }
 
                 composable(
                     route = "${Routes.HISTORY}?ruleId={ruleId}",

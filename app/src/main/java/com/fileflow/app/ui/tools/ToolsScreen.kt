@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -188,7 +187,7 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
                 }
             }
 
-            item { SectionHeader(stringResource(R.string.tools_power)) }
+            item { SectionHeader(stringResource(R.string.tools_advanced)) }
             item {
                 SectionCard {
                     Column {
@@ -268,13 +267,6 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
                             title = stringResource(R.string.tool_photo_search),
                             subtitle = stringResource(R.string.tool_photo_search_desc),
                             onClick = { onOpenTool("photo_search") },
-                            accent = scheme.secondary,
-                        )
-                        ToolRow(
-                            icon = Icons.Filled.AdminPanelSettings,
-                            title = stringResource(R.string.tool_power),
-                            subtitle = stringResource(R.string.tool_power_desc),
-                            onClick = { onOpenTool("power") },
                             accent = scheme.secondary,
                         )
                     }

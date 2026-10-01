@@ -218,7 +218,7 @@
     <string name="tools_cleanup">Bersihkan</string>
     <string name="tools_insight">Telusuri</string>
     <string name="tools_keep">Simpan &amp; pulihkan</string>
-    <string name="tools_power">Alat lanjutan</string>
+    <string name="tools_advanced">Bekerja dengan dua tempat</string>
     <string name="tools_analysis">Analisis &amp; perkakas</string>
     <string name="tool_analyzer">Analisis penyimpanan</string>
     <string name="tool_analyzer_desc">Lihat apa yang menghabiskan ruang</string>
@@ -537,28 +537,6 @@
     <string name="tool_versions">Versi file</string>
     <string name="tool_versions_desc">Mesin waktu yang hanya menyimpan perubahannya</string>
 
-    <!-- Akses istimewa -->
-    <string name="power_title">Akses istimewa</string>
-    <string name="power_via_shizuku">Bisa lewat Shizuku</string>
-    <string name="power_via_root">Bisa lewat root</string>
-    <string name="power_none">Belum ada akses istimewa</string>
-    <string name="power_shizuku_state">Shizuku</string>
-    <string name="power_shizuku_missing">belum terpasang</string>
-    <string name="power_shizuku_stopped">terpasang, belum jalan</string>
-    <string name="power_shizuku_running">jalan, izin belum diberikan</string>
-    <string name="power_shizuku_granted">izin diberikan</string>
-    <string name="power_root_yes">ada</string>
-    <string name="power_root_no">tidak ada</string>
-    <string name="power_grant">Beri izin Shizuku</string>
-    <string name="power_note">Android menyembunyikan folder ini dari semua aplikasi. Dengan Shizuku atau root, shell bisa membacanya, jadi file bisa disalin keluar ke penyimpanan biasa — tempat aplikasi ini bisa mengolahnya.</string>
-    <string name="power_no_engine">Belum ada yang tersedia. Pasang dan jalankan Shizuku, beri izin untuk app ini, atau pakai perangkat yang sudah root.</string>
-    <string name="power_reading">Membaca folder…</string>
-    <string name="power_copy_out">Salin keluar</string>
-    <string name="power_copy_to">Salinannya disimpan ke mana?</string>
-    <string name="power_delete_title">Hapus lewat shell?</string>
-    <string name="power_delete_warning">Ini menjalankan rm -rf sebagai shell. Tidak masuk Sampah FileFlow dan tidak bisa dibatalkan.</string>
-    <string name="tool_power">Akses istimewa</string>
-    <string name="tool_power_desc">Baca dan salin folder yang disembunyikan Android, lewat Shizuku atau root</string>
 
     <!-- Pencarian foto -->
     <string name="photo_search_title">Cari foto</string>
@@ -582,8 +560,14 @@
     <string name="photo_section_exact">Cocok persis</string>
     <string name="photo_match_meaning">kemiripan</string>
     <string name="photo_prompt_translated">Diterjemahkan ke prompt Inggris, bahasa yang dibaca modelnya</string>
+    <string name="model_download_title">Mengunduh model pencarian</string>
+    <string name="model_download_starting">Memulaiâ€¦</string>
+    <string name="model_download_channel">Unduhan model</string>
+    <string name="model_download_channel_desc">Kemajuan unduhan model pencarian opsional</string>
+    <string name="photo_model_stop">Hentikan unduhan</string>
     <string name="photo_model_title">Cari menurut makna (model opsional)</string>
     <string name="photo_model_offer">Pencarian teks menemukan yang tercetak di foto. Untuk menemukan foto dari isinya â€” kerja bakti, pasar, pemandangan â€” app ini bisa menjalankan model MobileCLIP di HP. Unduhannya %1$d MB dan tidak pernah keluar dari HP.</string>
+    <string name="photo_model_keep_going">Unduhan tetap jalan walau app ditutup, dan lanjut dari yang sudah terunduh.</string>
     <string name="photo_model_download">Unduh modelnya (%1$d MB)</string>
     <string name="photo_model_downloading">%1$s Â· %2$s dari %3$s</string>
     <string name="photo_model_ready">Siap Â· %1$d foto sudah dibaca Â· %2$s di penyimpanan</string>

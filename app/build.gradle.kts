@@ -130,9 +130,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-        // One AIDL interface: the Shizuku user service, which is how an app is
-        // given the shell's rights without being rooted.
-        aidl = true
     }
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -214,13 +211,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.jsch)
     implementation(libs.jcifs.ng)
-
-    // Privileged access: Shizuku grants the app the shell's rights without root,
-    // and the provider is the half of the handshake that has to live in the
-    // manifest. Both are tiny, and the app works exactly as before without the
-    // Shizuku app installed.
-    implementation(libs.shizuku.api)
-    implementation(libs.shizuku.provider)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

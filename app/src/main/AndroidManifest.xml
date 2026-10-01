@@ -26,11 +26,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-    <!-- Shizuku runs with the shell's rights, so the app can reach the folders
-         Android hides from it without being rooted. The permission is granted by
-         the user in the Shizuku app, and everything here works without it. -->
-    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
-
     <!-- This is a phone app, and it says so: it needs a touchscreen, and it does
          not claim Android TV support — the interface is built for a finger, and
          a device without either should not be offered it. -->
@@ -42,13 +37,11 @@
         android:required="true" />
 
     <!-- Android 11 and later hide other packages from an app unless the app says
-         which ones it deals with. Without these two entries Shizuku looks
-         "not installed" on every modern phone no matter what the user has
-         installed, and the APK backup screen lists nothing but this app. Asking
-         for launcher apps is what the backup needs; QUERY_ALL_PACKAGES is not
-         needed for it and would be a harder question to answer. -->
+         which ones it deals with. The APK backup screen lists what the
+         PackageManager will show it, and without this it would show this app and
+         nothing else; asking for launcher activities is exactly what that screen
+         needs, and QUERY_ALL_PACKAGES is not. -->
     <queries>
-        <package android:name="moe.shizuku.manager" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -107,22 +100,12 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
-        <!-- The service Shizuku starts with the shell's uid. It is not exported:
-             only the Shizuku manager binds it, and only with the permission the
-             user granted. -->
+        <!-- The model download outlives the screen: a 795 MB file has to keep
+             arriving while the phone is locked and the app is closed. -->
         <service
-            android:name=".core.privileged.PrivilegedUserService"
+            android:name=".service.ModelDownloadService"
             android:exported="false"
-            android:process=":privileged" />
-
-        <!-- The other half of the Shizuku handshake: the Shizuku app talks back
-             through this provider to hand over the permission. -->
-        <provider
-            android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="${applicationId}.shizuku"
-            android:enabled="true"
-            android:exported="true"
-            android:multiprocess="false" />
+            android:foregroundServiceType="dataSync" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

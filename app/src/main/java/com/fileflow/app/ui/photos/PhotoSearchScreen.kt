@@ -59,14 +59,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.qualifiers.ApplicationContext
 import coil.compose.AsyncImage
 import com.fileflow.app.R
+import android.content.Context
+import com.fileflow.app.core.semantic.DownloadState
+import com.fileflow.app.core.semantic.ModelDownloadManager
 import com.fileflow.app.core.semantic.SemanticAsset
-import com.fileflow.app.core.semantic.SemanticDownloader
 import com.fileflow.app.core.semantic.SemanticEngine
 import com.fileflow.app.core.semantic.SemanticHit
 import com.fileflow.app.core.semantic.SemanticModels
 import com.fileflow.app.core.semantic.SemanticStatus
+import com.fileflow.app.service.ModelDownloadService
 import com.fileflow.app.core.util.Formatters
 import com.fileflow.app.core.vision.PhotoHit
 import com.fileflow.app.core.vision.PhotoIndexer
@@ -119,8 +123,9 @@ data class PhotoSearchState(
 class PhotoSearchViewModel @Inject constructor(
     private val indexer: PhotoIndexer,
     private val semantic: SemanticEngine,
-    private val downloader: SemanticDownloader,
+    private val downloads: ModelDownloadManager,
     private val models: SemanticModels,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PhotoSearchState())
@@ -143,57 +148,94 @@ class PhotoSearchViewModel @Inject constructor(
             semantic.observeCount().collect { count -> _state.update { it.copy(embedded = count) } }
         }
         viewModelScope.launch {
+            // What a previous run left behind, read before anything else: the
+            // screen should open showing the real number, not zero.
+            downloads.restoreState()
             val installed = models.ready()
-            val ready = if (installed) semantic.ready() else false
             _state.update {
                 it.copy(
                     modelInstalled = installed,
-                    modelReady = ready,
+                    modelReady = false,
                     modelBytes = semantic.sizeOnDisk(),
                 )
+            }
+            if (installed) {
+                val ready = semantic.ready()
+                _state.update {
+                    it.copy(
+                        modelReady = ready,
+                        modelDownload = if (ready) null else SemanticStatus.Failed("the model did not load"),
+                    )
+                }
+            }
+        }
+        // The service owns the download; this only mirrors it, so leaving and
+        // reopening the screen shows the same progress rather than a restarted
+        // download.
+        viewModelScope.launch {
+            downloads.state.collect { download ->
+                when (download) {
+                    is DownloadState.Running -> _state.update { current ->
+                        current.copy(
+                            modelDownload = SemanticStatus.Downloading(
+                                asset = download.asset,
+                                done = download.done,
+                                total = download.total,
+                            )
+                        )
+                    }
+
+                    is DownloadState.Finished -> {
+                        val ready = semantic.ready()
+                        _state.update {
+                            it.copy(
+                                modelDownload = if (ready) null else SemanticStatus.Failed("the model did not load"),
+                                modelInstalled = models.ready(),
+                                modelReady = ready,
+                                modelBytes = semantic.sizeOnDisk(),
+                            )
+                        }
+                        if (ready) {
+                            _messages.send(UiMessage.Info("Model ready. Reading the photos it can search."))
+                            embedPhotos()
+                        }
+                    }
+
+                    is DownloadState.Failed -> _state.update {
+                        it.copy(modelDownload = SemanticStatus.Failed(download.reason))
+                    }
+
+                    DownloadState.Idle -> Unit
+                }
             }
         }
         showRecent()
     }
 
     /**
-     * Fetches the model, one file at a time, saying which one.
+     * Starts the download, and lets go of it.
      *
-     * Half a gigabyte over a phone connection is a long wait, so the progress
-     * is reported per file and in bytes rather than as one opaque spinner.
+     * The work belongs to a foreground service from here on: this screen can be
+     * left, the app can be closed, and the file keeps arriving — and when the
+     * screen comes back it reads the progress back off disk rather than
+     * pretending the download is wherever it left it.
      */
     fun downloadModel() {
-        if (_state.value.modelDownload is SemanticStatus.Downloading) return
+        ModelDownloadService.start(context)
+    }
+
+    /** Stops it, keeping what has arrived so the next start resumes. */
+    fun cancelDownload() {
         viewModelScope.launch {
-            for (asset in SemanticAsset.entries) {
-                if (models.present(asset)) continue
-                _state.update {
-                    it.copy(modelDownload = SemanticStatus.Downloading(asset.label, 0, asset.bytes))
-                }
-                val result = downloader.download(asset) { done, total ->
-                    _state.update {
-                        it.copy(modelDownload = SemanticStatus.Downloading(asset.label, done, total))
-                    }
-                }
-                if (result.isFailure) {
-                    val reason = result.exceptionOrNull()?.message ?: "download failed"
-                    _state.update { it.copy(modelDownload = SemanticStatus.Failed(reason)) }
-                    return@launch
-                }
-            }
-            _state.update { it.copy(modelDownload = SemanticStatus.Loading) }
-            val ready = semantic.ready()
+            downloads.cancel()
+            ModelDownloadService.stop(context)
+            val state = downloads.state.value
             _state.update {
                 it.copy(
+                    modelDownload = if (state is DownloadState.Failed) SemanticStatus.Failed(state.reason) else null,
                     modelInstalled = models.ready(),
-                    modelReady = ready,
                     modelBytes = semantic.sizeOnDisk(),
-                    modelDownload = if (ready) null else SemanticStatus.Failed("the model did not load"),
                 )
-            }
-            if (ready) {
-                _messages.send(UiMessage.Info("Model ready. Reading the photos it can search."))
-                embedPhotos()
             }
         }
     }
@@ -442,7 +484,12 @@ fun PhotoSearchScreen(
                 )
 
                 else -> {
-                    ModelCard(state = state, onDownload = viewModel::downloadModel, onDelete = viewModel::deleteModel)
+                    ModelCard(
+                        state = state,
+                        onDownload = viewModel::downloadModel,
+                        onStop = viewModel::cancelDownload,
+                        onDelete = viewModel::deleteModel,
+                    )
 
                     if (state.results.isEmpty() && state.semantic.isEmpty() && !state.searching) {
                         EmptyState(
@@ -543,6 +590,7 @@ fun PhotoSearchScreen(
 private fun ModelCard(
     state: PhotoSearchState,
     onDownload: () -> Unit,
+    onStop: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val downloading = state.modelDownload as? SemanticStatus.Downloading
@@ -599,6 +647,14 @@ private fun ModelCard(
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
+            Text(
+                text = stringResource(R.string.photo_model_keep_going),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = onStop, shape = RoundedCornerShape(12.dp)) {
+                Text(stringResource(R.string.photo_model_stop))
+            }
         } else {
             Text(
                 text = stringResource(R.string.photo_model_offer, state.modelTotalMb),

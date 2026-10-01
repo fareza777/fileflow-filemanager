@@ -24,7 +24,6 @@ jcifs = "2.1.10"
 mlkitOcr = "19.0.1"
 mlkitLabeling = "16.0.8"
 tflite = "2.16.1"
-shizuku = "13.1.5"
 junit = "4.13.2"
 mockk = "1.13.13"
 androidxJunit = "1.2.1"
@@ -68,8 +67,6 @@ jcifs-ng = { group = "eu.agno3.jcifs", name = "jcifs-ng", version.ref = "jcifs" 
 mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "mlkitOcr" }
 mlkit-image-labeling = { group = "com.google.android.gms", name = "play-services-mlkit-image-labeling", version.ref = "mlkitLabeling" }
 tflite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
-shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuku" }
-shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref = "shizuku" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }

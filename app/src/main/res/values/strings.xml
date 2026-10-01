@@ -230,7 +230,7 @@
     <string name="tools_cleanup">Clean up</string>
     <string name="tools_insight">Understand</string>
     <string name="tools_keep">Keep &amp; recover</string>
-    <string name="tools_power">Power tools</string>
+    <string name="tools_advanced">Working with two places</string>
     <string name="tools_analysis">Analysis &amp; tools</string>
     <string name="tool_analyzer">Storage analyzer</string>
     <string name="tool_analyzer_desc">See what is eating your space</string>
@@ -549,28 +549,6 @@
     <string name="tool_versions">Versions</string>
     <string name="tool_versions_desc">A time machine that stores only what changed</string>
 
-    <!-- Power access -->
-    <string name="power_title">Power access</string>
-    <string name="power_via_shizuku">Reachable through Shizuku</string>
-    <string name="power_via_root">Reachable through root</string>
-    <string name="power_none">No privileged access</string>
-    <string name="power_shizuku_state">Shizuku</string>
-    <string name="power_shizuku_missing">not installed</string>
-    <string name="power_shizuku_stopped">installed, not running</string>
-    <string name="power_shizuku_running">running, permission not granted</string>
-    <string name="power_shizuku_granted">granted</string>
-    <string name="power_root_yes">yes</string>
-    <string name="power_root_no">no</string>
-    <string name="power_grant">Grant Shizuku permission</string>
-    <string name="power_note">Android hides these folders from every app. With Shizuku or root the shell can read them, so a file can be copied out into ordinary storage — where the rest of the app can work with it.</string>
-    <string name="power_no_engine">Nothing is available yet. Install and start Shizuku, grant it this app, or use a rooted device.</string>
-    <string name="power_reading">Reading the folder…</string>
-    <string name="power_copy_out">Copy out</string>
-    <string name="power_copy_to">Where should the copy go?</string>
-    <string name="power_delete_title">Delete through the shell?</string>
-    <string name="power_delete_warning">This runs rm -rf as the shell. It does not go to FileFlow Trash and cannot be undone.</string>
-    <string name="tool_power">Power access</string>
-    <string name="tool_power_desc">Read and copy the folders Android hides, via Shizuku or root</string>
 
     <!-- Photo search -->
     <string name="photo_search_title">Search photos</string>
@@ -594,8 +572,14 @@
     <string name="photo_section_exact">Exact matches</string>
     <string name="photo_match_meaning">match</string>
     <string name="photo_prompt_translated">Translated into English prompts, which is the language the model reads</string>
+    <string name="model_download_title">Downloading the search model</string>
+    <string name="model_download_starting">Startingâ€¦</string>
+    <string name="model_download_channel">Model download</string>
+    <string name="model_download_channel_desc">Progress of the optional search model</string>
+    <string name="photo_model_stop">Stop downloading</string>
     <string name="photo_model_title">Search by meaning (optional model)</string>
     <string name="photo_model_offer">The text search finds what is printed in a photo. To find a photo by what it shows â€” a work party, a market, a view â€” this app can run a MobileCLIP model on the device. It is a %1$d MB download and it never leaves the phone.</string>
+    <string name="photo_model_keep_going">It keeps downloading if you close the app, and picks up where it stopped.</string>
     <string name="photo_model_download">Download the model (%1$d MB)</string>
     <string name="photo_model_downloading">%1$s Â· %2$s of %3$s</string>
     <string name="photo_model_ready">Ready Â· %1$d photos read Â· %2$s on disk</string>
