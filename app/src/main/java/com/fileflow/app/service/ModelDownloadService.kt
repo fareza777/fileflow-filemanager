@@ -86,12 +86,22 @@ class ModelDownloadService : Service() {
     }
 
     private fun notify(notification: Notification) {
-        val manager = getSystemService(NotificationManager::class.java) ?: return
-        ensureChannel(manager)
-        manager.notify(NOTIFICATION_ID, notification)
+        // A notification that cannot be posted must never take the process with
+        // it; the download is still running either way.
+        runCatching {
+            val manager = getSystemService(NotificationManager::class.java) ?: return
+            manager.notify(NOTIFICATION_ID, notification)
+        }
     }
 
     private fun buildNotification(state: DownloadState?): Notification {
+        // The channel has to exist before this notification is handed to
+        // startForeground: posting to a channel that is not there makes Android
+        // reject it, and the rejection arrives as an exception thrown in the
+        // main thread's handler — which no try/catch on our side can catch. That
+        // was the crash on tapping download.
+        ensureChannel()
+
         val open = PendingIntent.getActivity(
             this,
             0,
@@ -133,7 +143,8 @@ class ModelDownloadService : Service() {
             .build()
     }
 
-    private fun ensureChannel(manager: NotificationManager) {
+    private fun ensureChannel() {
+        val manager = getSystemService(NotificationManager::class.java) ?: return
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         manager.createNotificationChannel(
             NotificationChannel(
@@ -162,6 +173,33 @@ class ModelDownloadService : Service() {
         private const val CHANNEL_ID = "fileflow_model_download"
         private const val NOTIFICATION_ID = 4402
         const val ACTION_STOP = "com.fileflow.app.action.STOP_MODEL_DOWNLOAD"
+
+        /**
+         * Creates the channel before anything needs it.
+         *
+         * A foreground service that posts to a channel which does not exist yet
+         * is rejected by the framework, and the rejection arrives as an
+         * exception on the main thread's handler — the process dies with
+         * "Bad notification for startForeground", and no try/catch around
+         * startForeground can stop it. Making the channel early at app start
+         * means the service can never be the first thing to post.
+         */
+        fun ensureChannelEarly(context: Context) {
+            runCatching {
+                val manager = context.getSystemService(NotificationManager::class.java) ?: return
+                if (manager.getNotificationChannel(CHANNEL_ID) != null) return
+                manager.createNotificationChannel(
+                    NotificationChannel(
+                        CHANNEL_ID,
+                        context.getString(R.string.model_download_channel),
+                        NotificationManager.IMPORTANCE_LOW,
+                    ).apply {
+                        description = context.getString(R.string.model_download_channel_desc)
+                        setShowBadge(false)
+                    }
+                )
+            }
+        }
 
         fun start(context: Context) {
             val intent = Intent(context, ModelDownloadService::class.java)

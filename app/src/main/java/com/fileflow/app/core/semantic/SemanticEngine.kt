@@ -1,6 +1,7 @@
 package com.fileflow.app.core.semantic
 
 import android.content.Context
+import android.util.Log
 import com.fileflow.app.data.db.PhotoVectorDao
 import com.fileflow.app.data.db.PhotoVectorEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -47,11 +48,10 @@ sealed interface SemanticStatus {
  * cannot know that it is the kerja bakti. MobileCLIP puts the *phrase* in the
  * same space as the picture, so "kerja bakti" reaches it.
  *
- * The two towers are loaded once and kept: they are hundreds of megabytes and
- * the load is the expensive part. Their roles are decided by their input
- * tensors rather than their file names, because the repository's names (`first`
- * and `last`) do not say which is which and swapping them yields vectors that
- * are the right length and meaningless.
+ * The model is loaded once and kept: it is hundreds of megabytes and the load
+ * is the expensive part. It carries *both* towers in one file, so one
+ * interpreter serves pictures and phrases; which input and which output is
+ * which is read from the model rather than from its file name.
  */
 @Singleton
 class SemanticEngine @Inject constructor(
@@ -61,9 +61,32 @@ class SemanticEngine @Inject constructor(
 ) {
 
     private val lock = Mutex()
-    private var imageTower: ClipEncoder? = null
-    private var textTower: ClipEncoder? = null
+    private var model: ClipEncoder? = null
     private var tokenizer: ClipTokenizer? = null
+
+    /**
+     * Set once the accelerator has refused to *run* the model.
+     *
+     * Opening the model and running it are different failures. A delegate can
+     * accept a 400 MB graph when the interpreter is built and then fail on the
+     * first picture, which no construction-time fallback ever sees — the model
+     * opens, the pass runs, and every photo comes back empty. So the first run
+     * failure with the accelerator in place closes it and reopens on the CPU,
+     * and this flag stops the second attempt from trying the accelerator again.
+     */
+    private var cpuOnly = false
+
+    /**
+     * Why the last load failed, in the model's own words.
+     *
+     * "The model did not load" is not an answer: it says nothing about whether a
+     * file is missing, the interpreter refused it, its inputs are not what this
+     * code expects, or the vocabulary would not parse. Whichever it is, the
+     * message names it — including the tensor shapes, because that is what a
+     * wrong assumption about the model looks like.
+     */
+    var loadFailure: String? = null
+        private set
 
     /** Identifies the model in stored vectors, so another model cannot reuse them. */
     val modelId: String = "mobileclip2-s2"
@@ -73,6 +96,16 @@ class SemanticEngine @Inject constructor(
     fun sizeOnDisk(): Long = models.sizeOnDisk()
 
     suspend fun count(): Int = withContext(Dispatchers.IO) { vectors.count() }
+
+    /**
+     * How many indexed photos still have no vector: what is left to read by
+     * meaning. The screen uses this to decide whether a pass is worth starting,
+     * so a finished library does not spin up a service to do nothing.
+     */
+    suspend fun pending(): Int = withContext(Dispatchers.IO) {
+        val known = vectors.embeddedPaths().toHashSet()
+        vectors.indexedPhotos().count { it.path !in known && File(it.path).isFile }
+    }
 
     fun observeCount() = vectors.observeCount()
 
@@ -85,38 +118,28 @@ class SemanticEngine @Inject constructor(
      * claims to be, so a half-downloaded model is refused instead of producing
      * vectors nobody can trust.
      */
-    private suspend fun load(): Triple<ClipEncoder, ClipEncoder, ClipTokenizer>? = lock.withLock {
-        imageTower?.let { image ->
-            textTower?.let { text ->
-                tokenizer?.let { return@withLock Triple(image, text, it) }
-            }
+    private suspend fun load(): Pair<ClipEncoder, ClipTokenizer>? = lock.withLock {
+        model?.let { encoder ->
+            tokenizer?.let { return@withLock Pair(encoder, it) }
         }
-        if (!models.ready()) return@withLock null
+
+        if (!models.ready()) {
+            val missing = SemanticAsset.entries.filterNot { models.present(it) }
+            loadFailure = "Missing from the download: " +
+                missing.joinToString(", ") { "${it.label} (${it.fileName})" }
+            return@withLock null
+        }
 
         withContext(Dispatchers.IO) {
-            val a = ClipEncoder.open(models.file(SemanticAsset.IMAGE_TOWER)) ?: return@withContext null
-            val b = ClipEncoder.open(models.file(SemanticAsset.TEXT_TOWER))
-                ?: run {
-                    a.close()
-                    return@withContext null
-                }
-
-            val image = when {
-                a.info.role == TowerRole.IMAGE -> a
-                b.info.role == TowerRole.IMAGE -> b
-                else -> null
-            }
-            val text = when {
-                a.info.role == TowerRole.TEXT -> a
-                b.info.role == TowerRole.TEXT -> b
-                else -> null
-            }
-            // Both files describing the same tower, or neither describing the
-            // one it must be, is a model that cannot search — say so rather than
-            // produce noise.
-            if (image == null || text == null || image === text) {
-                runCatching { a.close() }
-                runCatching { b.close() }
+            // One file, both towers. The old code opened "first" as the image
+            // tower and "last" as the text tower; they are the same dual-tower
+            // model twice over, so both classified as IMAGE and the load was
+            // refused with "the model's inputs are not what this app expects".
+            val opened = ClipEncoder.open(models.file(SemanticAsset.MODEL), cpuOnly = cpuOnly)
+            if (opened == null) {
+                val megabytes = models.file(SemanticAsset.MODEL).length() / (1024 * 1024)
+                loadFailure = "The model file could not be opened as a TFLite model " +
+                    "($megabytes MB on disk). Deleting it and downloading it again is the fix."
                 return@withContext null
             }
 
@@ -125,16 +148,16 @@ class SemanticEngine @Inject constructor(
                     vocab = parseVocab(models.file(SemanticAsset.VOCAB)),
                     mergeLines = models.file(SemanticAsset.MERGES).readLines(),
                 )
-            }.getOrNull() ?: run {
-                runCatching { a.close() }
-                runCatching { b.close() }
+            }.getOrElse { error ->
+                runCatching { opened.close() }
+                loadFailure = "The vocabulary could not be read: ${error.message}"
                 return@withContext null
             }
 
-            imageTower = image
-            textTower = text
+            model = opened
             tokenizer = parsed
-            Triple(image, text, parsed)
+            loadFailure = null
+            Pair(opened, parsed)
         }
     }
 
@@ -149,7 +172,7 @@ class SemanticEngine @Inject constructor(
         limit: Int = 500,
         onProgress: (done: Int, total: Int, name: String) -> Unit = { _, _, _ -> },
     ): Int = withContext(Dispatchers.IO) {
-        val (image, _, _) = load() ?: return@withContext 0
+        val (encoder, _) = load() ?: return@withContext 0
 
         val known = vectors.embeddedPaths().toHashSet()
         val photos = vectors.indexedPhotos()
@@ -164,7 +187,7 @@ class SemanticEngine @Inject constructor(
             currentCoroutineContext().ensureActive()
             onProgress(done, photos.size, photo.path.substringAfterLast('/'))
 
-            val vector = image.embedImage(File(photo.path))
+            val vector = encoder.embedImage(File(photo.path))
             if (vector != null) {
                 batch += PhotoVectorEntity(
                     path = photo.path,
@@ -174,6 +197,17 @@ class SemanticEngine @Inject constructor(
                     vector = pack(vector),
                     model = modelId,
                     indexedAt = System.currentTimeMillis(),
+                )
+            } else if (encoder.runFailure != null) {
+                // A photo that cannot be read is one file to skip. A run that
+                // threw is the model itself, and continuing would turn a broken
+                // model into a progress bar that reaches the end and stores
+                // nothing — which is exactly what happened: every photo failed,
+                // the count stayed at zero, and no screen said why.
+                val reason = encoder.runFailure
+                if (reopenOnCpu(encoder)) return@withContext embed(limit, onProgress)
+                throw IllegalStateException(
+                    "The model could not run on this phone: $reason",
                 )
             }
             done++
@@ -203,24 +237,79 @@ class SemanticEngine @Inject constructor(
         withContext(Dispatchers.IO) {
             val needle = query.trim()
             if (needle.isEmpty()) return@withContext emptyList()
-
-            val (_, text, tokens) = load() ?: return@withContext emptyList()
             val prompts = ClipPrompts.promptsFor(needle)
             if (prompts.isEmpty()) return@withContext emptyList()
 
-            val vectors = prompts.mapNotNull { prompt ->
-                text.embedText(tokens.encode(prompt))
-            }
-            val queryVector = averageNormalised(vectors) ?: return@withContext emptyList()
+            // Two attempts, the accelerator first. Searching and indexing are
+            // the same model and the same failure, so they need the same
+            // second chance — when only indexing had one, the library indexed
+            // fine and every search silently came back empty.
+            repeat(2) {
+                val (encoder, tokens) = load() ?: return@withContext emptyList()
 
-            vectorsIndex(queryVector, limit, minimum)
+                // Named for what it holds, not for the table it resembles: a
+                // local called `vectors` shadows the DAO of the same name and
+                // silently turns `vectors.all()` into the stdlib `all { }`,
+                // which fails to compile at a line that reads correctly.
+                val embeddings = prompts.mapNotNull { prompt ->
+                    encoder.embedText(tokens.encode(prompt))
+                }
+                // A text tower that answers every prompt with nothing looks
+                // exactly like a phrase the model has never met: an empty
+                // result, no error. Saying so is the difference between a
+                // wrong query and a broken tower.
+                if (embeddings.isEmpty()) {
+                    Log.w(TAG, "text tower returned no vector for ${prompts.size} prompt(s): " +
+                        "${encoder.runFailure ?: "no exception raised"}")
+                    if (reopenOnCpu(encoder)) return@repeat
+                    return@withContext emptyList()
+                }
+
+                val queryVector = averageNormalised(embeddings) ?: return@withContext emptyList()
+                val all = vectors.all()
+                val scored = scoreAll(queryVector, all)
+                // Nothing comparable and nothing clearing the bar are two
+                // different faults that the old line reported identically as
+                // "aboveFloor=0". Saying which one it is is the whole point of
+                // measuring.
+                if (scored.isEmpty()) {
+                    val seen = all
+                        .distinctBy { "${it.model}/${it.dimension}" }
+                        .joinToString(", ") { "${it.model}/${it.dimension}" }
+                    Log.w(TAG, "search: no stored vector is comparable — wanted " +
+                        "model=$modelId dim=${queryVector.size}; stored=${all.size} " +
+                        "as [$seen]")
+                    return@withContext emptyList()
+                }
+                val hits = scored.filter { it.score >= minimum }.take(limit)
+                // The floor under a result is a guess, and a guess nobody
+                // measures eventually becomes a ceiling nobody can see past.
+                // rawTop is the best score *before* the floor, so a bar set
+                // above every real score shows up as a number instead of
+                // looking like a library with nothing to offer.
+                val best = scored.first()
+                Log.i(TAG, "search '$needle': prompts=${prompts.size} embedded=${embeddings.size} " +
+                    "dim=${queryVector.size} stored=${all.size} rows=${scored.size} " +
+                    "rawTop=${best.score} aboveFloor=${hits.size} " +
+                    "top=${hits.firstOrNull()?.score ?: Float.NaN} floor=$minimum " +
+                    "best='${best.name}'")
+                return@withContext hits
+            }
+            emptyList()
         }
 
-    private suspend fun vectorsIndex(
+    /**
+     * Every stored vector scored against [queryVector], closest first.
+     *
+     * The floor and the limit are applied by the caller on purpose: applied
+     * here, the best score that *was* available is discarded along with the
+     * rejects, and "zero results" can no longer be told apart from "every
+     * result sat below a floor set too high".
+     */
+    private fun scoreAll(
         queryVector: FloatArray,
-        limit: Int,
-        minimum: Float,
-    ): List<SemanticHit> = vectors.all()
+        all: List<PhotoVectorEntity>,
+    ): List<SemanticHit> = all
         .asSequence()
         .filter { it.model == modelId && it.dimension == queryVector.size }
         .map { row ->
@@ -231,9 +320,7 @@ class SemanticEngine @Inject constructor(
                 score = dot(queryVector, unpack(row.vector, row.dimension)),
             )
         }
-        .filter { it.score >= minimum }
         .sortedByDescending { it.score }
-        .take(limit)
         .toList()
 
     /** True when the query has a hand-written prompt rather than a raw passthrough. */
@@ -242,11 +329,48 @@ class SemanticEngine @Inject constructor(
     suspend fun clear() = withContext(Dispatchers.IO) { vectors.clear() }
 
     fun close() {
-        runCatching { imageTower?.close() }
-        runCatching { textTower?.close() }
-        imageTower = null
-        textTower = null
+        runCatching { model?.close() }
+        model = null
         tokenizer = null
+    }
+
+    /**
+     * Drops the open model so the next call opens it again.
+     *
+     * The tokenizer is kept: the accelerator is the suspect here, and the
+     * vocabulary is a megabyte of text that was parsed without complaint.
+     */
+    private fun reopen() {
+        runCatching { model?.close() }
+        model = null
+    }
+
+    /**
+     * Gives the model one more try on the CPU, if that is what has not been
+     * tried yet.
+     *
+     * Opening a model and running it are different failures. A delegate can
+     * accept a 400 MB graph when the interpreter is built and then refuse the
+     * first input — `ANEURALNETWORKS_BAD_DATA` — and no construction-time
+     * fallback ever sees that, because construction succeeded. On this phone
+     * that is exactly what happens: the model opens, the accelerator takes it,
+     * and every run fails.
+     *
+     * Both paths need this, not just one. Indexing photos and searching them
+     * are the same model and the same refusal; when only indexing knew how to
+     * retry, the library indexed cleanly and every search came back empty with
+     * nothing said anywhere.
+     *
+     * @return true when the caller should try again. False when the CPU has
+     * already been tried — in which case the failure is the model's, not the
+     * accelerator's, and another attempt would only repeat it.
+     */
+    private fun reopenOnCpu(encoder: ClipEncoder): Boolean {
+        if (!encoder.usesDelegate || cpuOnly) return false
+        Log.w(TAG, "the accelerator refused to run the model; reopening on the CPU")
+        cpuOnly = true
+        reopen()
+        return true
     }
 
     // ------------------------------------------------------------- internals
@@ -270,16 +394,6 @@ class SemanticEngine @Inject constructor(
         return FloatArray(dimension) { buffer.float }
     }
 
-    /** CLIP's vocabulary file: a JSON object of token to id. */
-    private fun parseVocab(file: File): Map<String, Int> {
-        val text = file.readText()
-        val vocab = HashMap<String, Int>(64_000)
-        ENTRIES.findAll(text).forEach { match ->
-            vocab[match.groupValues[1]] = match.groupValues[2].toIntOrNull() ?: return@forEach
-        }
-        return vocab
-    }
-
     /**
      * The mean of several unit vectors, re-normalised.
      *
@@ -292,6 +406,9 @@ class SemanticEngine @Inject constructor(
      */
     internal companion object {
         const val BATCH = 8
+
+        /** Where a search explains itself, in enough detail to be argued with. */
+        private const val TAG = "SemanticEngine"
 
         /**
          * The floor under a result, and an honest guess rather than a
@@ -308,6 +425,24 @@ class SemanticEngine @Inject constructor(
          * characters some tokens contain.
          */
         private val ENTRIES = Regex("\"((?:[^\"\\\\]|\\\\.)*)\"\\s*:\\s*(\\d+)")
+
+        /**
+         * CLIP's vocabulary file: a JSON object of token to id.
+         *
+         * On the companion, and internal, because this is the step that fails
+         * silently: a file that parses to zero entries does not throw, it just
+         * sends every word to `<unk>`, and a tokenizer that answers every
+         * question with the same string hands the text tower a model input it
+         * cannot tell apart from any other. The engine needs the map; the test
+         * needs to know the map is not empty.
+         */
+        internal fun parseVocab(file: File): Map<String, Int> {
+            val vocab = HashMap<String, Int>(64_000)
+            ENTRIES.findAll(file.readText()).forEach { match ->
+                vocab[match.groupValues[1]] = match.groupValues[2].toIntOrNull() ?: return@forEach
+            }
+            return vocab
+        }
 
         fun averageNormalised(vectors: List<FloatArray>): FloatArray? {
             if (vectors.isEmpty()) return null

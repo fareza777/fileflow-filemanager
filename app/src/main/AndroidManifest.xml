@@ -107,6 +107,13 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- Reading photos is a first-run pass over thousands of files; it
+             runs to completion with the app closed, same as the download. -->
+        <service
+            android:name=".service.PhotoWorkService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

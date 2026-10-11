@@ -2,6 +2,9 @@ package com.fileflow.app.ui.photos
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,8 +72,11 @@ import com.fileflow.app.core.semantic.SemanticAsset
 import com.fileflow.app.core.semantic.SemanticEngine
 import com.fileflow.app.core.semantic.SemanticHit
 import com.fileflow.app.core.semantic.SemanticModels
+import com.fileflow.app.core.semantic.PhotoWorkManager
+import com.fileflow.app.core.semantic.PhotoWorkState
 import com.fileflow.app.core.semantic.SemanticStatus
 import com.fileflow.app.service.ModelDownloadService
+import com.fileflow.app.service.PhotoWorkService
 import com.fileflow.app.core.util.Formatters
 import com.fileflow.app.core.vision.PhotoHit
 import com.fileflow.app.core.vision.PhotoIndexer
@@ -125,6 +131,7 @@ class PhotoSearchViewModel @Inject constructor(
     private val semantic: SemanticEngine,
     private val downloads: ModelDownloadManager,
     private val models: SemanticModels,
+    private val work: PhotoWorkManager,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -135,8 +142,6 @@ class PhotoSearchViewModel @Inject constructor(
     val messages = _messages.receiveAsFlow()
 
     private var searchJob: Job? = null
-    private var indexJob: Job? = null
-    private var embedJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -146,6 +151,68 @@ class PhotoSearchViewModel @Inject constructor(
         }
         viewModelScope.launch {
             semantic.observeCount().collect { count -> _state.update { it.copy(embedded = count) } }
+        }
+        // The two reading passes belong to the service now, so leaving the
+        // screen — or the app — does not stop them. This only mirrors the
+        // service's progress, the same way the download is mirrored.
+        viewModelScope.launch {
+            work.state.collect { progress ->
+                when (progress) {
+                    is PhotoWorkState.Running -> _state.update {
+                        it.copy(
+                            indexing = progress.kind == PhotoWorkState.Kind.INDEXING,
+                            embedding = progress.kind == PhotoWorkState.Kind.EMBEDDING,
+                            progressDone = progress.done,
+                            progressTotal = progress.total,
+                            progressName = progress.name,
+                        )
+                    }
+
+                    is PhotoWorkState.Finished -> {
+                        _state.update {
+                            it.copy(
+                                indexing = false,
+                                embedding = false,
+                                progressDone = 0,
+                                progressTotal = 0,
+                                progressName = "",
+                            )
+                        }
+                        when (progress.kind) {
+                            PhotoWorkState.Kind.INDEXING -> _messages.send(
+                                UiMessage.Info(
+                                    if (progress.counted == 0) {
+                                        "Nothing new to read"
+                                    } else {
+                                        "Read ${progress.counted} photos"
+                                    },
+                                ),
+                            )
+                            PhotoWorkState.Kind.EMBEDDING -> _messages.send(
+                                UiMessage.Info(
+                                    if (progress.counted == 0) {
+                                        "No photo left to read by meaning"
+                                    } else {
+                                        "Read ${progress.counted} photos by meaning"
+                                    },
+                                ),
+                            )
+                        }
+                        if (_state.value.query.isNotBlank()) setQuery(_state.value.query) else showRecent()
+                    }
+
+                    is PhotoWorkState.Failed -> {
+                        _state.update {
+                            it.copy(indexing = false, embedding = false, progressName = "")
+                        }
+                        _messages.send(UiMessage.Info(progress.reason))
+                    }
+
+                    PhotoWorkState.Idle -> _state.update {
+                        it.copy(indexing = false, embedding = false, progressName = "")
+                    }
+                }
+            }
         }
         viewModelScope.launch {
             // What a previous run left behind, read before anything else: the
@@ -164,9 +231,20 @@ class PhotoSearchViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         modelReady = ready,
-                        modelDownload = if (ready) null else SemanticStatus.Failed("the model did not load"),
+                        // The engine says why, in the model's own terms: which
+                        // file is missing, or which tensor shapes it did not
+                        // recognise. "The model did not load" is not an answer.
+                        modelDownload = if (ready) {
+                            null
+                        } else {
+                            SemanticStatus.Failed(semantic.loadFailure ?: "the model did not load")
+                        },
                     )
                 }
+                // A download that finished while nobody was watching left the
+                // files here but no vectors. The pass is worth starting only
+                // when there is something left to read.
+                if (ready && semantic.pending() > 0) embedPhotos()
             }
         }
         // The service owns the download; this only mirrors it, so leaving and
@@ -189,7 +267,13 @@ class PhotoSearchViewModel @Inject constructor(
                         val ready = semantic.ready()
                         _state.update {
                             it.copy(
-                                modelDownload = if (ready) null else SemanticStatus.Failed("the model did not load"),
+                                modelDownload = if (ready) {
+                                    null
+                                } else {
+                                    SemanticStatus.Failed(
+                                        semantic.loadFailure ?: "the model did not load"
+                                    )
+                                },
                                 modelInstalled = models.ready(),
                                 modelReady = ready,
                                 modelBytes = semantic.sizeOnDisk(),
@@ -201,11 +285,11 @@ class PhotoSearchViewModel @Inject constructor(
                         }
                     }
 
+                    DownloadState.Idle -> Unit
+
                     is DownloadState.Failed -> _state.update {
                         it.copy(modelDownload = SemanticStatus.Failed(download.reason))
                     }
-
-                    DownloadState.Idle -> Unit
                 }
             }
         }
@@ -240,8 +324,34 @@ class PhotoSearchViewModel @Inject constructor(
         }
     }
 
+    /** Re-reads the model already on disk, without downloading it again. */
+    fun retryLoad() {
+        viewModelScope.launch {
+            _state.update { it.copy(modelDownload = SemanticStatus.Loading) }
+            semantic.close()
+            val ready = semantic.ready()
+            _state.update {
+                it.copy(
+                    modelReady = ready,
+                    modelInstalled = models.ready(),
+                    modelBytes = semantic.sizeOnDisk(),
+                    modelDownload = if (ready) {
+                        null
+                    } else {
+                        SemanticStatus.Failed(semantic.loadFailure ?: "the model did not load")
+                    },
+                )
+            }
+            if (ready) {
+                _messages.send(UiMessage.Info("Model ready. Reading the photos it can search."))
+                embedPhotos()
+            }
+        }
+    }
+
     fun deleteModel() {
         viewModelScope.launch {
+            PhotoWorkService.stop(context)
             semantic.close()
             runCatching { semantic.clear() }
             models.delete()
@@ -259,28 +369,17 @@ class PhotoSearchViewModel @Inject constructor(
         }
     }
 
-    /** Reads the photos the model can then search by meaning. */
-    fun embedPhotos(limit: Int = 500) {
-        if (_state.value.embedding) return
-        embedJob = viewModelScope.launch {
-            _state.update { it.copy(embedding = true, progressDone = 0, progressTotal = 0) }
-            val done = runCatching {
-                semantic.embed(limit = limit) { count, total, name ->
-                    _state.update {
-                        it.copy(progressDone = count, progressTotal = total, progressName = name)
-                    }
-                }
-            }.getOrNull() ?: 0
-            _state.update { it.copy(embedding = false, progressName = "") }
-            _messages.send(
-                UiMessage.Info(if (done == 0) "No photo left to read" else "Read $done photos by meaning")
-            )
-            if (_state.value.query.isNotBlank()) setQuery(_state.value.query)
-        }
+    /**
+     * Reads the photos the model can then search by meaning — in the service,
+     * so the pass survives leaving the screen and closing the app.
+     */
+    fun embedPhotos() {
+        PhotoWorkService.startEmbedding(context)
     }
 
     fun stopEmbedding() {
-        embedJob?.cancel()
+        PhotoWorkService.stop(context)
+        work.reset()
         _state.update { it.copy(embedding = false, progressName = "") }
     }
 
@@ -328,37 +427,17 @@ class PhotoSearchViewModel @Inject constructor(
      * Reads the photos that are new or changed.
      *
      * The first run is the one that matters: it is when the models are fetched
-     * from Play Services and every picture is opened for the first time, so it
-     * is also the run that has to be visible and interruptible rather than a
-     * background surprise.
+     * from Play Services and every picture is opened for the first time — so it
+     * runs in the service like everything else here, and keeps going whether or
+     * not anyone is watching.
      */
-    fun buildIndex(limit: Int = 800) {
-        if (_state.value.indexing) return
-        indexJob = viewModelScope.launch {
-            _state.update { it.copy(indexing = true, progressDone = 0, progressTotal = 0, progressName = "") }
-            val counted = runCatching {
-                indexer.index(limit = limit) { done, total, name ->
-                    _state.update {
-                        it.copy(progressDone = done, progressTotal = total, progressName = name)
-                    }
-                }
-            }.getOrElse { error ->
-                _state.update { it.copy(indexing = false) }
-                _messages.send(UiMessage.Info(error.message ?: "Could not read the photos"))
-                return@launch
-            }
-            _state.update { it.copy(indexing = false, progressName = "") }
-            _messages.send(
-                UiMessage.Info(
-                    if (counted == 0) "Nothing new to read" else "Read $counted photos"
-                )
-            )
-            if (_state.value.query.isBlank()) showRecent() else setQuery(_state.value.query)
-        }
+    fun buildIndex() {
+        PhotoWorkService.startIndexing(context)
     }
 
     fun stopIndexing() {
-        indexJob?.cancel()
+        PhotoWorkService.stop(context)
+        work.reset()
         _state.update { it.copy(indexing = false, progressName = "") }
     }
 }
@@ -428,10 +507,12 @@ fun PhotoSearchScreen(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-            ) {
                 // The examples are the feature: nobody guesses that receipts
                 // are searchable, and "kerjabakti" is not a word anyone types
-                // into a file manager unless it is suggested.
+                // into a file manager unless it is suggested. They scroll
+                // sideways on a narrow screen rather than spilling out of it.
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            ) {
                 listOf(
                     R.string.photo_example_transfer,
                     R.string.photo_example_kerja,
@@ -440,7 +521,13 @@ fun PhotoSearchScreen(
                     val text = stringResource(example)
                     AssistChip(
                         onClick = { viewModel.setQuery(text) },
-                        label = { Text(text) },
+                        label = {
+                            Text(
+                                text = text,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
                         leadingIcon = {
                             Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                         },
@@ -489,6 +576,7 @@ fun PhotoSearchScreen(
                         onDownload = viewModel::downloadModel,
                         onStop = viewModel::cancelDownload,
                         onDelete = viewModel::deleteModel,
+                        onRetry = viewModel::retryLoad,
                     )
 
                     if (state.results.isEmpty() && state.semantic.isEmpty() && !state.searching) {
@@ -592,6 +680,7 @@ private fun ModelCard(
     onDownload: () -> Unit,
     onStop: () -> Unit,
     onDelete: () -> Unit,
+    onRetry: () -> Unit,
 ) {
     val downloading = state.modelDownload as? SemanticStatus.Downloading
     val failed = state.modelDownload as? SemanticStatus.Failed
@@ -601,12 +690,19 @@ private fun ModelCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                RoundedCornerShape(16.dp),
+            )
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
             text = stringResource(R.string.photo_model_title),
             style = MaterialTheme.typography.titleSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
 
         if (state.modelReady) {
@@ -618,6 +714,8 @@ private fun ModelCard(
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { onDelete() }, shape = RoundedCornerShape(12.dp)) {
@@ -655,17 +753,44 @@ private fun ModelCard(
             OutlinedButton(onClick = onStop, shape = RoundedCornerShape(12.dp)) {
                 Text(stringResource(R.string.photo_model_stop))
             }
+        } else if (state.modelInstalled) {
+            // The files are here but the model would not load. Downloading 795 MB
+            // again would be the wrong answer to a wrong assumption in the code.
+            Text(
+                text = failed?.reason ?: stringResource(R.string.photo_model_not_loaded),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = stringResource(R.string.photo_model_retry_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onRetry, shape = RoundedCornerShape(14.dp)) {
+                    Text(stringResource(R.string.photo_model_retry))
+                }
+                OutlinedButton(onClick = onDelete, shape = RoundedCornerShape(12.dp)) {
+                    Text(stringResource(R.string.photo_model_delete))
+                }
+            }
         } else {
             Text(
                 text = stringResource(R.string.photo_model_offer, state.modelTotalMb),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis,
             )
             if (failed != null) {
                 Text(
                     text = failed.reason,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Button(onClick = onDownload, shape = RoundedCornerShape(14.dp)) {
@@ -682,12 +807,24 @@ private fun ProgressCard(state: PhotoSearchState, onStop: () -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                RoundedCornerShape(16.dp),
+            )
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = stringResource(R.string.photo_indexing),
+            // The pass says its own name: "reading photos" and "reading photos
+            // by meaning" are different jobs, and a card that says the wrong one
+            // is a card nobody trusts.
+            text = stringResource(
+                if (state.embedding) R.string.photo_embed_title else R.string.photo_indexing,
+            ),
             style = MaterialTheme.typography.titleSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = if (state.progressTotal > 0) {
@@ -729,7 +866,12 @@ private fun PhotoCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow),
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                RoundedCornerShape(16.dp),
+            ),
     ) {
         AsyncImage(
             model = File(path),

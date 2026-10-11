@@ -46,15 +46,51 @@ sealed interface DownloadState {
  */
 internal object ResumeDecision {
 
-    enum class Action { APPEND, RESTART, COMPLETE }
+    enum class Action { APPEND, RESTART, COMPLETE, /** The range was past the end. */ REFUSED }
 
     fun forResponse(statusCode: Int, alreadyOnDisk: Long, expected: Long): Action = when {
-        alreadyOnDisk >= expected && expected > 0 -> Action.COMPLETE
+        // 416 is the server saying "there is nothing after that byte". It means
+        // the partial file is as long as the file gets — either the download
+        // finished last time and was never renamed, or our idea of the size was
+        // wrong. Either way, asking again is what turned one refusal into five.
+        statusCode == 416 && alreadyOnDisk > 0 -> Action.REFUSED
+        expected > 0 && alreadyOnDisk >= expected -> Action.COMPLETE
         statusCode == 206 && alreadyOnDisk > 0 -> Action.APPEND
         // 200 with a partial file: the range was not honoured, so starting over
         // is the only way to end up with a file that is not two halves of
         // different downloads stitched together.
         else -> Action.RESTART
+    }
+
+    /**
+     * The real length of the file, from what the server said rather than from
+     * what we assumed.
+     *
+     * `X-Linked-Size` is Hugging Face's own answer for a file it stores;
+     * `Content-Range: bytes 0-99/1234` is the standard one for a ranged
+     * response, and the part after the slash is the whole file. A guess in the
+     * code is the last resort, and only for showing progress.
+     */
+    fun totalSize(
+        linkedSize: String?,
+        contentRange: String?,
+        contentLength: Long,
+        appending: Boolean,
+        alreadyOnDisk: Long,
+        fallback: Long,
+    ): Long {
+        linkedSize?.trim()?.toLongOrNull()?.takeIf { it > 0 }?.let { return it }
+        contentRange
+            ?.substringAfterLast('/', "")
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() && it != "*" }
+            ?.toLongOrNull()
+            ?.takeIf { it > 0 }
+            ?.let { return it }
+        if (contentLength > 0) {
+            return if (appending) alreadyOnDisk + contentLength else contentLength
+        }
+        return fallback
     }
 }
 
@@ -112,7 +148,7 @@ class ModelDownloadManager @Inject constructor(
             val asset = SemanticAsset.entries.firstOrNull { it.fileName == name }
             if (asset != null && !models.present(asset)) {
                 _state.update {
-                    DownloadState.Running(asset.label, done, asset.bytes, attempt = 0)
+                    DownloadState.Running(asset.label, done, asset.approximateBytes, attempt = 0)
                 }
             }
         }
@@ -167,10 +203,11 @@ class ModelDownloadManager @Inject constructor(
         models.ensureDirectory()
 
         // What is already here is the starting point, not a reason to start over.
+        // The "and if it is already complete?" case is answered by the server
+        // rather than by a comparison with the number above: it replies 416 when
+        // there is nothing past that byte, which is the same answer and does not
+        // depend on our arithmetic being right.
         val already = partial.takeIf { it.isFile }?.length() ?: 0L
-        if (ResumeDecision.forResponse(200, already, asset.bytes) == ResumeDecision.Action.COMPLETE) {
-            if (partial.renameTo(target)) return null
-        }
 
         val request = Request.Builder()
             .url(asset.url)
@@ -186,20 +223,51 @@ class ModelDownloadManager @Inject constructor(
             prefs[KEY_ASSET] = asset.fileName
             prefs[KEY_DONE] = already
         }
-        _state.update { DownloadState.Running(asset.label, already, asset.bytes, attempt) }
+        _state.update { DownloadState.Running(asset.label, already, asset.approximateBytes, attempt) }
 
         return try {
             client.newCall(request).execute().use { response ->
+                // The length comes from the server, never from the constant in
+                // the enum: a guess that is too high makes a finished file look
+                // truncated, and then asks for a range past the end of it. It
+                // is read *first*, so the decision below is made against the
+                // real size rather than against the guess.
+                val appending = response.code == 206 && already > 0
+                val total = ResumeDecision.totalSize(
+                    linkedSize = response.header("X-Linked-Size"),
+                    contentRange = response.header("Content-Range"),
+                    contentLength = response.body?.contentLength() ?: -1L,
+                    appending = appending,
+                    alreadyOnDisk = already,
+                    fallback = asset.approximateBytes,
+                )
+                val action = ResumeDecision.forResponse(response.code, already, total)
+                // A file that declares its own hash can be checked against it,
+                // which is the only way to know that 400 MB arrived intact.
+                val expectedHash = response.header("X-Linked-Etag")?.trim('"', ' ')
+
+                if (
+                    action == ResumeDecision.Action.REFUSED ||
+                    action == ResumeDecision.Action.COMPLETE
+                ) {
+                    // What is on disk is the whole file: the server says there
+                    // is nothing after it (416), or its own size says we
+                    // already have it all. Either way it is accepted and then
+                    // checked; a wrong size guess is our mistake, not a reason
+                    // to download 400 MB again.
+                    checkHash(partial, expectedHash)?.let { return it }
+                    if (partial.renameTo(target)) return null
+                    partial.delete()
+                    return "the file was complete but could not be kept"
+                }
+
                 if (!response.isSuccessful) return "HTTP ${response.code}"
 
-                // The decision above, applied to what actually came back.
-                val action = ResumeDecision.forResponse(response.code, already, asset.bytes)
-                val start = when (action) {
-                    ResumeDecision.Action.APPEND -> already
-                    else -> {
-                        partial.delete()
-                        0L
-                    }
+                val start = if (action == ResumeDecision.Action.APPEND) {
+                    already
+                } else {
+                    partial.delete()
+                    0L
                 }
 
                 val body = response.body ?: return "empty response"
@@ -215,7 +283,7 @@ class ModelDownloadManager @Inject constructor(
                             file.write(buffer, 0, read)
                             written += read
                             _state.update {
-                                DownloadState.Running(asset.label, written, asset.bytes, attempt)
+                                DownloadState.Running(asset.label, written, total, attempt)
                             }
                             // Persisted every few megabytes: often enough that a
                             // kill costs seconds, rare enough that it is not a
@@ -228,10 +296,17 @@ class ModelDownloadManager @Inject constructor(
                 }
                 context.downloadStore.edit { prefs -> prefs[KEY_DONE] = written }
 
-                if (written < asset.bytes * MIN_COMPLETE_RATIO) {
+                // Measured against the server's own number, not against the
+                // guess in the enum: a guess that was wrong once cost five
+                // attempts and an HTTP 416.
+                if (total > 0 && written < total * MIN_COMPLETE_RATIO) {
                     // Short body: keep the partial so the next attempt resumes.
-                    return "the download stopped early at ${written / (1024 * 1024)} MB"
+                    return "the download stopped early at ${written / (1024 * 1024)} MB of " +
+                        "${total / (1024 * 1024)} MB"
                 }
+
+                checkHash(partial, expectedHash)?.let { return it }
+
                 if (!partial.renameTo(target)) {
                     partial.copyTo(target, overwrite = true)
                     partial.delete()
@@ -248,6 +323,36 @@ class ModelDownloadManager @Inject constructor(
             error.message ?: "network error"
         }
     }
+
+    /**
+     * The checksum verdict: null when the file is fine (or says nothing about
+     * itself), and the reason to discard it when it is not.
+     */
+    private suspend fun checkHash(partial: File, expectedHash: String?): String? {
+        if (expectedHash.isNullOrBlank() || expectedHash.length != 64) return null
+        val actual = sha256(partial) ?: return null
+        if (actual.equals(expectedHash, ignoreCase = true)) return null
+        partial.delete()
+        context.downloadStore.edit { prefs ->
+            prefs.remove(KEY_ASSET)
+            prefs.remove(KEY_DONE)
+        }
+        return "the file did not match its checksum"
+    }
+
+    /** The SHA-256 of a file, hex, or null when it could not be read. */
+    private fun sha256(file: File): String? = runCatching {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(512 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read <= 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        digest.digest().joinToString("") { "%02x".format(it) }
+    }.getOrNull()
 
     private companion object {
         const val MAX_ATTEMPTS = 5

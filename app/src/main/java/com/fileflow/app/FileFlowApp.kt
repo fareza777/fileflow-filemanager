@@ -14,6 +14,8 @@ import com.fileflow.app.domain.rules.RuleScheduler
 import com.fileflow.app.domain.scan.FileIndexScheduler
 import com.fileflow.app.domain.scan.PartialSweeper
 import com.fileflow.app.domain.scan.TrashJanitor
+import com.fileflow.app.service.ModelDownloadService
+import com.fileflow.app.service.PhotoWorkService
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -73,6 +75,11 @@ class FileFlowApp : Application(), Configuration.Provider, ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        // Channels exist before anything can post to them: a foreground service
+        // that is the first to use a channel is rejected by the framework, and
+        // that rejection kills the process.
+        runCatching { ModelDownloadService.ensureChannelEarly(this) }
+        runCatching { PhotoWorkService.ensureChannelEarly(this) }
         // Periodic rule work does not survive an app update or a long powered-off
         // stretch, so it is re-armed on every process start. The quiet period
         // lets the first frame land before WorkManager and the trash sweep
