@@ -84,8 +84,8 @@ class ContentIndexRepository @Inject constructor(
         ).collect { candidate ->
             currentCoroutineContext().ensureActive()
             if (storageAccess.isRestrictedPath(candidate.path)) return@collect
-            if (!TextExtractor.canExtract(File(candidate.path))) return@collect
-            if (candidate.extension.lowercase() !in TextExtractor.EXTRACTABLE) return@collect
+            if (!TextExtractor.canIndex(File(candidate.path))) return@collect
+            if (candidate.extension.lowercase() !in TextExtractor.INDEXABLE) return@collect
 
             val text = runCatching { TextExtractor.extract(File(candidate.path)) }.getOrNull()
                 ?: return@collect
@@ -209,7 +209,7 @@ class ContentIndexRepository @Inject constructor(
     suspend fun refreshPaths(paths: List<String>) = withContext(Dispatchers.IO) {
         paths.forEach { path ->
             val file = File(path)
-            if (!TextExtractor.canExtract(file)) {
+            if (!TextExtractor.canIndex(file)) {
                 dao.remove(path)
                 dao.removeVector(path)
                 return@forEach

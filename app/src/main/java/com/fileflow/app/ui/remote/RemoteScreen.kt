@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -54,6 +56,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -372,11 +378,37 @@ private fun ConnectionEditor(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                // The password is the one field here that nobody should be able
+                // to read over a shoulder, off a screenshot, or from a screen
+                // share while the connection is being set up. It is masked like
+                // every other password field, with the eye to check a typo
+                // before the connection is saved.
+                var secretVisible by remember { mutableStateOf(false) }
                 OutlinedTextField(
                     value = draft.secret,
                     onValueChange = { draft = draft.copy(secret = it) },
                     label = { Text(secretLabel(draft.kind)) },
                     singleLine = true,
+                    visualTransformation = if (secretVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { secretVisible = !secretVisible }) {
+                            Icon(
+                                imageVector = if (secretVisible) {
+                                    Icons.Filled.VisibilityOff
+                                } else {
+                                    Icons.Filled.Visibility
+                                },
+                                contentDescription = stringResource(
+                                    if (secretVisible) R.string.cd_hide_secret else R.string.cd_show_secret
+                                ),
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(

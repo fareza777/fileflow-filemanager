@@ -8,6 +8,7 @@ import coil.ImageLoaderFactory
 import coil.decode.VideoFrameDecoder
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
+import com.fileflow.app.core.analysis.PdfText
 import com.fileflow.app.di.ApplicationScope
 import com.fileflow.app.data.repo.FileIndexRepository
 import com.fileflow.app.domain.rules.RuleScheduler
@@ -16,6 +17,7 @@ import com.fileflow.app.domain.scan.PartialSweeper
 import com.fileflow.app.domain.scan.TrashJanitor
 import com.fileflow.app.service.ModelDownloadService
 import com.fileflow.app.service.PhotoWorkService
+import com.fileflow.app.service.TransferService
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -80,6 +82,12 @@ class FileFlowApp : Application(), Configuration.Provider, ImageLoaderFactory {
         // that rejection kills the process.
         runCatching { ModelDownloadService.ensureChannelEarly(this) }
         runCatching { PhotoWorkService.ensureChannelEarly(this) }
+        runCatching { TransferService.ensureChannelEarly(this) }
+        // PDFBox reads its font and encoding tables from its own assets, and the
+        // loader needs a context to reach them. Doing it here rather than on the
+        // first PDF keeps that work off the indexing path, where it would be paid
+        // once per document if the initialisation ever failed.
+        runCatching { PdfText.initialise(this) }
         // Periodic rule work does not survive an app update or a long powered-off
         // stretch, so it is re-armed on every process start. The quiet period
         // lets the first frame land before WorkManager and the trash sweep

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -66,6 +67,12 @@ data class BulkHandlers(
     val onMove: () -> Unit,
     val onCopy: () -> Unit,
     val onConvert: () -> Unit,
+    /**
+     * Renaming a whole batch needs a pattern and a preview, so it opens a
+     * screen of its own. Null hides the verb, for the callers that have not
+     * wired that screen up.
+     */
+    val onBatchRename: (() -> Unit)? = null,
     val onCompress: () -> Unit,
     val onCleanMetadata: () -> Unit,
     val onStar: () -> Unit,
@@ -158,6 +165,11 @@ fun BulkMoreSheet(
                 BulkRow(Icons.Filled.Devices, R.string.action_to_pc, handlers.onMoveToTransfer)
             }
             BulkRow(Icons.Filled.FolderZip, R.string.action_compress, handlers.onCompress)
+            // With the other whole-batch verbs: renaming a selection is one
+            // pattern for all of it, not a per-file question.
+            handlers.onBatchRename?.let { rename ->
+                BulkRow(Icons.Filled.DriveFileRenameOutline, R.string.action_batch_rename, rename)
+            }
             if (strippable > 0) {
                 BulkRow(Icons.Filled.PrivacyTip, R.string.action_clean_metadata, handlers.onCleanMetadata)
             }

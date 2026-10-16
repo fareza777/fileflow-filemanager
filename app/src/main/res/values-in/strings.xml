@@ -109,6 +109,8 @@
 
     <!-- Aksesibilitas -->
     <string name="cd_back">Kembali</string>
+    <string name="cd_show_secret">Tampilkan kata sandi tersimpan</string>
+    <string name="cd_hide_secret">Sembunyikan kata sandi tersimpan</string>
     <string name="cd_search">Cari</string>
     <string name="cd_sort">Urutkan</string>
     <string name="cd_view_mode">Ganti tampilan daftar dan kisi</string>
@@ -310,6 +312,9 @@
     <string name="transfer_background">Jalan di latar belakang. Ketuk notifikasi untuk kembali atau mematikannya.</string>
     <string name="transfer_open_page">Buka halamannya di HP ini</string>
     <string name="transfer_copy">Salin alamat</string>
+    <string name="transfer_scan">Pindai untuk menyambung</string>
+    <string name="transfer_scan_hint">Arahkan kamera ke kode ini, atau ketik alamat di atas pada perangkat lain.</string>
+    <string name="cd_transfer_qr">Kode QR alamat transfer</string>
     <string name="transfer_copied">Alamat disalin</string>
     <string name="transfer_error">Gagal menyalakan: %1$s</string>
     <string name="transfer_link_wifi">Wi-Fi</string>
@@ -663,6 +668,30 @@
     <string name="rename_none_hint">Tidak ada nama sampah, nama aneh, atau duplikat yang perlu dibereskan.</string>
     <string name="rename_old">Sekarang</string>
     <string name="rename_apply">Ganti nama %1$d file</string>
+
+    <!-- Ganti nama massal: satu pola nama untuk seluruh pilihan. Bahasa
+         placeholder-nya sendiri dijelaskan oleh NameTemplate. -->
+    <string name="action_batch_rename">Ganti nama massal</string>
+    <string name="batch_rename_title">Ganti nama massal</string>
+    <string name="batch_rename_intro">Beri semua file terpilih jenis nama yang sama. Ekstensinya tetap, kecuali kamu menulisnya di dalam pola.</string>
+    <string name="batch_rename_pattern">Pola nama</string>
+    <string name="batch_rename_tokens">Placeholder</string>
+    <string name="batch_rename_preview">Pratinjau</string>
+    <string name="batch_rename_showing">Menampilkan %1$d dari %2$d</string>
+    <string name="batch_rename_unknown_tokens">Placeholder tidak dikenal: %1$s — ditulis apa adanya ke dalam nama.</string>
+    <string name="batch_rename_none">Tidak ada yang bisa diganti namanya</string>
+    <string name="batch_rename_none_hint">Pilih file di daftar mana pun, lalu pilih Ganti nama massal dari lembar lainnya.</string>
+    <string name="batch_rename_empty_name">nama kosong</string>
+    <string name="batch_rename_row_unchanged">Sudah bernama seperti ini</string>
+    <plurals name="batch_rename_apply">
+        <item quantity="other">Ganti nama %1$d file</item>
+    </plurals>
+    <plurals name="batch_rename_blocked">
+        <item quantity="other">%1$d nama tidak bisa dipakai dengan pola ini. Perbaiki polanya sebelum mengganti nama.</item>
+    </plurals>
+    <plurals name="batch_rename_unchanged">
+        <item quantity="other">%1$d file sudah bernama seperti ini</item>
+    </plurals>
     <string name="rename_reason_junk">Menghapus kata pengisi</string>
     <string name="rename_reason_duplicate_suffix">Membereskan duplikat gaya (1)</string>
     <string name="rename_reason_spacing">Merapikan spasi dan simbol</string>
@@ -805,7 +834,8 @@
     <string name="settings_theme_dark">Gelap</string>
     <string name="settings_color_theme">Tema warna</string>
     <string name="palette_default">Bawaan</string>
-    <string name="palette_dynamic">Wallpaper</string>
+    <string name="palette_dynamic">Material You</string>
+    <string name="palette_dynamic_hint">Menyusun seluruh warna dari wallpaper HP. Hanya Android 12 ke atas.</string>
     <string name="palette_ocean">Samudra</string>
     <string name="palette_forest">Hutan</string>
     <string name="palette_sunset">Senja</string>

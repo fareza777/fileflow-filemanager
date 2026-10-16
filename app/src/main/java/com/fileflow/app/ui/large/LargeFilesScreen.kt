@@ -308,6 +308,7 @@ class LargeFilesViewModel @Inject constructor(
 fun LargeFilesScreen(
     onBack: () -> Unit,
     onConvert: (List<String>) -> Unit,
+    onBatchRename: (List<String>) -> Unit,
     onCompress: (List<String>) -> Unit,
     viewModel: LargeFilesViewModel = hiltViewModel(),
 ) {
@@ -359,6 +360,7 @@ fun LargeFilesScreen(
                         picker = Picker.COPY
                     },
                     onConvert = { onConvert(state.selection.toList()) },
+                    onBatchRename = { onBatchRename(state.selection.toList()) },
                     onCompress = { onCompress(state.selection.toList()) },
                     onCleanMetadata = {
                         showMore = false
@@ -504,6 +506,10 @@ fun LargeFilesScreen(
                 onConvert = {
                     showMore = false
                     onConvert(state.selection.toList())
+                },
+                onBatchRename = {
+                    showMore = false
+                    onBatchRename(state.selection.toList())
                 },
                 onCompress = {
                     showMore = false

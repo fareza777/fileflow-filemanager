@@ -5,11 +5,11 @@ import java.io.File
 /**
  * The text inside a file, when there is any.
  *
- * Content search is only as good as what it can read, and a phone has no
- * document engine: PDF text needs a parser per format, and the formats people
- * actually search — notes, code, CSV, logs, JSON — are plain text already. So
- * this reads what can be read honestly and refuses the rest rather than
- * indexing a binary blob as if it were words.
+ * Content search is only as good as what it can read. Most of what people
+ * search — notes, code, CSV, logs, JSON — is plain text, and this reads it
+ * honestly, refusing a binary blob rather than indexing it as if it were
+ * words. PDF is the exception: its text needs a real parser, so those files
+ * are handed to [PdfText] instead.
  *
  * Two limits are deliberate. The read is bounded, because indexing a 2 GB log
  * would cost more than the answer is worth; and the encoding is UTF-8 with a
@@ -27,6 +27,16 @@ object TextExtractor {
         "ps1", "gradle", "srt", "vtt", "svg", "diff", "patch", "gitignore",
     )
 
+    /** Formats that hold text but need a parser to get it out. */
+    val DOCUMENTS = setOf("pdf")
+
+    /** Everything the indexer is willing to look inside. */
+    val INDEXABLE = EXTRACTABLE + DOCUMENTS
+
+    /**
+     * Whether the plain-text reader can make sense of this file. PDFs are not
+     * its job — [canIndex] accepts them, and [extract] sends them to [PdfText].
+     */
     fun canExtract(file: File): Boolean {
         if (!file.isFile || file.length() <= 0L) return false
         if (file.length() > MAX_FILE_BYTES) return false
@@ -34,11 +44,32 @@ object TextExtractor {
     }
 
     /**
+     * Whether the indexer should look inside this file, whichever reader ends
+     * up handling it.
+     *
+     * The size rule follows the reader: plain text has to fit in
+     * [MAX_FILE_BYTES] (8 MB), while a PDF is allowed the larger cap the
+     * parser sets for itself, [PdfText.MAX_FILE_SIZE] (32 MB) — PDF bytes are
+     * mostly packaging and layout around a modest amount of text. Both are
+     * still bounded, so one oversized file cannot stall the index.
+     */
+    fun canIndex(file: File): Boolean {
+        if (!file.isFile || file.length() <= 0L) return false
+        return when (file.name.substringAfterLast('.', "").lowercase()) {
+            in EXTRACTABLE -> file.length() <= MAX_FILE_BYTES
+            in DOCUMENTS -> file.length() <= PdfText.MAX_FILE_SIZE
+            else -> false
+        }
+    }
+
+    /**
      * @return the readable text, or null when the bytes are not text. Empty
      * files and files past [maxBytes] come back as null too: there is nothing
-     * to search in either.
+     * to search in either. A PDF is parsed as a document instead of read as
+     * bytes, so for those the parser's own limits apply ([PdfText.read]).
      */
     fun extract(file: File, maxBytes: Int = MAX_INDEX_BYTES): String? {
+        if (PdfText.isPdf(file)) return PdfText.read(file)
         if (!file.isFile || file.length() <= 0L) return null
         val length = minOf(file.length(), maxBytes.toLong()).toInt()
         val bytes = runCatching {

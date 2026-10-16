@@ -202,6 +202,24 @@ dependencies {
     // megabytes and that is not a decision to make on someone's behalf.
     implementation(libs.tflite)
 
+    // The PDF parser behind content search: the Android port of Apache PDFBox.
+    implementation(libs.pdfbox.android) {
+        // PDFBox brings Bouncy Castle for password-protected documents, and this
+        // app never opens one: an encrypted PDF is refused before the text is
+        // read, because there is no password to ask for. jcifs-ng needs its own
+        // Bouncy Castle for SMB3 signing, and two builds of it on one classpath
+        // is both a duplicate-class failure at build time and a few megabytes of
+        // the same crypto twice. The whole group goes; a PDF that does turn out
+        // to need it fails as an unreadable document, which is how every other
+        // parse failure here is already handled.
+        exclude(group = "org.bouncycastle")
+    }
+
+    // Drawing the QR code the transfer screen shows. Encoding a QR symbol is
+    // Reed-Solomon, masking patterns and a bit of error correction — worth a
+    // small library, and not worth hand-rolling wrongly.
+    implementation(libs.zxing.core)
+
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
 

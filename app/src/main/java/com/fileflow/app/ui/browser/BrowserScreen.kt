@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Lock
@@ -120,6 +121,7 @@ fun BrowserScreen(
     onViewImage: (folder: String, path: String) -> Unit,
     onViewText: (path: String) -> Unit,
     onConvert: (List<String>) -> Unit,
+    onBatchRename: (List<String>) -> Unit,
     viewModel: BrowserViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -227,6 +229,7 @@ fun BrowserScreen(
                     onMove = { viewModel.copyToClipboard(cut = true) },
                     onCompress = viewModel::compressSelection,
                     onConvert = { onConvert(state.selection.toList()) },
+                    onBatchRename = { onBatchRename(state.selection.toList()) },
                     onShare = {
                         FileIntents.share(context, state.selectedItems)
                         viewModel.clearSelection()
@@ -871,6 +874,7 @@ private fun SelectionTopBar(
     onShare: () -> Unit,
     onCompress: () -> Unit,
     onConvert: () -> Unit,
+    onBatchRename: () -> Unit,
     onMoveToTransfer: (() -> Unit)? = null,
 ) {
     var showMore by remember { mutableStateOf(false) }
@@ -917,6 +921,16 @@ private fun SelectionTopBar(
                         onClick = {
                             showMore = false
                             onConvert()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_batch_rename)) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.DriveFileRenameOutline, contentDescription = null)
+                        },
+                        onClick = {
+                            showMore = false
+                            onBatchRename()
                         },
                     )
                     DropdownMenuItem(

@@ -89,6 +89,7 @@ import com.fileflow.app.ui.photos.SimilarPhotosScreen
 import com.fileflow.app.ui.recent.RecentFilesScreen
 import com.fileflow.app.ui.remote.RemoteBrowserScreen
 import com.fileflow.app.ui.remote.RemoteScreen
+import com.fileflow.app.ui.rename.BatchRenameScreen
 import com.fileflow.app.ui.rename.SmartRenameScreen
 import com.fileflow.app.ui.rules.HistoryScreen
 import com.fileflow.app.ui.rules.RuleEditorScreen
@@ -132,6 +133,7 @@ private object Routes {
     const val LARGE = "large"
     const val JUNK = "junk"
     const val RENAME = "rename"
+    const val BATCH_RENAME = "batch_rename"
     const val TRASH = "trash"
     const val HISTORY = "history"
     const val ABOUT = "about"
@@ -227,6 +229,7 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
             "large" -> navController.navigate(Routes.LARGE)
             "junk" -> navController.navigate(Routes.JUNK)
             "rename" -> navController.navigate(Routes.RENAME)
+            "batch_rename" -> navController.navigate(Routes.BATCH_RENAME)
             "trash" -> navController.navigate(Routes.TRASH)
             "history" -> navController.navigate(Routes.HISTORY)
             "starred" -> navController.navigate(Routes.STARRED)
@@ -310,6 +313,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                             handoff.put(paths)
                             navController.navigate(Routes.CONVERT)
                         },
+                        onBatchRename = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.BATCH_RENAME)
+                        },
                         onCompress = { paths ->
                             handoff.put(paths)
                             navController.navigate(Routes.COMPRESS)
@@ -337,6 +344,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                         onConvert = { paths ->
                             handoff.put(paths)
                             navController.navigate(Routes.CONVERT)
+                        },
+                        onBatchRename = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.BATCH_RENAME)
                         },
                     )
                 }
@@ -379,6 +390,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                             handoff.put(paths)
                             navController.navigate(Routes.CONVERT)
                         },
+                        onBatchRename = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.BATCH_RENAME)
+                        },
                         onCompress = { paths ->
                             handoff.put(paths)
                             navController.navigate(Routes.COMPRESS)
@@ -395,6 +410,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                         onConvert = { paths ->
                             handoff.put(paths)
                             navController.navigate(Routes.CONVERT)
+                        },
+                        onBatchRename = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.BATCH_RENAME)
                         },
                         onCompress = { paths ->
                             handoff.put(paths)
@@ -450,6 +469,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                             handoff.put(paths)
                             navController.navigate(Routes.CONVERT)
                         },
+                        onBatchRename = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.BATCH_RENAME)
+                        },
                         onCompress = { paths ->
                             handoff.put(paths)
                             navController.navigate(Routes.COMPRESS)
@@ -463,6 +486,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
 
                 composable(Routes.RENAME) {
                     SmartRenameScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(Routes.BATCH_RENAME) {
+                    BatchRenameScreen(onBack = { navController.popBackStack() })
                 }
 
                 composable(Routes.TRASH) {
@@ -481,6 +508,10 @@ fun AppRoot(openTransferOnStart: Boolean = false) {
                         onConvert = { paths ->
                             handoff.put(paths)
                             navController.navigate(Routes.CONVERT)
+                        },
+                        onBatchRename = { paths ->
+                            handoff.put(paths)
+                            navController.navigate(Routes.BATCH_RENAME)
                         },
                         onCompress = { paths ->
                             handoff.put(paths)

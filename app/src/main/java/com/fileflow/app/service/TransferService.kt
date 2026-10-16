@@ -125,20 +125,7 @@ class TransferService : Service() {
             .build()
     }
 
-    private fun ensureChannel() {
-        val manager = getSystemService(NotificationManager::class.java) ?: return
-        if (manager.getNotificationChannel(CHANNEL_ID) != null) return
-        manager.createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.transfer_channel),
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = getString(R.string.transfer_channel_desc)
-                setShowBadge(false)
-            }
-        )
-    }
+    private fun ensureChannel() = createChannel(this)
 
     companion object {
         private const val CHANNEL_ID = "fileflow_transfer"
@@ -147,6 +134,33 @@ class TransferService : Service() {
         const val ACTION_STOP = "com.fileflow.app.action.STOP_TRANSFER"
         const val EXTRA_ROOT = "root"
         const val EXTRA_PORT = "port"
+
+        /**
+         * Creates the channel before anything can post to it.
+         *
+         * This service was the one foreground service in the app without an
+         * early channel, and it was the wrong one to skip: `startForeground`
+         * with a channel that does not exist throws on the main thread's
+         * handler, which is a place no `try`/`catch` in this class can reach —
+         * the process is simply gone. The Application calls this at start-up so
+         * the channel exists long before the first transfer.
+         */
+        fun ensureChannelEarly(context: Context) = createChannel(context)
+
+        private fun createChannel(context: Context) {
+            val manager = context.getSystemService(NotificationManager::class.java) ?: return
+            if (manager.getNotificationChannel(CHANNEL_ID) != null) return
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL_ID,
+                    context.getString(R.string.transfer_channel),
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = context.getString(R.string.transfer_channel_desc)
+                    setShowBadge(false)
+                }
+            )
+        }
 
         fun start(context: Context, root: String, port: Int) {
             val intent = Intent(context, TransferService::class.java)

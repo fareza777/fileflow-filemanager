@@ -404,6 +404,7 @@ fun CalendarScreen(
     onBack: () -> Unit,
     onOpenFolder: (String) -> Unit,
     onConvert: (List<String>) -> Unit,
+    onBatchRename: (List<String>) -> Unit,
     onCompress: (List<String>) -> Unit,
     viewModel: CalendarViewModel = hiltViewModel(),
 ) {
@@ -456,6 +457,7 @@ fun CalendarScreen(
                         picker = Picker.COPY
                     },
                     onConvert = { onConvert(state.selection.toList()) },
+                    onBatchRename = { onBatchRename(state.selection.toList()) },
                     onCompress = { onCompress(state.selection.toList()) },
                     onCleanMetadata = {
                         showMore = false
@@ -697,6 +699,10 @@ fun CalendarScreen(
                 onConvert = {
                     showMore = false
                     onConvert(state.selection.toList())
+                },
+                onBatchRename = {
+                    showMore = false
+                    onBatchRename(state.selection.toList())
                 },
                 onCompress = {
                     showMore = false

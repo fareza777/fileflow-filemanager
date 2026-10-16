@@ -19,6 +19,14 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
+    <!-- The app talks over the network on purpose: the transfer server, the
+         remote storages, and the model download. It used to work only because
+         the ads and image-loader libraries declare this themselves in their own
+         manifests, which means removing one of them would have quietly broken
+         every feature that needs a socket. It is declared here because this app
+         uses it, not because a library does. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- The transfer server keeps running while the user is in another app; a
          foreground service with a notification is what Android requires for
          that, and it is the honest trade: the transfer is visible and can be

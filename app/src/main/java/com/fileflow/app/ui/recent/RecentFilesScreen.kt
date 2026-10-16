@@ -336,6 +336,7 @@ fun RecentFilesScreen(
     onPreview: (FileItem) -> Unit,
     onOpenFolder: (String) -> Unit,
     onConvert: (List<String>) -> Unit,
+    onBatchRename: (List<String>) -> Unit,
     onCompress: (List<String>) -> Unit,
     viewModel: RecentFilesViewModel = hiltViewModel(),
 ) {
@@ -404,6 +405,7 @@ fun RecentFilesScreen(
                         picker = Picker.COPY
                     },
                     onConvert = { onConvert(state.selection.toList()) },
+                    onBatchRename = { onBatchRename(state.selection.toList()) },
                     onCompress = { onCompress(state.selection.toList()) },
                     onCleanMetadata = viewModel::cleanMetadata,
                     onStar = viewModel::toggleStarOnSelection,
@@ -600,6 +602,10 @@ fun RecentFilesScreen(
                 onConvert = {
                     showMore = false
                     onConvert(state.selection.toList())
+                },
+                onBatchRename = {
+                    showMore = false
+                    onBatchRename(state.selection.toList())
                 },
                 onCompress = {
                     showMore = false

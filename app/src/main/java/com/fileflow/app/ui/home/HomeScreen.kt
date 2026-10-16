@@ -80,7 +80,6 @@ import com.fileflow.app.ui.components.FileThumb
 import com.fileflow.app.ui.components.ProgressPanel
 import com.fileflow.app.ui.components.SectionCard
 import com.fileflow.app.ui.components.SectionHeader
-import com.fileflow.app.ui.components.FeatureBanner
 import com.fileflow.app.ui.components.StorageDonut
 import com.fileflow.app.ui.components.TILE_THUMBNAIL_PIXELS
 import com.fileflow.app.ui.util.FileIntents
@@ -140,14 +139,6 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item { SearchPill(onClick = onOpenSearch) }
-            item {
-                FeatureBanner(
-                    title = stringResource(R.string.photo_discover_title),
-                    description = stringResource(R.string.photo_discover_desc),
-                    icon = Icons.Filled.Search,
-                    onClick = { onOpenTool("photo_search") },
-                )
-            }
 
             item {
                 // Without access the whole screen is zeros and dashes. Saying so

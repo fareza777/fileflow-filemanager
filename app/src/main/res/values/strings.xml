@@ -113,6 +113,8 @@
 
     <!-- Accessibility -->
     <string name="cd_back">Back</string>
+    <string name="cd_show_secret">Show the saved secret</string>
+    <string name="cd_hide_secret">Hide the saved secret</string>
     <string name="cd_search">Search</string>
     <string name="cd_sort">Sort</string>
     <string name="cd_view_mode">Switch between list and grid</string>
@@ -322,6 +324,9 @@
     <string name="transfer_background">Running in the background. Tap the notification to come back or to stop it.</string>
     <string name="transfer_open_page">Open the page on this phone</string>
     <string name="transfer_copy">Copy address</string>
+    <string name="transfer_scan">Scan to connect</string>
+    <string name="transfer_scan_hint">Point a camera at the code, or type the address above on the other device.</string>
+    <string name="cd_transfer_qr">QR code for the transfer address</string>
     <string name="transfer_copied">Address copied</string>
     <string name="transfer_error">Could not start: %1$s</string>
     <string name="transfer_link_wifi">Wi-Fi</string>
@@ -665,6 +670,33 @@
     <string name="rename_none_hint">No junk, no cryptic names, no duplicates to resolve.</string>
     <string name="rename_old">Now</string>
     <string name="rename_apply">Rename %1$d files</string>
+
+    <!-- Batch rename: one naming pattern applied to a whole selection. The
+         placeholder language itself is documented by NameTemplate. -->
+    <string name="action_batch_rename">Batch rename</string>
+    <string name="batch_rename_title">Batch rename</string>
+    <string name="batch_rename_intro">Give every selected file the same kind of name. The extension stays as it is unless you write it into the pattern.</string>
+    <string name="batch_rename_pattern">Name pattern</string>
+    <string name="batch_rename_tokens">Placeholders</string>
+    <string name="batch_rename_preview">Preview</string>
+    <string name="batch_rename_showing">Showing %1$d of %2$d</string>
+    <string name="batch_rename_unknown_tokens">Unknown placeholders: %1$s — they are written into the name as typed.</string>
+    <string name="batch_rename_none">Nothing to rename</string>
+    <string name="batch_rename_none_hint">Select files in any list, then choose Batch rename from the more sheet.</string>
+    <string name="batch_rename_empty_name">empty name</string>
+    <string name="batch_rename_row_unchanged">Already named this way</string>
+    <plurals name="batch_rename_apply">
+        <item quantity="one">Rename %1$d file</item>
+        <item quantity="other">Rename %1$d files</item>
+    </plurals>
+    <plurals name="batch_rename_blocked">
+        <item quantity="one">%1$d name cannot be used with this pattern. Fix the pattern before renaming.</item>
+        <item quantity="other">%1$d names cannot be used with this pattern. Fix the pattern before renaming.</item>
+    </plurals>
+    <plurals name="batch_rename_unchanged">
+        <item quantity="one">%1$d file already has this name</item>
+        <item quantity="other">%1$d files already have this name</item>
+    </plurals>
     <string name="rename_reason_junk">Removed filler words</string>
     <string name="rename_reason_duplicate_suffix">Resolved a (1) style duplicate</string>
     <string name="rename_reason_spacing">Cleaned up spacing and symbols</string>
@@ -807,7 +839,8 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_color_theme">Colour theme</string>
     <string name="palette_default">Default</string>
-    <string name="palette_dynamic">Wallpaper</string>
+    <string name="palette_dynamic">Material You</string>
+    <string name="palette_dynamic_hint">Builds the whole palette from your wallpaper. Android 12 and later only.</string>
     <string name="palette_ocean">Ocean</string>
     <string name="palette_forest">Forest</string>
     <string name="palette_sunset">Sunset</string>

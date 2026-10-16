@@ -310,6 +310,7 @@ fun StarredScreen(
     onOpenFolder: (String) -> Unit,
     onPreview: (FileItem) -> Unit,
     onConvert: (List<String>) -> Unit,
+    onBatchRename: (List<String>) -> Unit,
     onCompress: (List<String>) -> Unit,
     viewModel: StarredViewModel = hiltViewModel(),
 ) {
@@ -344,6 +345,7 @@ fun StarredScreen(
             picker = BulkPicker.COPY
         },
         onConvert = { onConvert(state.selection.toList()) },
+        onBatchRename = { onBatchRename(state.selection.toList()) },
         onCompress = { onCompress(state.selection.toList()) },
         onCleanMetadata = viewModel::cleanMetadata,
         onStar = viewModel::unstarSelection,

@@ -91,6 +91,7 @@ fun SearchScreen(
     initialPath: String?,
     onCreateRule: (String) -> Unit,
     onConvert: (List<String>) -> Unit,
+    onBatchRename: (List<String>) -> Unit,
     onCompress: (List<String>) -> Unit,
     onOpenFolder: (String) -> Unit,
     onBack: () -> Unit,
@@ -140,6 +141,7 @@ fun SearchScreen(
                         copyToFolder = true
                     },
                     onConvert = { onConvert(state.selection.toList()) },
+                    onBatchRename = { onBatchRename(state.selection.toList()) },
                     onCompress = { onCompress(state.selection.toList()) },
                     onCleanMetadata = {
                         showMore = false
@@ -618,6 +620,10 @@ fun SearchScreen(
                 onConvert = {
                     showMore = false
                     onConvert(state.selection.toList())
+                },
+                onBatchRename = {
+                    showMore = false
+                    onBatchRename(state.selection.toList())
                 },
                 onCompress = {
                     showMore = false

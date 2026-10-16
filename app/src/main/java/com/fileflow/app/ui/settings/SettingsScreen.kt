@@ -329,6 +329,18 @@ fun SettingsScreen(
                             current = state.settings.colorTheme,
                             onSelect = viewModel::setColorTheme,
                         )
+                        // Naming the option "Material You" is only useful if the
+                        // app says what that means. Without this line the choice
+                        // reads as a mystery setting that happens to match the
+                        // wallpaper, and the phone has to be on Android 12 for it
+                        // to be offered at all.
+                        if (state.settings.colorTheme == ColorTheme.DYNAMIC) {
+                            Text(
+                                text = stringResource(R.string.palette_dynamic_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

@@ -26,6 +26,12 @@
 -dontwarn okio.**
 -dontwarn okhttp3.**
 
+# PDFBox (pdfbox-android): font classes, glyph lists and encoding tables are
+# resolved by name and read from the library's own assets, which R8 cannot see;
+# keep the whole com.tom_roush tree.
+-keep class com.tom_roush.** { *; }
+-dontwarn com.tom_roush.**
+
 # SMB (jcifs-ng): the SMB1/SMB2 dialect tables and the properties file are
 # loaded by name, and its crypto goes through Bouncy Castle providers that R8
 # cannot see being used.

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,10 +56,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -400,6 +406,21 @@ fun TransferScreen(
                 }
             }
 
+            // The address, drawn as a code. Typing an IP on a laptop is where a
+            // working server turns into "connection refused" because one digit
+            // was wrong, and the page URL carries a token too — so the code
+            // removes the transcription rather than just making it faster.
+            val scannable = state.addresses.firstOrNull { it.link == TransferLink.WIFI }
+                ?: state.addresses.firstOrNull()
+            if (server.running && scannable != null) {
+                item {
+                    SectionHeader(stringResource(R.string.transfer_scan))
+                    SectionCard {
+                        QrCard(url = viewModel.pageUrl(scannable.host))
+                    }
+                }
+            }
+
             item {
                 SectionHeader(stringResource(R.string.transfer_share_folder))
                 SectionCard {
@@ -670,6 +691,80 @@ private fun StatusCard(
         }
     }
 }
+
+/**
+ * The address as a code, with the address still written underneath.
+ *
+ * A laptop with a camera is the common case, not the only one: a desktop with
+ * no webcam still needs the URL, and the copy row above stays for exactly that.
+ *
+ * The symbol is generated at the size it is displayed, in device pixels, and
+ * drawn without filtering. That is the whole trick: a QR code is a grid of hard
+ * edges, and letting the image pipeline resample it produces something that
+ * looks like a QR code and does not scan.
+ */
+@Composable
+private fun QrCard(url: String) {
+    val density = LocalDensity.current
+    // Encoded for the space *inside* the padding, so the bitmap and the drawing
+    // are the same number of pixels and nothing is resampled on the way to the
+    // screen.
+    val requested = with(density) { (QR_DISPLAY_SIZE - QR_PADDING * 2).roundToPx() }
+    // Encoding is cheap but not free, and this screen recomposes on every
+    // progress update while a transfer is running.
+    val bitmap = remember(url, requested) { QrCode.bitmap(url, size = requested) }
+    // The encoder grows the canvas when the address needs more room than it was
+    // offered, so the box is measured from the bitmap and not from the constant.
+    // A symbol drawn at one size and shown at another is exactly the resampling
+    // that turns a QR code into a pretty square that will not scan.
+    val inner = bitmap?.let { with(density) { it.width.toDp() } }
+        ?: (QR_DISPLAY_SIZE - QR_PADDING * 2)
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = stringResource(R.string.cd_transfer_qr),
+                filterQuality = FilterQuality.None,
+                modifier = Modifier
+                    .size(inner + QR_PADDING * 2)
+                    // White behind the symbol, always: the scanner needs the
+                    // light modules to be light, and a dark theme would
+                    // otherwise invert the code into an unscannable square.
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White)
+                    .padding(QR_PADDING),
+            )
+        }
+        Text(
+            text = url,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        // Only promised when there is a code to point at: for an address too long
+        // to draw at a resolvable size, the line above is the whole instruction,
+        // and the copy button on the row above is the way through.
+        if (bitmap != null) {
+            Text(
+                text = stringResource(R.string.transfer_scan_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+/** Big enough to scan off a desk from another laptop's camera. */
+private val QR_DISPLAY_SIZE = 216.dp
+
+/** Keeps the symbol away from the rounded edge that would clip its quiet zone. */
+private val QR_PADDING = 6.dp
 
 @Composable
 private fun AddressRow(
