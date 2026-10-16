@@ -17,6 +17,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
+enum class PhotoMatch { TEXT, NAME, THEME, RECENT }
+
 /** A photo that matched, and why. */
 @androidx.compose.runtime.Immutable
 data class PhotoHit(
@@ -28,6 +30,8 @@ data class PhotoHit(
     /** The Indonesian theme names the photo matched, when it matched a theme. */
     val themes: List<String>,
     val labels: List<String>,
+    val match: PhotoMatch = PhotoMatch.RECENT,
+    val relevance: Int = 0,
 )
 
 /**
@@ -61,10 +65,16 @@ class PhotoIndexer @Inject constructor(
 
     suspend fun clear() = withContext(Dispatchers.IO) { dao.clear() }
 
-    /** Photos the phone knows about, newest first, capped. */
-    private suspend fun photos(limit: Int): List<PhotoCandidate> = withContext(Dispatchers.IO) {
+    /**
+     * Photos the phone knows about, newest first.
+     *
+     * Every one of them. The list used to stop at the newest two thousand, which
+     * meant "search your photos" quietly answered for a slice of the library
+     * and nothing else — the gap that reads as "only 210 showed up".
+     */
+    private suspend fun photos(): List<PhotoCandidate> = withContext(Dispatchers.IO) {
         val roots = volumes.volumes().map { it.rootPath }
-        val found = ArrayList<PhotoCandidate>(minOf(limit, 512))
+        val found = ArrayList<PhotoCandidate>(512)
         runCatching {
             context.contentResolver.query(
                 MediaStore.Files.getContentUri("external"),
@@ -73,7 +83,7 @@ class PhotoIndexer @Inject constructor(
                 null,
                 "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC",
             )?.use { cursor ->
-                while (cursor.moveToNext() && found.size < limit) {
+                while (cursor.moveToNext()) {
                     val item = MediaStoreItems.from(cursor, roots) ?: continue
                     if (!MediaStoreItems.isUserFile(item.path)) continue
                     if (!File(item.path).isFile) continue
@@ -85,17 +95,23 @@ class PhotoIndexer @Inject constructor(
     }
 
     /**
-     * Reads every photo that is new or changed.
-     *
-     * @param limit how many of the newest photos to consider, so a first run on
-     * a phone with sixty thousand pictures is a decision rather than a surprise.
+     * How many photos [index] would consider — what the whole library weighs
+     * in at, so the screen can say "210 of 3,000" instead of leaving the user
+     * to wonder whether 210 is all there is.
+     */
+    suspend fun knownCount(): Int = withContext(Dispatchers.IO) { photos().size }
+
+    /**
+     * Reads every photo that is new or changed — the entire library, oldest
+     * leftovers included. Newest first, so an interrupted run still covers the
+     * most recent photos before the tail, and re-running it continues where the
+     * fingerprints say it stopped.
      */
     suspend fun index(
-        limit: Int = DEFAULT_LIMIT,
         includeLabels: Boolean = true,
         onProgress: (done: Int, total: Int, name: String) -> Unit = { _, _, _ -> },
     ): Int = withContext(Dispatchers.IO) {
-        val photos = photos(limit)
+        val photos = photos()
         if (photos.isEmpty()) return@withContext 0
 
         val known = dao.fingerprints().associateBy { it.path }
@@ -151,7 +167,7 @@ class PhotoIndexer @Inject constructor(
      * while a label match is "photos that look like this". Both are returned,
      * labelled for what they are, and the text matches come first.
      */
-    suspend fun search(query: String, limit: Int = 120): List<PhotoHit> = withContext(Dispatchers.IO) {
+    suspend fun search(query: String, limit: Int = 300): List<PhotoHit> = withContext(Dispatchers.IO) {
         val needle = query.trim()
         if (needle.isEmpty()) return@withContext emptyList()
 
@@ -177,39 +193,50 @@ class PhotoIndexer @Inject constructor(
                     snippet = snippet(row.text, terms),
                     themes = ThemeVocabulary.themesFor(labelsOf(row)),
                     labels = ThemeVocabulary.display(labelsOf(row).take(4)),
+                    match = if (terms.all { it in row.folded }) PhotoMatch.TEXT else PhotoMatch.NAME,
                 )
             }
         }
 
         val themeLabels = ThemeVocabulary.labelsFor(needle)
         if (themeLabels.isNotEmpty()) {
-            val padded = (themeLabels + List(12) { "" }).take(12)
+            val padded = (themeLabels.map { ",$it," } + List(12) { "" }).take(12)
             dao.searchLabels(
                 l1 = like(padded[0]), l2 = like(padded[1]), l3 = like(padded[2]),
                 l4 = like(padded[3]), l5 = like(padded[4]), l6 = like(padded[5]),
                 l7 = like(padded[6]), l8 = like(padded[7]), l9 = like(padded[8]),
                 l10 = like(padded[9]), l11 = like(padded[10]), l12 = like(padded[11]),
-                limit = limit,
-            ).forEach { row ->
+                // Apply the limit after verifying evidence, not before: a newer
+                // crowd of selfies must not hide older community-work photos.
+                limit = dao.count(),
+            ).filter { ThemeVocabulary.matchesTheme(needle, labelsOf(it)) }
+                .sortedByDescending { ThemeVocabulary.matchStrength(needle, labelsOf(it)) }
+                .take(limit).forEach { row ->
                 hits.getOrPut(row.path) {
                     val labels = labelsOf(row)
                     PhotoHit(
                         path = row.path,
                         name = row.name,
                         modified = row.modified,
-                        snippet = if (row.text.isBlank()) null else snippet(row.text, terms),
+                        snippet = null,
                         themes = ThemeVocabulary.themesFor(labels),
                         labels = ThemeVocabulary.display(labels.take(4)),
+                        match = PhotoMatch.THEME,
+                        relevance = ThemeVocabulary.matchStrength(needle, labels),
                     )
                 }
             }
         }
 
-        hits.values.sortedByDescending { it.modified }.take(limit)
+        hits.values.sortedWith(
+            compareBy<PhotoHit> { it.match == PhotoMatch.THEME }
+                .thenByDescending { it.relevance }
+                .thenByDescending { it.modified },
+        ).take(limit)
     }
 
     /** Everything indexed, newest first — what the screen shows before a query. */
-    suspend fun recent(limit: Int = 60): List<PhotoHit> = withContext(Dispatchers.IO) {
+    suspend fun recent(limit: Int = 200): List<PhotoHit> = withContext(Dispatchers.IO) {
         dao.recent(limit).map { row ->
             val labels = labelsOf(row)
             PhotoHit(
@@ -254,8 +281,6 @@ class PhotoIndexer @Inject constructor(
     )
 
     private companion object {
-        /** Newest first, and a number someone can sit through. */
-        const val DEFAULT_LIMIT = 2000
         const val BATCH = 12
         const val YIELD_MILLIS = 40L
         const val MAX_TEXT = 8 * 1024

@@ -20,8 +20,9 @@ import com.fileflow.app.core.vision.ThemeVocabulary
  * 2. Failing that, the labels the phrase maps to in [ThemeVocabulary] become
  *    prompts ("a photo of a team"), which connects the Indonesian table that
  *    already exists to the model's own vocabulary instead of duplicating it.
- * 3. The query itself is always included last, so an English query — or one
- *    whose Indonesian phrasing happens to work — is never made worse.
+ * 3. Unknown queries are preserved, including free-form English captions.
+ *    Known Indonesian themes use English only so untranslated words do not
+ *    dilute the averaged query vector.
  *
  * And every prompt is expanded through a few templates, because CLIP's own
  * research found that "a photo of X" retrieves better than "X" alone. The
@@ -109,9 +110,9 @@ object ClipPrompts {
         val seeds = buildList {
             explicit?.let { addAll(it) }
             addAll(derived)
-            // Last, always: an English query already works, and a phrase we have
-            // no entry for is no worse off than it was before.
-            add(needle)
+            // Only the fallback is raw. Half an ensemble of untranslated words
+            // can pull a recognised theme away from its English captions.
+            if (explicit == null && derived.isEmpty()) add(needle)
         }
 
         return seeds

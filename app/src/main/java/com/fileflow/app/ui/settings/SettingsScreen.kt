@@ -2,6 +2,14 @@ package com.fileflow.app.ui.settings
 
 import android.app.Activity
 import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,6 +17,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +32,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -38,13 +53,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -64,7 +83,6 @@ import com.fileflow.app.ui.components.AdBanner
 import com.fileflow.app.ui.components.AdsConsent
 import com.fileflow.app.ui.components.ConfirmDialog
 import com.fileflow.app.ui.components.SectionCard
-import com.fileflow.app.ui.components.SectionHeader
 import com.fileflow.app.ui.theme.PaletteColors
 import com.fileflow.app.ui.theme.paletteColors
 import com.fileflow.app.ui.rememberCanPostNotifications
@@ -199,6 +217,10 @@ fun SettingsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = context as? Activity
+    val hasAccess = com.fileflow.app.ui.rememberStorageAccess()
+    var retention by remember(state.settings.trashRetentionDays) {
+        mutableFloatStateOf(state.settings.trashRetentionDays.toFloat())
+    }
     var confirmReset by remember { mutableStateOf(false) }
     // Observed rather than read once: the answer changes while the user is away
     // in the system dialog, and the row has to notice when they come back.
@@ -221,7 +243,29 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                SectionCard {
+                Column(Modifier.padding(top = 8.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.settings_intro_title), style = MaterialTheme.typography.headlineMedium)
+                    Text(stringResource(R.string.settings_intro_desc), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                        Text(stringResource(R.string.settings_local_badge),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                }
+            }
+            item {
+                MenuCard(
+                    title = stringResource(R.string.settings_storage_access),
+                    icon = Icons.Filled.FolderOpen,
+                    summary = stringResource(if (hasAccess) R.string.settings_storage_granted else R.string.settings_storage_missing),
+                    iconTint = if (hasAccess) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -233,38 +277,31 @@ fun SettingsScreen(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(
-                            Icons.Filled.FolderOpen,
-                            contentDescription = null,
-                            tint = if (state.hasAccess) {
-                                MaterialTheme.colorScheme.primary
+                        Text(
+                            text = stringResource(
+                                if (hasAccess) R.string.settings_storage_granted
+                                else R.string.settings_storage_missing
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (hasAccess) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
                             } else {
                                 MaterialTheme.colorScheme.error
                             },
+                            modifier = Modifier.weight(1f),
                         )
-                        Spacer(Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.settings_storage_access),
-                                style = MaterialTheme.typography.titleSmall,
-                            )
-                            Text(
-                                text = stringResource(
-                                    if (state.hasAccess) R.string.settings_storage_granted
-                                    else R.string.settings_storage_missing
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
                         Icon(Icons.Filled.ChevronRight, contentDescription = null)
                     }
                 }
             }
 
-            item { SectionHeader(stringResource(R.string.settings_appearance)) }
             item {
-                SectionCard {
+                MenuCard(
+                    title = stringResource(R.string.settings_appearance),
+                    icon = Icons.Filled.Palette,
+                    summary = labelForTheme(state.settings.themeMode) + " · " + labelForColorTheme(state.settings.colorTheme),
+                    initiallyExpanded = true,
+                ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
                             text = stringResource(R.string.settings_theme),
@@ -296,9 +333,12 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader(stringResource(R.string.settings_browsing)) }
             item {
-                SectionCard {
+                MenuCard(
+                    title = stringResource(R.string.settings_browsing),
+                    icon = Icons.Filled.Tune,
+                    summary = stringResource(R.string.settings_browsing_summary),
+                ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SwitchRow(
                             title = stringResource(R.string.settings_show_hidden),
@@ -352,9 +392,12 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader(stringResource(R.string.settings_safety)) }
             item {
-                SectionCard {
+                MenuCard(
+                    title = stringResource(R.string.settings_safety),
+                    icon = Icons.Filled.Shield,
+                    summary = stringResource(R.string.settings_safety_summary),
+                ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SwitchRow(
                             title = stringResource(R.string.settings_confirm_delete),
@@ -380,14 +423,16 @@ fun SettingsScreen(
                             Text(
                                 text = stringResource(
                                     R.string.settings_days,
-                                    state.settings.trashRetentionDays,
+                                    retention.toInt(),
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Slider(
-                                value = state.settings.trashRetentionDays.toFloat(),
-                                onValueChange = { viewModel.setRetention(it.toInt()) },
+                                value = retention,
+                                onValueChange = { retention = it },
+                                onValueChangeFinished = { viewModel.setRetention(retention.toInt()) },
+                                enabled = state.settings.useTrash,
                                 valueRange = 1f..90f,
                                 steps = 88,
                             )
@@ -399,9 +444,12 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader(stringResource(R.string.tool_rename)) }
             item {
-                SectionCard {
+                MenuCard(
+                    title = stringResource(R.string.tool_rename),
+                    icon = Icons.Filled.Edit,
+                    summary = labelForConvention(state.settings.renameConvention),
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -419,9 +467,12 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader(stringResource(R.string.settings_privacy)) }
             item {
-                SectionCard {
+                MenuCard(
+                    title = stringResource(R.string.settings_privacy),
+                    icon = Icons.Filled.PrivacyTip,
+                    summary = stringResource(R.string.settings_privacy_summary),
+                ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // The preference and the permission are two different
                         // things, and only their intersection is real. Showing
@@ -465,9 +516,12 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader(stringResource(R.string.settings_about)) }
             item {
-                SectionCard {
+                MenuCard(
+                    title = stringResource(R.string.settings_about),
+                    icon = Icons.Filled.Info,
+                    summary = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                ) {
                     Column {
                         Row(
                             modifier = Modifier
@@ -518,6 +572,63 @@ fun SettingsScreen(
             onDismiss = { confirmReset = false },
             destructive = true,
         )
+    }
+}
+
+/**
+ * One settings menu, as one card: title on top, its controls below it.
+ *
+ * The screen used to float a bare header row above each block, which read as
+ * fragments of a list rather than one card per menu. Folding the header in —
+ * with the same tinted icon badge the rest of the app uses — makes every menu
+ * a self-contained card stacked top-down.
+ */
+@Composable
+private fun MenuCard(
+    title: String,
+    icon: ImageVector,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
+    summary: String,
+    initiallyExpanded: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
+    val description = stringResource(if (expanded) R.string.settings_expanded else R.string.settings_collapsed)
+    SectionCard(contentPadding = PaddingValues(12.dp)) {
+        Column(Modifier.animateContentSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                    .semantics { stateDescription = description }
+                    .clickable(role = Role.Button) { expanded = !expanded }.padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(iconTint.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(summary, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Icon(if (expanded) Icons.Filled.ExpandMore else Icons.Filled.ChevronRight,
+                    contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            AnimatedVisibility(expanded) {
+                Column(Modifier.padding(horizontal = 8.dp, vertical = 12.dp), content = content)
+            }
+        }
     }
 }
 
@@ -606,9 +717,15 @@ private fun SwitchRow(
     onChange: (Boolean) -> Unit,
     subtitle: String? = null,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyMedium)
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
             if (subtitle != null) {
                 Text(
                     text = subtitle,
@@ -617,7 +734,7 @@ private fun SwitchRow(
                 )
             }
         }
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

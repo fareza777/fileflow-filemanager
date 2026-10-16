@@ -53,6 +53,8 @@ import com.fileflow.app.R
 import com.fileflow.app.ui.components.AdBanner
 import com.fileflow.app.ui.components.SectionCard
 import com.fileflow.app.ui.components.SectionHeader
+import com.fileflow.app.ui.components.FeatureBanner
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +71,14 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            item {
+                FeatureBanner(
+                    title = stringResource(R.string.photo_discover_title),
+                    description = stringResource(R.string.photo_discover_desc),
+                    icon = Icons.Filled.PhotoLibrary,
+                    onClick = { onOpenTool("photo_search") },
+                )
+            }
             // Three groups, and every tool appears in exactly one of them: the
             // cards used to mix "look at this" with "delete this" and listed a
             // journal and a run log side by side as if they were the same thing.
@@ -262,13 +272,6 @@ fun ToolsScreen(onOpenTool: (String) -> Unit) {
                             onClick = { onOpenTool("versions") },
                             accent = scheme.tertiary,
                         )
-                        ToolRow(
-                            icon = Icons.Filled.PhotoLibrary,
-                            title = stringResource(R.string.tool_photo_search),
-                            subtitle = stringResource(R.string.tool_photo_search_desc),
-                            onClick = { onOpenTool("photo_search") },
-                            accent = scheme.secondary,
-                        )
                     }
                 }
             }
@@ -321,5 +324,11 @@ private fun ToolRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }

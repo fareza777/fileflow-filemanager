@@ -136,7 +136,7 @@ class BrowseRepository @Inject constructor(
         runCatching { indexRepository.mostRecentFiles(limit * 2) }
             .getOrDefault(emptyList())
             .forEach { candidate ->
-                if (!MediaStoreItems.isUserFile(candidate.path)) return@forEach
+                if (!MediaStoreItems.isRecentFile(candidate.path)) return@forEach
                 if (!File(candidate.path).isFile) return@forEach
                 merged[candidate.path] = candidate.toFileItem()
             }
@@ -145,7 +145,10 @@ class BrowseRepository @Inject constructor(
             context.contentResolver.query(
                 MediaStore.Files.getContentUri("external"),
                 MediaStoreItems.PROJECTION,
-                "${MediaStore.Files.FileColumns.SIZE} > 0",
+                "${MediaStore.Files.FileColumns.SIZE} > 0 AND " +
+                    "LOWER(${MediaStore.Files.FileColumns.DISPLAY_NAME}) NOT LIKE '%.webp' AND " +
+                    "(${MediaStore.Files.FileColumns.MIME_TYPE} IS NULL OR " +
+                    "LOWER(${MediaStore.Files.FileColumns.MIME_TYPE}) != 'image/webp')",
                 null,
                 "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC",
             )?.use { cursor ->
@@ -161,7 +164,7 @@ class BrowseRepository @Inject constructor(
                     // trash and the Android/data trees. Showing those as "recent
                     // files" put entries on the home screen that opened folders
                     // the user had never been in.
-                    if (!MediaStoreItems.isUserFile(item.path)) continue
+                    if (!MediaStoreItems.isRecentFile(item.path, item.mimeType)) continue
                     merged[item.path] = item
                 }
             }

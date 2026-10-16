@@ -23,3 +23,10 @@ app/build
 
 # Scratch notes written during a review pass.
 _audit_findings.txt
+
+# Evidence from a verification pass on a device: a screenshot, the UI dump it
+# was checked against, and the local tool state that produced them. Kept on
+# disk, not published — the findings that matter are written up in docs/.
+/.freebuff/
+/shot1.png
+/ui.xml

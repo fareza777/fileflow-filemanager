@@ -34,6 +34,14 @@ class ClipPromptsTest {
     }
 
     @Test
+    fun `known indonesian themes do not dilute english embeddings`() {
+        val prompts = ClipPrompts.promptsFor("makanan")
+        assertTrue(prompts.any { "food" in it })
+        assertFalse(prompts.any { "makanan" in it })
+        assertFalse(ClipPrompts.promptsFor("foto kerja bakti").any { "kerja bakti" in it })
+    }
+
+    @Test
     fun `bukti transfer becomes a receipt prompt`() {
         val prompts = ClipPrompts.promptsFor("bukti transfer")
         assertTrue("expected a receipt prompt in $prompts", prompts.any { it.contains("receipt") })

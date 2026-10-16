@@ -566,10 +566,12 @@
     <string name="photo_indexing_note">Text and themes are read on this phone. Nothing is uploaded.</string>
     <string name="photo_search_empty">No photo matches that</string>
     <string name="photo_search_empty_hint">Try the words printed in the photo, or a theme: receipt, team, food, mountain, vehicle.</string>
-    <string name="photo_search_indexed">%1$d photos read · newest first</string>
+    <string name="photo_search_indexed">%1$d photos read</string>
+    <string name="photo_search_indexed_of">%1$d of %2$d photos read</string>
     <string name="photo_search_found">%1$d photos found</string>
     <string name="photo_section_meaning">By meaning</string>
     <string name="photo_section_exact">Exact matches</string>
+    <string name="photo_section_recent">Newest photos</string>
     <string name="photo_match_meaning">match</string>
     <string name="photo_prompt_translated">Translated into English prompts, which is the language the model reads</string>
     <string name="model_download_title">Downloading the search model</string>
@@ -580,6 +582,7 @@
     <string name="photo_work_channel_desc">Progress while photos are read for search</string>
     <string name="photo_embed_title">Reading photos by meaning</string>
     <string name="photo_model_stop">Stop downloading</string>
+    <string name="photo_model_loading">Opening the model…</string>
     <string name="photo_model_not_loaded">The model files are here but could not be opened.</string>
     <string name="photo_model_retry_hint">The message above says what the model declared. Nothing needs downloading again.</string>
     <string name="photo_model_retry">Load it again</string>
@@ -968,7 +971,34 @@
     <string name="analyzer_largest">Largest files</string>
     <string name="analyzer_browse">Open in Files</string>
     <string name="analyzer_unknown_size">Size unknown until the next scan</string>
-    <string name="analyzer_tap_hint">Tap a folder to see what is inside it.</string>
+    <string name="analyzer_tap_hint">Tap a folder to see what is inside it. Long-press any row to select several.</string>
+    <string name="analyzer_copy_to">Copy to folder</string>
+    <string name="analyzer_move_to">Move to folder</string>
     <string name="junk_clean_short">Clean now</string>
 
+    <string name="photo_discover_title">Find the moment, not the filename</string>
+    <string name="photo_discover_desc">Community work, meals, scenery or receipts. Explore your photos by what is in them.</string>
+    <string name="photo_example_nature">scenery</string>
+    <string name="photo_example_pets">cat</string>
+    <string name="photo_clear_query">Clear search</string>
+    <string name="photo_filter_all">All results</string>
+    <string name="photo_section_theme">By theme</string>
+    <string name="photo_section_text">Text &amp; filename</string>
+    <string name="photo_match_name">Filename match</string>
+    <string name="photo_match_visual">Visual suggestion</string>
+    <string name="photo_meaning_note">Ordered by visual similarity, not a confidence percentage. Suggestions can be wrong.</string>
+    <string name="photo_theme_note">Supported by image labels. An event such as community work cannot be confirmed from labels alone.</string>
+    <string name="photo_meaning_coverage">Meaning search: %1$d of %2$d photos prepared</string>
+    <string name="photo_meaning_optional">Text and theme search available · meaning model optional</string>
+    <string name="photo_model_manage">Model</string>
+    <string name="photo_model_hide">Hide</string>
+    <string name="photo_model_delete_confirm">Delete the downloaded model and its photo vectors? Your photos and text index will not be deleted.</string>
+    <string name="settings_intro_title">Make FileFlow yours</string>
+    <string name="settings_intro_desc">Appearance, browsing and file safety. Tap a section to see its controls.</string>
+    <string name="settings_local_badge">Photo search runs on this device</string>
+    <string name="settings_browsing_summary">Hidden files, thumbnails and search index</string>
+    <string name="settings_safety_summary">Deletion confirmation, previews and trash</string>
+    <string name="settings_privacy_summary">Notifications, ad choices and privacy policy</string>
+    <string name="settings_expanded">Expanded</string>
+    <string name="settings_collapsed">Collapsed</string>
 </resources>

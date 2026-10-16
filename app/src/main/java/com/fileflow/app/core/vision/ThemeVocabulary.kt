@@ -51,13 +51,14 @@ object ThemeVocabulary {
         "selfie" to listOf("selfie", "person", "smile"),
 
         // Food.
-        "makanan" to listOf("food", "cuisine", "meal", "fast food", "lunch", "supper", "bento", "cookware and bakeware", "tableware"),
+        "makanan" to listOf("food", "cuisine", "meal", "fast food", "lunch", "supper", "bento", "pizza", "sushi", "fruit", "vegetable", "bread"),
         "makan" to listOf("eating", "food", "meal", "lunch", "supper", "cuisine"),
         "kue" to listOf("cake", "cookie", "icing", "gelato", "pie"),
         "minuman" to listOf("coffee", "cappuccino", "juice", "cola", "wine", "cup"),
 
         // Nature and places.
         "alam" to listOf("mountain", "forest", "beach", "lake", "river", "sky", "sunset", "waterfall", "field", "garden", "prairie"),
+        "pemandangan" to listOf("mountain", "forest", "beach", "lake", "river", "sunset", "waterfall", "garden"),
         "gunung" to listOf("mountain", "cliff", "canyon", "sky", "field"),
         "pantai" to listOf("beach", "sand", "pier", "sunset", "swimming", "sailboat"),
         "kebun" to listOf("garden", "plant", "flower", "farm", "field", "flowerpot"),
@@ -259,6 +260,59 @@ object ThemeVocabulary {
      */
     val themeLabels: Set<String> get() = THEMES.values.flatten().toSet()
 
+    // Context alone is not evidence of the subject: a road is not a car, and
+    // tableware is not food. Compound queries must satisfy every named theme.
+    private val SUBJECTS = mapOf(
+        "bukti transfer" to listOf("receipt", "money"),
+        "transfer" to listOf("receipt", "money"),
+        "struk" to listOf("receipt"),
+        "nota" to listOf("receipt"),
+        "rekening" to listOf("receipt", "money"),
+        "screenshot" to listOf("screenshot", "web page"),
+        "gunung" to listOf("mountain"),
+        "pantai" to listOf("beach"),
+        "kucing" to listOf("cat", "ragdoll", "sphynx", "pixie-bob"),
+        "anjing" to listOf("dog", "dalmatian", "basset hound"),
+        "mobil" to listOf("car"),
+        "motor" to listOf("motorcycle"),
+        "masjid" to listOf("mosque"),
+    )
+
+    private fun queryThemes(query: String): List<String> {
+        val words = query.trim().lowercase().split(Regex("[^\\p{L}\\p{N}]+"))
+            .filter { it.isNotEmpty() }
+        val matches = mutableListOf<String>()
+        var index = 0
+        while (index < words.size) {
+            val phrase = (minOf(3, words.size - index) downTo 1)
+                .map { words.subList(index, index + it).joinToString(" ") }
+                .firstOrNull { it in THEMES }
+            if (phrase == null) index++ else {
+                matches += phrase
+                index += phrase.split(' ').size
+            }
+        }
+        return matches.distinct()
+    }
+
+    /** Label evidence is approximate, never an exact description of an event. */
+    fun matchesTheme(query: String, labels: List<String>): Boolean {
+        val set = labels.map { it.lowercase() }.toSet()
+        val themes = queryThemes(query)
+        if (themes.isEmpty()) return query.trim().lowercase() in set
+        return themes.all { theme ->
+            if (theme == "kerja bakti" || theme == "gotong royong") {
+                set.any { it in listOf("team", "community", "crew", "crowd", "interaction") } &&
+                    set.any { it in listOf("construction", "field", "garden", "farm", "wheelbarrow", "soil") }
+            } else {
+                (SUBJECTS[theme] ?: THEMES.getValue(theme)).any { it in set }
+            }
+        }
+    }
+
+    fun matchStrength(query: String, labels: List<String>): Int =
+        if (matchesTheme(query, labels)) labels.count { it in labelsFor(query) } else 0
+
     /** Indonesian phrase → the model labels that mean it. */
     fun labelsFor(query: String): List<String> {
         val needle = query.trim().lowercase()
@@ -266,19 +320,7 @@ object ThemeVocabulary {
 
         THEMES[needle]?.let { return it }
 
-        // Whole words and phrases of them, never substrings: matching inside a
-        // word made "malam" find the "alam" theme, which is a photo search that
-        // answers a question nobody asked.
-        val words = needle.split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }
-        val phrases = buildSet {
-            addAll(words)
-            words.windowed(2).forEach { add(it.joinToString(" ")) }
-            words.windowed(3).forEach { add(it.joinToString(" ")) }
-        }
-        val fromThemes = THEMES.entries
-            .filter { entry -> entry.key in phrases }
-            .flatMap { it.value }
-            .distinct()
+        val fromThemes = queryThemes(needle).flatMap { THEMES.getValue(it) }.distinct()
         if (fromThemes.isNotEmpty()) return fromThemes
 
         // Last resort: the query may already be a label the model emits.
@@ -293,9 +335,8 @@ object ThemeVocabulary {
     /** Themes that would match a label — what the result row says it found. */
     fun themesFor(labels: List<String>): List<String> {
         if (labels.isEmpty()) return emptyList()
-        val set = labels.toSet()
         return THEMES.entries
-            .filter { entry -> entry.value.any { it in set } }
+            .filter { entry -> matchesTheme(entry.key, labels) }
             .map { it.key }
             .sorted()
     }

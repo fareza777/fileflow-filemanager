@@ -16,6 +16,39 @@ import org.junit.Test
 class ThemeVocabularyTest {
 
     @Test
+    fun `a person alone is not community work`() {
+        assertFalse(ThemeVocabulary.matchesTheme("kerja bakti", listOf("person", "smile")))
+        assertFalse(ThemeVocabulary.matchesTheme("kerja bakti", listOf("field")))
+        assertFalse(ThemeVocabulary.matchesTheme("kerja bakti", listOf("team", "crowd", "party")))
+        assertTrue(ThemeVocabulary.matchesTheme("foto kerja bakti", listOf("team", "person", "field")))
+        assertTrue(ThemeVocabulary.matchesTheme("gotong royong", listOf("community", "construction")))
+    }
+
+    @Test
+    fun `food needs food evidence not just tableware`() {
+        assertFalse(ThemeVocabulary.matchesTheme("makanan", listOf("tableware", "cup")))
+        assertTrue(ThemeVocabulary.matchesTheme("foto makanan", listOf("food", "meal")))
+        assertTrue(ThemeVocabulary.matchesTheme("makanan", listOf("pizza")))
+    }
+
+    @Test
+    fun `compound themes require each subject`() {
+        assertFalse(ThemeVocabulary.matchesTheme("kerja bakti di sekolah", listOf("team", "field")))
+        assertTrue(ThemeVocabulary.matchesTheme("kerja bakti di sekolah", listOf("team", "field", "school")))
+        assertFalse(ThemeVocabulary.matchesTheme("makanan di pantai", listOf("food")))
+        assertTrue(ThemeVocabulary.matchesTheme("makanan di pantai", listOf("food", "beach")))
+    }
+
+    @Test
+    fun `specific subjects do not match generic context`() {
+        assertFalse(ThemeVocabulary.matchesTheme("mobil", listOf("road", "vehicle")))
+        assertFalse(ThemeVocabulary.matchesTheme("kucing", listOf("pet", "dog")))
+        assertFalse(ThemeVocabulary.matchesTheme("gunung", listOf("sky", "field")))
+        assertTrue(ThemeVocabulary.matchesTheme("car", listOf("car")))
+        assertFalse(ThemeVocabulary.matchesTheme("car", listOf("cart")))
+    }
+
+    @Test
     fun `every theme names a label the model has`() {
         // The failure this catches is a silent one: a theme pointing at a label
         // the model never emits, which is a search that returns nothing forever.

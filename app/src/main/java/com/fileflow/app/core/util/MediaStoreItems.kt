@@ -109,6 +109,11 @@ object MediaStoreItems {
         return normalized.split('/').none { it.startsWith(".") }
     }
 
+    /** Feed policy only: WebP remains available in the browser and photo search. */
+    fun isRecentFile(path: String, mimeType: String? = null): Boolean =
+        isUserFile(path) && !path.endsWith(".webp", ignoreCase = true) &&
+            !mimeType.equals("image/webp", ignoreCase = true)
+
     private fun resolvePath(cursor: Cursor, volumeRoots: List<String>): String? {
         cursor.stringColumn(MediaStore.Files.FileColumns.DATA)
             ?.takeIf { it.isNotEmpty() }

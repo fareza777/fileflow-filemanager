@@ -386,7 +386,7 @@ interface FileIndexDao {
     @Query(
         """
         SELECT * FROM indexed_files
-        WHERE isDirectory = 0 AND sizeBytes > 0
+        WHERE isDirectory = 0 AND sizeBytes > 0 AND LOWER(name) NOT LIKE '%.webp'
         ORDER BY modified DESC
         LIMIT :limit
         """
@@ -523,9 +523,9 @@ interface PhotoIndexDao {
     @Query(
         """
         SELECT * FROM photo_index
-        WHERE (:t1 = '' OR folded LIKE :t1)
-          AND (:t2 = '' OR folded LIKE :t2)
-          AND (:t3 = '' OR folded LIKE :t3)
+        WHERE (:t1 = '' OR folded LIKE :t1 ESCAPE '\' OR LOWER(name) LIKE :t1 ESCAPE '\')
+          AND (:t2 = '' OR folded LIKE :t2 ESCAPE '\' OR LOWER(name) LIKE :t2 ESCAPE '\')
+          AND (:t3 = '' OR folded LIKE :t3 ESCAPE '\' OR LOWER(name) LIKE :t3 ESCAPE '\')
         ORDER BY modified DESC
         LIMIT :limit
         """
@@ -541,10 +541,10 @@ interface PhotoIndexDao {
     @Query(
         """
         SELECT * FROM photo_index
-        WHERE labels LIKE :l1 OR labels LIKE :l2 OR labels LIKE :l3
-           OR labels LIKE :l4 OR labels LIKE :l5 OR labels LIKE :l6
-           OR labels LIKE :l7 OR labels LIKE :l8 OR labels LIKE :l9
-           OR labels LIKE :l10 OR labels LIKE :l11 OR labels LIKE :l12
+        WHERE (',' || labels || ',') LIKE :l1 OR (',' || labels || ',') LIKE :l2 OR (',' || labels || ',') LIKE :l3
+           OR (',' || labels || ',') LIKE :l4 OR (',' || labels || ',') LIKE :l5 OR (',' || labels || ',') LIKE :l6
+           OR (',' || labels || ',') LIKE :l7 OR (',' || labels || ',') LIKE :l8 OR (',' || labels || ',') LIKE :l9
+           OR (',' || labels || ',') LIKE :l10 OR (',' || labels || ',') LIKE :l11 OR (',' || labels || ',') LIKE :l12
         ORDER BY modified DESC
         LIMIT :limit
         """

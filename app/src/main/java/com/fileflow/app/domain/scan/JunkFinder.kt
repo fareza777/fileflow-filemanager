@@ -1,6 +1,7 @@
 package com.fileflow.app.domain.scan
 
 import com.fileflow.app.core.storage.StorageAccess
+import com.fileflow.app.core.storage.TrashStore
 import com.fileflow.app.core.storage.VolumeRepository
 import com.fileflow.app.domain.Candidate
 import com.fileflow.app.domain.FileWalker
@@ -38,6 +39,7 @@ class JunkFinder @Inject constructor(
     private val walker: FileWalker,
     private val volumes: VolumeRepository,
     private val storageAccess: StorageAccess,
+    private val trash: TrashStore,
     private val gate: StorageWalkGate,
 ) {
 
@@ -57,7 +59,9 @@ class JunkFinder @Inject constructor(
                 // anyway. Asking for them separately meant a second traversal of
                 // the whole device purely to find folders with nothing in them.
                 onEmptyDirectory = { directory ->
-                    if (!storageAccess.isRestrictedPath(directory.path)) {
+                    if (!storageAccess.isRestrictedPath(directory.path) &&
+                        !trash.isTrashPath(directory.path)
+                    ) {
                         emptyFolders += directory
                     }
                 },
@@ -67,6 +71,12 @@ class JunkFinder @Inject constructor(
                 // Android/data and obb stay untouchable even for a cleaner: the
                 // system hides them because touching them breaks other apps.
                 if (storageAccess.isRestrictedPath(candidate.path)) return@collect
+                // The trash holds everything this tool just removed. It is
+                // walked without the hidden-file skip (junk lives in dot-folders
+                // like .thumbnails), so without this line every clean moved the
+                // junk into .fileflow/trash and the next scan reported the very
+                // same files again — "deleted, and back".
+                if (trash.isTrashPath(candidate.path)) return@collect
                 JunkRules.classify(candidate)?.let { kind ->
                     buckets.getOrPut(kind) { mutableListOf() }.add(candidate)
                 }

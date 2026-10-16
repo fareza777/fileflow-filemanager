@@ -5,9 +5,11 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -301,13 +303,8 @@ fun StatPill(
 }
 
 /**
- * Cards are tonal rather than elevated, with one extra touch: a very soft
- * vertical wash from the raised surface colour down to the container colour.
- *
- * A single flat fill with a hairline border is the safe Material answer, and on
- * a screen of six of them it reads as grey rectangles. The wash costs one
- * gradient and gives each card a top edge the eye can pick out, without any
- * shadow that would muddy an OLED dark theme.
+ * Shared quiet surfaces keep tools, lists and settings in the same visual
+ * system. Accents are reserved for meaningful actions, not every card edge.
  */
 @Composable
 fun SectionCard(
@@ -323,39 +320,51 @@ fun SectionCard(
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clip(shape).clickable(onClick = onClick) else Modifier),
         shape = shape,
-        color = Color.Transparent,
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
         border = BorderStroke(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+            color = (accent ?: MaterialTheme.colorScheme.outlineVariant).copy(alpha = 0.25f),
         ),
     ) {
         Box(
             modifier = Modifier
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                            MaterialTheme.colorScheme.surfaceContainerLow,
-                        ),
-                    )
-                )
                 .padding(contentPadding),
         ) {
             Column(content = content)
-            // A tinted hairline along the top edge: the cheapest way to say
-            // "this card belongs to that feature" without colouring the whole
-            // surface and losing text contrast.
-            if (accent != null) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = (-16).dp)
-                        .fillMaxWidth(0.34f)
-                        .height(2.dp)
-                        .clip(RoundedCornerShape(bottomStart = 2.dp, bottomEnd = 2.dp))
-                        .background(accent.copy(alpha = 0.75f)),
-                )
+        }
+    }
+}
+
+/** A recognisable entry point to a feature, with one accessible touch target. */
+@Composable
+fun FeatureBanner(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(24.dp),
+        color = scheme.primaryContainer,
+        contentColor = scheme.onPrimaryContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(shape = RoundedCornerShape(16.dp), color = scheme.primary) {
+                Icon(icon, contentDescription = null, tint = scheme.onPrimary,
+                    modifier = Modifier.padding(14.dp).size(26.dp))
             }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(description, style = MaterialTheme.typography.bodySmall)
+            }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
         }
     }
 }
@@ -444,6 +453,9 @@ fun LoadingState(
  * on the home screen meant the storage figures and the scan progress stacked on
  * top of each other. It is now a card with a settled hierarchy — what is
  * happening, how far along, and a way out.
+ *
+ * [elevated] is for the one copy that floats over other screens: opaque and
+ * shadowed, so nothing underneath reads through it.
  */
 @Composable
 fun ProgressPanel(
@@ -452,13 +464,23 @@ fun ProgressPanel(
     fraction: Float?,
     modifier: Modifier = Modifier,
     onCancel: (() -> Unit)? = null,
+    elevated: Boolean = false,
 ) {
     val tint = MaterialTheme.colorScheme.primary
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        color = tint.copy(alpha = 0.07f),
-        border = BorderStroke(1.dp, tint.copy(alpha = 0.18f)),
+        // The floating bar draws this over live content, so it gets an opaque
+        // surface and a shadow of its own. The translucent tint it uses inside
+        // cards let the text and boxes underneath read straight through it —
+        // the overlap that looked like two layouts drawn on top of each other.
+        color = if (elevated) {
+            MaterialTheme.colorScheme.surfaceContainerHighest
+        } else {
+            tint.copy(alpha = 0.07f)
+        },
+        shadowElevation = if (elevated) 10.dp else 0.dp,
+        border = if (elevated) null else BorderStroke(1.dp, tint.copy(alpha = 0.18f)),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -658,7 +680,12 @@ fun KeyValueRow(
  * A row in the storage analyzer: an icon tile, the name, a proportional bar and
  * the size. Used for folders, for the category breakdown and for large files,
  * so one glance reads the same way everywhere in the screen.
+ *
+ * [selectable] turns the trailing chevron into a selection dot and lets
+ * [onLongClick] pick the row up: long-press starts a bulk selection, a tap in
+ * that mode ticks the row instead of opening it.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UsageRow(
     name: String,
@@ -670,13 +697,32 @@ fun UsageRow(
     modifier: Modifier = Modifier,
     showChevron: Boolean = false,
     muted: Boolean = false,
+    selected: Boolean = false,
+    selectable: Boolean = false,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .background(
+                if (selected) {
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                } else {
+                    Color.Transparent
+                },
+            )
+            .then(
+                when {
+                    onClick != null && onLongClick != null -> Modifier.combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                    )
+                    onClick != null -> Modifier.clickable(onClick = onClick)
+                    else -> Modifier
+                },
+            )
             .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -740,7 +786,10 @@ fun UsageRow(
             )
         }
 
-        if (showChevron) {
+        if (selectable) {
+            Spacer(Modifier.width(4.dp))
+            SelectionDot(selected)
+        } else if (showChevron) {
             Spacer(Modifier.width(4.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,

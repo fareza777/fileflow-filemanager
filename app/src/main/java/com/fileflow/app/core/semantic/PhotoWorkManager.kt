@@ -48,10 +48,15 @@ class PhotoWorkManager @Inject constructor(
     private val _state = MutableStateFlow<PhotoWorkState>(PhotoWorkState.Idle)
     val state: StateFlow<PhotoWorkState> = _state.asStateFlow()
 
-    /** Reads photos that are new or changed into the text-and-label index. */
-    suspend fun runIndex(limit: Int = 2000): Int = withContext(Dispatchers.IO) {
+    /**
+     * Reads photos that are new or changed into the text-and-label index — all
+     * of them. This used to stop after the newest two thousand, which is why the
+     * search screen kept reporting a few hundred photos read while the gallery
+     * held thousands.
+     */
+    suspend fun runIndex(): Int = withContext(Dispatchers.IO) {
         val counted = try {
-            indexer.index(limit = limit) { done, total, name ->
+            indexer.index { done, total, name ->
                 _state.update {
                     PhotoWorkState.Running(PhotoWorkState.Kind.INDEXING, done, total, name)
                 }

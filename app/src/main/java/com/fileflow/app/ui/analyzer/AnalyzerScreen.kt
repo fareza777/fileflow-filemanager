@@ -53,6 +53,18 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DriveFileMove
+import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.fileflow.app.core.model.VolumeInfo
 import com.fileflow.app.R
 import com.fileflow.app.core.model.FileCategory
@@ -61,15 +73,20 @@ import com.fileflow.app.domain.Candidate
 import com.fileflow.app.domain.Candidates
 import com.fileflow.app.domain.toFileItem
 import com.fileflow.app.ui.components.BreadcrumbBar
+import com.fileflow.app.ui.components.ConfirmDialog
 import com.fileflow.app.ui.components.EmptyState
 import com.fileflow.app.ui.components.FileVisuals
 import com.fileflow.app.ui.components.ProgressPanel
 import com.fileflow.app.ui.components.SectionCard
 import com.fileflow.app.ui.components.SectionHeader
+import com.fileflow.app.ui.components.SelectionAction
+import com.fileflow.app.ui.components.SelectionActionBar
 import com.fileflow.app.ui.components.StatPill
 import com.fileflow.app.ui.components.StorageBar
 import com.fileflow.app.ui.components.UsageRow
 import com.fileflow.app.ui.util.FileIntents
+import com.fileflow.app.ui.util.UiMessage
+import com.fileflow.app.ui.util.showMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,11 +98,24 @@ fun AnalyzerScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val snackbar = remember { SnackbarHostState() }
+    var confirmDelete by remember { mutableStateOf(false) }
+    /** Non-null while the copy/move destination sheet is open. */
+    var pickDestination by remember { mutableStateOf<BulkTransfer?>(null) }
+    val settings = com.fileflow.app.ui.util.LocalUserSettings.current
 
-    // Back means "up one level" while drilled in, and only leaves the analyzer
-    // from the top. Jumping straight out to another tab made the drill-down a
-    // one-way trip.
-    BackHandler(enabled = !state.atRoot) { viewModel.up() }
+    LaunchedEffect(Unit) {
+        viewModel.messages.collect { message ->
+            snackbar.showMessage(context, message) { group -> viewModel.undo(group) }
+        }
+    }
+
+    // Back unwinds in order: first the selection, then the drill-down, and only
+    // then the screen. Jumping straight out to another tab made the drill-down
+    // a one-way trip, and dropping a careful selection on one stray tap worse.
+    BackHandler(enabled = state.selecting || !state.atRoot) {
+        if (state.selecting) viewModel.clearSelection() else viewModel.up()
+    }
 
     val rootLabel = stringResource(R.string.analyzer_root)
     val crumbs = remember(state.crumbs, state.atRoot, state.root, rootLabel) {
@@ -104,25 +134,37 @@ fun AnalyzerScreen(
     val largestTotal = remember(state.largest) { largestTotalOf(state.largest) }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
+                    if (state.selecting) {
                         Text(
-                            text = if (state.atRoot) {
-                                stringResource(R.string.analyzer_title)
-                            } else {
-                                state.focusName
-                            },
+                            text = pluralStringResource(
+                                R.plurals.item_count,
+                                state.selection.size,
+                                state.selection.size,
+                            ),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
                         )
-                        if (!state.atRoot && state.result != null) {
+                    } else {
+                        Column {
                             Text(
-                                text = Formatters.bytes(state.focusBytes),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = if (state.atRoot) {
+                                    stringResource(R.string.analyzer_title)
+                                } else {
+                                    state.focusName
+                                },
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
+                            if (!state.atRoot && state.result != null) {
+                                Text(
+                                    text = Formatters.bytes(state.focusBytes),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 },
@@ -137,24 +179,93 @@ fun AnalyzerScreen(
                     }
                 },
                 actions = {
-                    if (!state.atRoot) {
-                        IconButton(
-                            onClick = { onOpenFolder(state.focusPath) },
-                        ) {
+                    if (state.selecting) {
+                        IconButton(onClick = viewModel::clearSelection) {
                             Icon(
-                                imageVector = Icons.Filled.FolderOpen,
-                                contentDescription = stringResource(R.string.analyzer_browse),
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.action_deselect_all),
+                            )
+                        }
+                    } else {
+                        // One tap to pick up every row on screen — the mass
+                        // selection without having to long-press each one.
+                        if (state.entries.isNotEmpty()) {
+                            IconButton(onClick = viewModel::selectAll) {
+                                Icon(
+                                    imageVector = Icons.Filled.SelectAll,
+                                    contentDescription = stringResource(R.string.action_select_all),
+                                )
+                            }
+                        }
+                        if (!state.atRoot) {
+                            IconButton(
+                                onClick = { onOpenFolder(state.focusPath) },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.FolderOpen,
+                                    contentDescription = stringResource(R.string.analyzer_browse),
+                                )
+                            }
+                        }
+                        IconButton(onClick = viewModel::refresh) {
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = stringResource(R.string.cd_refresh),
                             )
                         }
                     }
-                    IconButton(onClick = viewModel::refresh) {
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = stringResource(R.string.cd_refresh),
-                        )
-                    }
                 },
             )
+        },
+        bottomBar = {
+            // Stands down while an operation runs: the global operation bar is
+            // already showing its progress in this exact spot, and the two
+            // stacked on top of each other is the overlap this avoids.
+            if (state.selecting && !state.working) {
+                SelectionActionBar(
+                    title = pluralStringResource(
+                        R.plurals.item_count,
+                        state.selection.size,
+                        state.selection.size,
+                    ),
+                    subtitle = Formatters.bytes(state.selectedBytes),
+                    actions = listOf(
+                        SelectionAction(
+                            icon = Icons.Filled.Close,
+                            label = stringResource(R.string.action_deselect_all),
+                            onClick = viewModel::clearSelection,
+                        ),
+                        SelectionAction(
+                            icon = Icons.Filled.Share,
+                            label = stringResource(R.string.action_share),
+                            onClick = {
+                                FileIntents.share(
+                                    context,
+                                    viewModel.selectedPaths().map { path ->
+                                        Candidates.of(java.io.File(path)).toFileItem()
+                                    },
+                                )
+                            },
+                        ),
+                        SelectionAction(
+                            icon = Icons.Filled.ContentCopy,
+                            label = stringResource(R.string.action_copy),
+                            onClick = { pickDestination = BulkTransfer.COPY },
+                        ),
+                        SelectionAction(
+                            icon = Icons.Filled.DriveFileMove,
+                            label = stringResource(R.string.action_move),
+                            onClick = { pickDestination = BulkTransfer.MOVE },
+                        ),
+                        SelectionAction(
+                            icon = Icons.Filled.Delete,
+                            label = stringResource(R.string.action_delete),
+                            onClick = { confirmDelete = true },
+                            destructive = true,
+                        ),
+                    ),
+                )
+            }
         },
     ) { padding ->
         LazyColumn(
@@ -386,7 +497,11 @@ fun AnalyzerScreen(
                         },
                         muted = !entry.measured,
                         showChevron = entry.isDirectory,
-                        onClick = if (entry.isDirectory) {
+                        selected = entry.path in state.selection,
+                        selectable = state.selecting,
+                        onClick = if (state.selecting) {
+                            { viewModel.toggleSelected(entry.path) }
+                        } else if (entry.isDirectory) {
                             { viewModel.open(entry) }
                         } else {
                             {
@@ -396,6 +511,9 @@ fun AnalyzerScreen(
                                 )
                             }
                         },
+                        // Long-press is what opens the selection; every row
+                        // offers it, so there is no mode to enter first.
+                        onLongClick = { viewModel.startSelection(entry.path) },
                     )
                 }
 
@@ -412,7 +530,14 @@ fun AnalyzerScreen(
                             accent = FileVisuals.accentFor(category),
                             icon = Icons.AutoMirrored.Filled.InsertDriveFile,
                             showChevron = true,
-                            onClick = { viewModel.revealFile(file) },
+                            selected = file.path in state.selection,
+                            selectable = state.selecting,
+                            onClick = if (state.selecting) {
+                                { viewModel.toggleSelected(file.path) }
+                            } else {
+                                { viewModel.revealFile(file) }
+                            },
+                            onLongClick = { viewModel.startSelection(file.path) },
                         )
                     }
                     item {
@@ -427,6 +552,104 @@ fun AnalyzerScreen(
             }
         }
     }
+
+    if (confirmDelete) {
+        ConfirmDialog(
+            title = pluralStringResource(
+                R.plurals.delete_title,
+                state.selection.size,
+                state.selection.size,
+            ),
+            body = stringResource(R.string.delete_body, settings.trashRetentionDays),
+            confirmLabel = stringResource(R.string.delete_move_to_trash),
+            onConfirm = {
+                viewModel.deleteSelection()
+                confirmDelete = false
+            },
+            onDismiss = { confirmDelete = false },
+            destructive = true,
+        )
+    }
+
+    pickDestination?.let { transfer ->
+        DestinationDialog(
+            title = stringResource(
+                if (transfer == BulkTransfer.COPY) R.string.analyzer_copy_to
+                else R.string.analyzer_move_to,
+            ),
+            options = viewModel.quickDestinations(),
+            onPick = { path ->
+                if (transfer == BulkTransfer.COPY) viewModel.copySelection(path)
+                else viewModel.moveSelection(path)
+                pickDestination = null
+            },
+            onDismiss = { pickDestination = null },
+        )
+    }
+}
+
+/** Which bulk transfer the destination sheet is picking a folder for. */
+private enum class BulkTransfer { COPY, MOVE }
+
+/**
+ * Where the checked files go. The standard folders of their own volume, so
+ * "Copy" is two taps and no typing — a full folder browser is the Files tab's
+ * job, not this screen's.
+ */
+@Composable
+private fun DestinationDialog(
+    title: String,
+    options: List<FolderOption>,
+    onPick: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text(title) },
+        text = {
+            Column {
+                options.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onPick(option.path) }
+                            .padding(horizontal = 4.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = option.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = option.path,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+        confirmButton = {},
+    )
 }
 
 

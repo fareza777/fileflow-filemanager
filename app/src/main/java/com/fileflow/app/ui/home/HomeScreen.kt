@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -79,6 +80,7 @@ import com.fileflow.app.ui.components.FileThumb
 import com.fileflow.app.ui.components.ProgressPanel
 import com.fileflow.app.ui.components.SectionCard
 import com.fileflow.app.ui.components.SectionHeader
+import com.fileflow.app.ui.components.FeatureBanner
 import com.fileflow.app.ui.components.StorageDonut
 import com.fileflow.app.ui.components.TILE_THUMBNAIL_PIXELS
 import com.fileflow.app.ui.util.FileIntents
@@ -138,6 +140,14 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item { SearchPill(onClick = onOpenSearch) }
+            item {
+                FeatureBanner(
+                    title = stringResource(R.string.photo_discover_title),
+                    description = stringResource(R.string.photo_discover_desc),
+                    icon = Icons.Filled.Search,
+                    onClick = { onOpenTool("photo_search") },
+                )
+            }
 
             item {
                 // Without access the whole screen is zeros and dashes. Saying so
@@ -670,7 +680,15 @@ private fun InsightTile(
     icon: ImageVector,
     tint: Color,
 ) {
-    SectionCard(modifier = modifier, contentPadding = PaddingValues(14.dp)) {
+    // The three summary tiles are one row of a summary: same width already,
+    // and now the same height too. They used to grow to their content, so a
+    // tile with no detail line sat shorter than its neighbours and the row
+    // ended in a stair step. The minimum is shared and the detail line always
+    // reserves its slot, so the heights match without clipping on large fonts.
+    SectionCard(
+        modifier = modifier.heightIn(min = SUMMARY_TILE_MIN_HEIGHT),
+        contentPadding = PaddingValues(14.dp),
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -705,18 +723,21 @@ private fun InsightTile(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                 )
-                if (detail != null) {
-                    Text(
-                        text = detail,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                }
+                Text(
+                    // A non-breaking space keeps the line's height when there
+                    // is no detail, so the three tiles stay the same size.
+                    text = detail ?: "\u00A0",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
         }
     }
 }
+
+/** Shared minimum height of the three summary tiles, so the row reads level. */
+private val SUMMARY_TILE_MIN_HEIGHT = 132.dp
 
 /**
  * The well-known folders, as one row of chips.

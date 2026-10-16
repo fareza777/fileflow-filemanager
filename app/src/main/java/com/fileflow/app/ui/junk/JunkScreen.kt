@@ -244,7 +244,11 @@ fun JunkScreen(
         },
         bottomBar = {
             val report = state.report
-            if (report != null && !report.isEmpty) {
+            // While the clean runs, the global operation bar is already showing
+            // the progress where the action bar sits. Showing both stacked the
+            // floating panel on top of this bar — its box over the bar's text —
+            // so the bar stands down until the operation is done.
+            if (report != null && !report.isEmpty && !state.working) {
                 SelectionActionBar(
                     title = stringResource(
                         R.string.junk_reclaimable,

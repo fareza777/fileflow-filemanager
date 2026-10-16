@@ -31,7 +31,19 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AssistChip
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Landscape
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.fileflow.app.core.vision.PhotoMatch
+import com.fileflow.app.core.vision.ThemeVocabulary
+import com.fileflow.app.ui.components.ConfirmDialog
+import kotlinx.coroutines.ensureActive
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -102,6 +114,8 @@ data class PhotoSearchState(
     val query: String = "",
     val results: List<PhotoHit> = emptyList(),
     val indexed: Int = 0,
+    /** How many photos the library holds in total, for "read X of Y". */
+    val knownTotal: Int = 0,
     val indexing: Boolean = false,
     val progressDone: Int = 0,
     val progressTotal: Int = 0,
@@ -122,6 +136,7 @@ data class PhotoSearchState(
     val queryCurated: Boolean = false,
 ) {
     val showingRecent: Boolean get() = query.isBlank()
+    val foundCount: Int get() = (results.map { it.path } + semantic.map { it.path }).distinct().size
     val modelTotalMb: Long get() = SemanticAsset.entries.sumOf { it.megabytes }
 }
 
@@ -148,6 +163,12 @@ class PhotoSearchViewModel @Inject constructor(
             indexer.observeCount().collect { count ->
                 _state.update { it.copy(indexed = count, neverIndexed = count == 0) }
             }
+        }
+        viewModelScope.launch {
+            // What the library weighs in at, so "210 photos read" can answer the
+            // question it provokes: 210 of how many?
+            val known = runCatching { indexer.knownCount() }.getOrDefault(0)
+            _state.update { it.copy(knownTotal = known) }
         }
         viewModelScope.launch {
             semantic.observeCount().collect { count -> _state.update { it.copy(embedded = count) } }
@@ -179,15 +200,19 @@ class PhotoSearchViewModel @Inject constructor(
                             )
                         }
                         when (progress.kind) {
-                            PhotoWorkState.Kind.INDEXING -> _messages.send(
-                                UiMessage.Info(
-                                    if (progress.counted == 0) {
-                                        "Nothing new to read"
-                                    } else {
-                                        "Read ${progress.counted} photos"
-                                    },
-                                ),
-                            )
+                            PhotoWorkState.Kind.INDEXING -> {
+                                val known = runCatching { indexer.knownCount() }.getOrDefault(0)
+                                _state.update { it.copy(knownTotal = known) }
+                                _messages.send(
+                                    UiMessage.Info(
+                                        if (progress.counted == 0) {
+                                            "Nothing new to read"
+                                        } else {
+                                            "Read ${progress.counted} photos"
+                                        },
+                                    ),
+                                )
+                            }
                             PhotoWorkState.Kind.EMBEDDING -> _messages.send(
                                 UiMessage.Info(
                                     if (progress.counted == 0) {
@@ -224,6 +249,10 @@ class PhotoSearchViewModel @Inject constructor(
                     modelInstalled = installed,
                     modelReady = false,
                     modelBytes = semantic.sizeOnDisk(),
+                    // Opening the model is neither "ready" nor "failed": say
+                    // so, rather than letting the card claim it could not open
+                    // while it is still opening.
+                    modelDownload = if (installed) SemanticStatus.Loading else null,
                 )
             }
             if (installed) {
@@ -384,7 +413,10 @@ class PhotoSearchViewModel @Inject constructor(
     }
 
     fun setQuery(query: String) {
-        _state.update { it.copy(query = query) }
+        _state.update {
+            it.copy(query = query, searching = query.isNotBlank(), results = emptyList(),
+                semantic = emptyList(), queryCurated = false)
+        }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             kotlinx.coroutines.delay(200)
@@ -395,18 +427,35 @@ class PhotoSearchViewModel @Inject constructor(
                 return@launch
             }
             _state.update { it.copy(searching = true) }
-            val hits = runCatching { indexer.search(needle) }.getOrDefault(emptyList())
+            val hits = try {
+                indexer.search(needle)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                _messages.send(UiMessage.Info(error.message ?: "Photo text search failed"))
+                emptyList()
+            }
+            coroutineContext.ensureActive()
+            _state.update { if (it.query.trim() == needle) it.copy(results = hits) else it }
             // The third mechanism, and the only one that can answer a phrase
             // which is not written anywhere in the photo and is not one of the
             // model's categories. It costs a model download, so it only runs
             // when that download is present.
             val byMeaning = if (_state.value.modelReady) {
-                runCatching { semantic.search(needle) }.getOrDefault(emptyList())
+                try {
+                    semantic.search(needle)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    _messages.send(UiMessage.Info(error.message ?: "Photo meaning search failed"))
+                    emptyList()
+                }
             } else {
                 emptyList()
             }
+            coroutineContext.ensureActive()
             _state.update {
-                it.copy(
+                if (it.query.trim() != needle) it else it.copy(
                     searching = false,
                     results = hits,
                     semantic = byMeaning,
@@ -419,7 +468,9 @@ class PhotoSearchViewModel @Inject constructor(
     private fun showRecent() {
         viewModelScope.launch {
             val recent = runCatching { indexer.recent() }.getOrDefault(emptyList())
-            _state.update { it.copy(results = recent) }
+            _state.update {
+                if (it.query.isNotBlank()) it else it.copy(results = recent, searching = false)
+            }
         }
     }
 
@@ -463,6 +514,18 @@ fun PhotoSearchScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
+    var filter by rememberSaveable { mutableStateOf("all") }
+    var showModel by rememberSaveable { mutableStateOf(false) }
+    var confirmDeleteModel by remember { mutableStateOf(false) }
+    val exact = state.results.filter { it.match != PhotoMatch.THEME }
+    val themed = state.results.filter { it.match == PhotoMatch.THEME }
+    val exactPaths = exact.map { it.path }.toSet()
+    val meaning = state.semantic.filterNot { it.path in exactPaths }
+    val strongerPaths = exactPaths + meaning.map { it.path }
+    val themeOnly = themed.filterNot { it.path in strongerPaths }
+    LaunchedEffect(state.query) {
+        filter = if (ThemeVocabulary.labelsFor(state.query).isNotEmpty()) "theme" else "all"
+    }
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { message -> snackbar.showMessage(context, message) { } }
@@ -495,174 +558,194 @@ fun PhotoSearchScreen(
         },
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             SearchField(
                 value = state.query,
                 onValueChange = viewModel::setQuery,
                 placeholder = stringResource(R.string.photo_search_hint),
+                trailing = {
+                    if (state.query.isNotBlank()) {
+                        IconButton(onClick = { viewModel.setQuery("") }) {
+                            Icon(Icons.Filled.Close, stringResource(R.string.photo_clear_query))
+                        }
+                    }
+                },
             )
 
             Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                // The examples are the feature: nobody guesses that receipts
-                // are searchable, and "kerjabakti" is not a word anyone types
-                // into a file manager unless it is suggested. They scroll
-                // sideways on a narrow screen rather than spilling out of it.
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
             ) {
                 listOf(
-                    R.string.photo_example_transfer,
-                    R.string.photo_example_kerja,
-                    R.string.photo_example_food,
-                ).forEach { example ->
-                    val text = stringResource(example)
-                    AssistChip(
+                    R.string.photo_example_kerja to Icons.Filled.Groups,
+                    R.string.photo_example_food to Icons.Filled.Restaurant,
+                    R.string.photo_example_transfer to Icons.AutoMirrored.Filled.ReceiptLong,
+                    R.string.photo_example_nature to Icons.Filled.Landscape,
+                    R.string.photo_example_pets to Icons.Filled.Pets,
+                ).forEach { (label, icon) ->
+                    val text = stringResource(label)
+                    FilterChip(
+                        selected = state.query.equals(text, ignoreCase = true),
                         onClick = { viewModel.setQuery(text) },
-                        label = {
-                            Text(
-                                text = text,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(16.dp))
-                        },
+                        label = { Text(text, maxLines = 1) },
+                        leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },
                     )
                 }
-                if (state.query.isNotBlank()) {
-                    IconButton(onClick = { viewModel.setQuery("") }) {
-                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_deselect_all))
+            }
+            if (!state.showingRecent) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    listOf(
+                        "all" to R.string.photo_filter_all,
+                        "meaning" to R.string.photo_section_meaning,
+                        "theme" to R.string.photo_section_theme,
+                        "text" to R.string.photo_section_text,
+                    ).forEach { (key, label) ->
+                        FilterChip(selected = filter == key, onClick = { filter = key },
+                            label = { Text(stringResource(label)) })
                     }
                 }
             }
+            if (state.searching) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
 
-            when {
-                state.indexing || state.embedding -> ProgressCard(
-                    state = state,
-                    onStop = {
-                        if (state.embedding) viewModel.stopEmbedding() else viewModel.stopIndexing()
-                    },
-                )
-
-                state.indexed == 0 -> EmptyState(
-                    icon = Icons.Filled.Image,
-                    title = stringResource(R.string.photo_search_no_index),
-                    body = stringResource(R.string.photo_search_no_index_hint),
-                    action = {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Button(
-                                onClick = { viewModel.buildIndex() },
-                                shape = RoundedCornerShape(14.dp),
-                            ) {
-                                Text(stringResource(R.string.photo_index_build))
-                            }
+            // Status, setup and results share one scroll surface. Large fonts,
+            // a keyboard or a model error must never squeeze the gallery out.
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 150.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (state.showingRecent) {
+                    item(key = "intro", span = { GridItemSpan(maxLineSpan) }) {
+                        Column(Modifier.padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(stringResource(R.string.photo_discover_title), style = MaterialTheme.typography.headlineSmall)
+                            Text(stringResource(R.string.photo_discover_desc), style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                item(key = "coverage", span = { GridItemSpan(maxLineSpan) }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.AutoAwesome, null, Modifier.size(20.dp), MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(R.string.photo_search_model_note),
-                                style = MaterialTheme.typography.labelSmall,
+                                if (state.knownTotal > state.indexed) stringResource(R.string.photo_search_indexed_of, state.indexed, state.knownTotal)
+                                else stringResource(R.string.photo_search_indexed, state.indexed),
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                            Text(
+                                if (state.modelReady) stringResource(R.string.photo_meaning_coverage, state.embedded, maxOf(state.indexed, state.knownTotal))
+                                else stringResource(R.string.photo_meaning_optional),
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 8.dp),
                             )
                         }
-                    },
-                )
-
-                else -> {
-                    ModelCard(
-                        state = state,
-                        onDownload = viewModel::downloadModel,
-                        onStop = viewModel::cancelDownload,
-                        onDelete = viewModel::deleteModel,
-                        onRetry = viewModel::retryLoad,
-                    )
-
-                    if (state.results.isEmpty() && state.semantic.isEmpty() && !state.searching) {
+                        TextButton(onClick = { showModel = !showModel }) {
+                            Text(stringResource(if (showModel) R.string.photo_model_hide else R.string.photo_model_manage))
+                        }
+                    }
+                }
+                if (showModel || state.modelDownload is SemanticStatus.Downloading ||
+                    state.modelDownload is SemanticStatus.Failed || state.modelDownload is SemanticStatus.Loading) {
+                    item(key = "model", span = { GridItemSpan(maxLineSpan) }) {
+                        ModelCard(state, viewModel::downloadModel, viewModel::cancelDownload,
+                            { confirmDeleteModel = true }, viewModel::retryLoad)
+                    }
+                }
+                if (state.indexing || state.embedding) {
+                    item(key = "progress", span = { GridItemSpan(maxLineSpan) }) {
+                        ProgressCard(state) {
+                            if (state.embedding) viewModel.stopEmbedding() else viewModel.stopIndexing()
+                        }
+                    }
+                }
+                if (state.indexed == 0 && !state.indexing && !state.embedding) {
+                    item(key = "setup", span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(
-                            icon = Icons.Filled.Search,
-                            title = stringResource(R.string.photo_search_empty),
-                            body = stringResource(R.string.photo_search_empty_hint),
-                        )
-                    } else {
-                        Text(
-                            text = if (state.showingRecent) {
-                                stringResource(R.string.photo_search_indexed, state.indexed)
-                            } else {
-                                stringResource(R.string.photo_search_found, state.results.size)
+                            icon = Icons.Filled.Image,
+                            title = stringResource(R.string.photo_search_no_index),
+                            body = stringResource(R.string.photo_search_no_index_hint),
+                            action = {
+                                Button(onClick = viewModel::buildIndex) { Text(stringResource(R.string.photo_index_build)) }
                             },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 150.dp),
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 24.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            // Meaning first when there is any: it is the tier the
-                            // user paid hundreds of megabytes for, and the one
-                            // that can answer a phrase nothing is printed on.
-                            if (state.semantic.isNotEmpty()) {
-                                item(span = { GridItemSpan(maxLineSpan) }) {
-                                    Column {
-                                        SectionHeader(stringResource(R.string.photo_section_meaning))
-                                        // Why an Indonesian phrase works at all:
-                                        // the model reads English, so the query is
-                                        // translated into prompts before it is
-                                        // embedded. Saying so turns a mystery into
-                                        // a mechanism.
-                                        if (state.queryCurated) {
-                                            Text(
-                                                text = stringResource(R.string.photo_prompt_translated),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.padding(horizontal = 4.dp),
-                                            )
-                                        }
-                                    }
-                                }
-                                items(state.semantic, key = { "s-${it.path}" }) { hit ->
-                                    PhotoCard(
-                                        name = hit.name,
-                                        path = hit.path,
-                                        modified = hit.modified,
-                                        note = "≈ ${(hit.score * 100).toInt()}% " +
-                                            stringResource(R.string.photo_match_meaning),
-                                        noteColor = MaterialTheme.colorScheme.tertiary,
-                                        onClick = { onOpenPhoto(hit.path) },
-                                    )
-                                }
-                            }
-                            if (state.results.isNotEmpty()) {
-                                item(span = { GridItemSpan(maxLineSpan) }) {
-                                    SectionHeader(stringResource(R.string.photo_section_exact))
-                                }
-                                items(state.results, key = { it.path }) { hit ->
-                                    PhotoCard(
-                                        name = hit.name,
-                                        path = hit.path,
-                                        modified = hit.modified,
-                                        note = hit.snippet
-                                            ?: hit.themes.take(3).joinToString(" · ")
-                                            .takeIf { it.isNotBlank() }
-                                            ?: hit.labels.joinToString(" · "),
-                                        noteColor = if (hit.snippet != null) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
-                                        onClick = { onOpenPhoto(hit.path) },
-                                    )
-                                }
+                    }
+                } else if (!state.searching || state.results.isNotEmpty()) {
+                    item(key = "count", span = { GridItemSpan(maxLineSpan) }) {
+                        Text(
+                            if (state.showingRecent) stringResource(R.string.photo_section_recent)
+                            else stringResource(R.string.photo_search_found, state.foundCount),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                    val visibleExact = if (state.showingRecent || filter == "all" || filter == "text") exact else emptyList()
+                    val visibleMeaning = if (filter == "meaning") state.semantic else if (filter == "all") meaning else emptyList()
+                    val visibleTheme = if (filter == "theme") themed else if (filter == "all") themeOnly else emptyList()
+                    if (visibleExact.isEmpty() && visibleMeaning.isEmpty() && visibleTheme.isEmpty() && !state.searching) {
+                        item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+                            EmptyState(Icons.Filled.Search,
+                                stringResource(R.string.photo_search_empty),
+                                body = stringResource(R.string.photo_search_empty_hint))
+                        }
+                    }
+                    if (visibleExact.isNotEmpty() && !state.showingRecent) {
+                        item(key = "text-heading", span = { GridItemSpan(maxLineSpan) }) {
+                            SectionHeader(stringResource(R.string.photo_section_text))
+                        }
+                    }
+                    items(visibleExact, key = { "text-${it.path}" }) { hit ->
+                        PhotoCard(hit.name, hit.path, hit.modified,
+                            if (state.showingRecent) hit.labels.joinToString(" · ")
+                            else if (hit.match == PhotoMatch.NAME) stringResource(R.string.photo_match_name)
+                            else hit.snippet.orEmpty(),
+                            MaterialTheme.colorScheme.primary, { onOpenPhoto(hit.path) })
+                    }
+                    if (visibleMeaning.isNotEmpty()) {
+                        item(key = "meaning-heading", span = { GridItemSpan(maxLineSpan) }) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                SectionHeader(stringResource(R.string.photo_section_meaning))
+                                Text(stringResource(R.string.photo_meaning_note), style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
+                    }
+                    items(visibleMeaning, key = { "meaning-${it.path}" }) { hit ->
+                        PhotoCard(hit.name, hit.path, hit.modified, stringResource(R.string.photo_match_visual),
+                            MaterialTheme.colorScheme.tertiary, { onOpenPhoto(hit.path) })
+                    }
+                    if (visibleTheme.isNotEmpty()) {
+                        item(key = "theme-heading", span = { GridItemSpan(maxLineSpan) }) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                SectionHeader(stringResource(R.string.photo_section_theme))
+                                Text(stringResource(R.string.photo_theme_note), style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                    items(visibleTheme, key = { "theme-${it.path}" }) { hit ->
+                        PhotoCard(hit.name, hit.path, hit.modified, hit.labels.joinToString(" · "),
+                            MaterialTheme.colorScheme.onSurfaceVariant, { onOpenPhoto(hit.path) })
                     }
                 }
             }
         }
+    }
+    if (confirmDeleteModel) {
+        ConfirmDialog(
+            title = stringResource(R.string.photo_model_delete),
+            body = stringResource(R.string.photo_model_delete_confirm),
+            confirmLabel = stringResource(R.string.photo_model_delete),
+            onConfirm = { viewModel.deleteModel(); confirmDeleteModel = false },
+            onDismiss = { confirmDeleteModel = false },
+            destructive = true,
+        )
     }
 }
 
@@ -684,6 +767,7 @@ private fun ModelCard(
 ) {
     val downloading = state.modelDownload as? SemanticStatus.Downloading
     val failed = state.modelDownload as? SemanticStatus.Failed
+    val loading = state.modelDownload is SemanticStatus.Loading
 
     Column(
         modifier = Modifier
@@ -753,6 +837,16 @@ private fun ModelCard(
             OutlinedButton(onClick = onStop, shape = RoundedCornerShape(12.dp)) {
                 Text(stringResource(R.string.photo_model_stop))
             }
+        } else if (loading) {
+            // Half a gigabyte does not open instantly. "Could not open" while
+            // it is still opening is a claim the card used to make.
+            Text(
+                text = stringResource(R.string.photo_model_loading),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         } else if (state.modelInstalled) {
             // The files are here but the model would not load. Downloading 795 MB
             // again would be the wrong answer to a wrong assumption in the code.
@@ -866,16 +960,12 @@ private fun PhotoCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                RoundedCornerShape(16.dp),
-            ),
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+            .clickable(onClick = onClick),
     ) {
         AsyncImage(
             model = File(path),
-            contentDescription = null,
+            contentDescription = name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
@@ -885,8 +975,7 @@ private fun PhotoCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(10.dp),
+                .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(

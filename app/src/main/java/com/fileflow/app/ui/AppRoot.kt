@@ -786,6 +786,9 @@ private fun GlobalOperationBar(
             },
             fraction = operation.progress?.fraction,
             onCancel = onCancel,
+            // Opaque and lifted: this one floats over live content, and a
+            // translucent panel let the screen underneath read through it.
+            elevated = true,
             modifier = Modifier.fillMaxWidth(),
         )
     }
